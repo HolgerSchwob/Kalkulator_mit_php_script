@@ -1,0 +1,173 @@
+<?php
+// upload.php - Angepasst für Kalkulator-Datenempfang und Google Drive Ablage
+
+// --- CORS-Header ---
+header("Access-Control-Allow-Origin: *"); // Für lokale Tests. Für Produktion: Deine Frontend-Domain
+header("Access-Control-Allow-Methods: POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+// --- Konfiguration ---
+// ID des übergeordneten Google Drive Ordners, in dem die "pending_..." Unterordner erstellt werden.
+$rootPendingOrdnerId = '1iyhs5Uvgamj7gxWLMsYTwBGT3nLIpAw3'; // Deine ID hier eintragen!
+$serviceAccountKeyFile = __DIR__ . '/hs-driveupload-e61508e32fc9.json'; // Pfad zu deiner Service Account Schlüsseldatei
+
+// --- Google API Client Library laden ---
+require_once __DIR__ . '/vendor/autoload.php';
+
+// --- Hilfsfunktionen ---
+function createJsonResponse($status, $message, $data = null, $debugLog = null) {
+    http_response_code($status === 'success' ? 200 : ($status === 'error_client' ? 400 : 500));
+    header('Content-Type: application/json; charset=utf-8');
+    $response = ['status' => $status, 'message' => $message];
+    if ($data) {
+        $response['data'] = $data;
+    }
+    if ($debugLog && is_array($debugLog)) {
+        $response['debug_log'] = $debugLog;
+    }
+    echo json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    exit();
+}
+
+$debugLog = [];
+$debugLog[] = "PHP: Anfrage gestartet um " . date('Y-m-d H:i:s');
+$debugLog[] = "PHP: Request-Methode: " . $_SERVER['REQUEST_METHOD'];
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    createJsonResponse('error_client', 'Ungültige Anfrage-Methode. Nur POST erlaubt.', null, $debugLog);
+}
+
+// --- Datenempfang ---
+$jsonDataString = $_POST['jsonData'] ?? null;
+$uploadedFiles = $_FILES;
+
+$debugLog[] = "PHP: Empfangenes jsonData (existiert): " . ($jsonDataString ? 'Ja' : 'Nein');
+$debugLog[] = "PHP: Anzahl empfangener Dateien im _FILES Array: " . count($uploadedFiles);
+
+if (!$jsonDataString) {
+    $debugLog[] = "PHP Fehler: Keine JSON-Daten ('jsonData') im POST-Request gefunden.";
+    createJsonResponse('error_client', 'Fehlende JSON-Daten in der Anfrage.', null, $debugLog);
+}
+
+$auftragsDatenGesamt = json_decode($jsonDataString, true);
+if (json_last_error() !== JSON_ERROR_NONE) {
+    $debugLog[] = "PHP Fehler: JSON-Daten konnten nicht dekodiert werden. Fehler: " . json_last_error_msg();
+    createJsonResponse('error_client', 'Ungültiges JSON-Format empfangen. Fehler: ' . json_last_error_msg(), null, $debugLog);
+}
+$debugLog[] = "PHP: JSON-Daten erfolgreich dekodiert.";
+
+// --- Google Drive Service initialisieren ---
+if ($rootPendingOrdnerId === 'DEINE_ORDNER_ID_HIER' || empty($rootPendingOrdnerId)) { // Prüfe auf Platzhalter
+    $debugLog[] = "PHP FEHLER: rootPendingOrdnerId ist nicht konfiguriert im PHP-Skript.";
+    createJsonResponse('error_server_config', 'Serverfehler: Google Drive Zielordner-ID ist nicht konfiguriert.', null, $debugLog);
+}
+if (!file_exists($serviceAccountKeyFile)) {
+    $debugLog[] = "PHP FEHLER: Dienstkonto-Schlüsseldatei nicht gefunden: " . $serviceAccountKeyFile;
+    createJsonResponse('error_server_config', 'Serverfehler: Dienstkonto-Schlüsseldatei nicht gefunden.', null, $debugLog);
+}
+
+$client = new Google\Client();
+$service = null;
+try {
+    $client->setAuthConfig($serviceAccountKeyFile);
+    $client->setScopes([Google\Service\Drive::DRIVE]); // DRIVE Scope für Ordnererstellung und Datei-Upload
+    $client->fetchAccessTokenWithAssertion();
+    $service = new Google\Service\Drive($client);
+    $debugLog[] = "PHP: Google Drive Service erfolgreich initialisiert.";
+} catch (Exception $e) {
+    $debugLog[] = "PHP FEHLER bei Google Drive Authentifizierung: " . $e->getMessage();
+    createJsonResponse('error_google_auth', 'Serverfehler: Google Drive Authentifizierung fehlgeschlagen. Details: ' . $e->getMessage(), null, $debugLog);
+}
+
+// --- Neuen Unterordner in Google Drive erstellen ---
+$zeitstempel = date('Ymd_His');
+$kundenNameFuerOrdner = isset($auftragsDatenGesamt['kundenDaten']['name']) ? preg_replace('/[^a-zA-Z0-9_-]/', '_', $auftragsDatenGesamt['kundenDaten']['name']) : 'UnbekannterKunde';
+$neuerDriveOrdnerName = "pending_" . $zeitstempel . "_" . $kundenNameFuerOrdner;
+$neuerDriveOrdner = null;
+$neuerDriveOrdnerLink = null;
+
+try {
+    $folderMetadata = new Google\Service\Drive\DriveFile([
+        'name' => $neuerDriveOrdnerName,
+        'mimeType' => 'application/vnd.google-apps.folder',
+        'parents' => [$rootPendingOrdnerId]
+    ]);
+    $neuerDriveOrdner = $service->files->create($folderMetadata, ['fields' => 'id, webViewLink']);
+    $neuerDriveOrdnerId = $neuerDriveOrdner->id;
+    $neuerDriveOrdnerLink = $neuerDriveOrdner->getWebViewLink();
+    $debugLog[] = "PHP: Neuer Google Drive Ordner erstellt: ID " . $neuerDriveOrdnerId . ", Name: " . $neuerDriveOrdnerName . ", Link: " . $neuerDriveOrdnerLink;
+} catch (Exception $e) {
+    $debugLog[] = "PHP FEHLER beim Erstellen des Google Drive Ordners: " . $e->getMessage();
+    createJsonResponse('error_google_drive', 'Serverfehler: Google Drive Ordner konnte nicht erstellt werden. Details: ' . $e->getMessage(), null, $debugLog);
+}
+
+// --- JSON-Datei in den neuen Drive-Ordner hochladen ---
+try {
+    $jsonFileMetadata = new Google\Service\Drive\DriveFile([
+        'name' => 'auftragsdetails.json',
+        'parents' => [$neuerDriveOrdnerId]
+    ]);
+    $service->files->create($jsonFileMetadata, [
+        'data' => json_encode($auftragsDatenGesamt, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
+        'mimeType' => 'application/json',
+        'uploadType' => 'media' // oder 'multipart' wenn Metadaten komplexer sind
+    ]);
+    $debugLog[] = "PHP: auftragsdetails.json erfolgreich in Drive-Ordner ID " . $neuerDriveOrdnerId . " hochgeladen.";
+} catch (Exception $e) {
+    $debugLog[] = "PHP FEHLER beim Hochladen der auftragsdetails.json: " . $e->getMessage();
+    // Hier nicht unbedingt abbrechen, andere Dateien könnten trotzdem wichtig sein.
+}
+
+// --- Dateien aus $_FILES in den neuen Drive-Ordner hochladen ---
+$hochgeladeneDateinamenInDrive = [];
+foreach ($uploadedFiles as $fileKey => $fileData) {
+    if ($fileData['error'] === UPLOAD_ERR_OK) {
+        $originalName = basename($fileData['name']); // Dateinamen bereinigen
+        $filePath = $fileData['tmp_name'];
+        $mimeType = mime_content_type($filePath) ?: $fileData['type']; // Versuche, MimeType genauer zu bestimmen
+
+        try {
+            $driveFileMetadata = new Google\Service\Drive\DriveFile([
+                'name' => $originalName,
+                'parents' => [$neuerDriveOrdnerId]
+            ]);
+            $content = file_get_contents($filePath);
+            $driveFile = $service->files->create($driveFileMetadata, [
+                'data' => $content,
+                'mimeType' => $mimeType,
+                'uploadType' => 'multipart'
+            ]);
+            $debugLog[] = "PHP: Datei '" . $originalName . "' (Key: " . $fileKey . ") erfolgreich in Drive hochgeladen. Drive File ID: " . $driveFile->id;
+            $hochgeladeneDateinamenInDrive[] = $originalName;
+        } catch (Exception $e) {
+            $debugLog[] = "PHP FEHLER beim Hochladen der Datei '" . $originalName . "' (Key: " . $fileKey . ") nach Drive: " . $e->getMessage();
+        } finally {
+            if (file_exists($filePath)) {
+                unlink($filePath); // Temporäre Datei löschen
+            }
+        }
+    } elseif ($fileData['error'] !== UPLOAD_ERR_NO_FILE) {
+        $debugLog[] = "PHP Fehler beim Datei-Upload für Key '" . $fileKey . "': Code " . $fileData['error'];
+    }
+}
+
+$debugLog[] = "PHP: Verarbeitung abgeschlossen.";
+createJsonResponse(
+    'success',
+    'Anfrage und Dateien erfolgreich empfangen und in Google Drive verarbeitet.',
+    [
+        'driveFolderId' => $neuerDriveOrdnerId,
+        'driveFolderLink' => $neuerDriveOrdnerLink,
+        'driveFolderName' => $neuerDriveOrdnerName,
+        'uploadedFilesToDrive' => $hochgeladeneDateinamenInDrive,
+        'jsonFileUploaded' => true // Annahme, da wir oben nicht abbrechen
+    ],
+    $debugLog
+);
+
+?>

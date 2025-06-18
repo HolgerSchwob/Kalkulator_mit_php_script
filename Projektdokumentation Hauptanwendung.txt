@@ -1,0 +1,111 @@
+Projektdokumentation: Dynamischer Online-Kalkulator für Druckaufträge (Fortgeschrittener Stand)
+
+Projekttitel: Dynamischer Online-Kalkulator für Druck- und Bindeaufträge (Abschlussarbeiten) mit PDF-Analyse, erweiterter Konfiguration und Anfragefunktion.
+
+Projektziel:
+Entwicklung eines webbasierten Kalkulators (Vanilla JavaScript, HTML, CSS), der Kunden eine transparente Preiskalkulation für Druck und Bindung von Abschlussarbeiten ermöglicht.  Das System generiert detaillierte, unverbindliche Anfragen mit allen Konfigurations-, Personalisierungs- und Druckdaten.  Diese Anfragen werden manuell vom Anbieter geprüft und bestätigt. 
+
+
+
+Technische Basis:
+
+Frontend: Reines Vanilla JavaScript (ES6-Module), HTML5, CSS3. 
+PDF-Verarbeitung (clientseitig): pdf.js (Analyse), pdfmake.js (Angebotserstellung). 
+
+Aktuelle Kernfunktionalitäten:
+
+Zentrale Konfiguration (CALC_CONFIG in script.js):
+
+Definiert Produkte (Papiere, Bindungen, Extras), Optionen, Preise, Aufpreise, globale Parameter (Pauschale, Währung, MwSt.). 
+Enthält Konfigurationen für Produktionszeiten und Liefermethoden.
+Bindungskonfigurationen mit Flags für Personalisierungsbedarf und Felddefinitionen. 
+Buchblock-Konfiguration (bookBlockHandler.mjs):
+
+Eingabe der A4-Gesamtseitenanzahl. 
+Auswahl Druckmodus (ein-/beidseitig) und Papiersorte. 
+Optionale Angabe von DIN A3-Seiten. 
+Dynamische Berechnung und Anzeige der Buchblockdicke.
+Vereinheitlichter PDF-Upload & Analyse (pdfAnalyzer.mjs, script.js): Ein Button zum Hochladen der Inhalts-PDF, der immer das Analyse-Modal öffnet.  Die Analyse liefert Gesamtseiten, A4/A3-Unterscheidung, und eine Vorschau der ersten Seite.  Das hochgeladene File-Objekt und die Analysedaten können in den Kalkulator übernommen werden. 
+
+
+Bindungsvarianten (variantHandler.mjs):
+
+Hinzufügen von bis zu maxVariants Bindungsvarianten.
+Auswahl des Bindungstyps und dynamische Anzeige von Optionen (z.B. Folientyp, Umschlagfarbe via Bildergalerie (uiUtils.mjs)). 
+Dickenvalidierung gegen Buchblockdicke; ggf. Fallback auf Standardbindung. 
+Personalisierung:
+Für Bindungen mit requiresPersonalization: true: Button "Bindung personalisieren". 
+Öffnet aktuell das Modal des personalizationHandler.mjs für Text- und Logo-Eingaben. 
+Eingegebene Daten werden im Hauptzustand gespeichert. 
+Status (erledigt/offen) wird signalisiert. 
+Zusätzliche Produkte / Beiwerk (extrasHandler.mjs):
+
+Auswahl von Extras (z.B. CD-Aktionen, Verpackung) aus CALC_CONFIG.extras. 
+Keine "Produktionsgeschwindigkeit" mehr hier, da ausgelagert.
+Produktionszeit & Lieferung (productionDeliveryHandler.mjs):
+
+Neuer, separater Konfigurationsbereich im Hauptkalkulator.
+Auswahl der Produktionszeit (z.B. "Standard", "Express") über Radiobuttons.
+Auswahl der Lieferart (z.B. "Selbstabholung", "Standardversand", "Express-Versand") über Radiobuttons.
+Standardwerte sind vorkonfiguriert.
+Ausgewählte Optionen und deren Kosten fließen direkt in die Gesamtkalkulation und den Warenkorb ein.
+Preisberechnung & Warenkorb (calculationService.mjs, cartHandler.mjs):
+
+Dynamische Preisberechnung pro Variante, Extra sowie für Produktion/Lieferung.
+Permanente Warenkorb-Anzeige (Desktop) / Mobiles Modal mit allen Details: Buchblock, A3-Seiten, konfigurierte Varianten (mit Optionen, Personalisierungs-Kurzinfos), Extras, Produktionszeit, Lieferart und Gesamtkosten. 
+Aktionsbuttons & Validierung (script.js):
+
+"Angebot als PDF herunterladen" (offerGenerator.mjs): Erzeugt clientseitig ein PDF-Angebot  mit allen Konfigurationsdetails, Preisen, MwSt.-Logik  und Titelseiten-Vorschau (falls vorhanden). Button ist nur aktiv bei gültiger Konfiguration. 
+
+
+"Konfiguration prüfen und Anfrage stellen":
+Button ist immer klickbar (solange Preis > 0).
+Bei Klick: Validierung auf Vollständigkeit (Haupt-PDF hochgeladen, alle erforderlichen Personalisierungen erledigt ).
+Bei fehlenden Daten: Die entsprechenden Sektionen im Kalkulator werden visuell hervorgehoben (z.B. roter Rahmen). Bestehende Hinweistexte (pdfUploadRequirementNotice, personalizationRequirementNotice) werden angezeigt.  Das Anfrage-Modal öffnet nicht.
+Bei Erfolg: Öffnet das mehrstufige Anfrage-Modal (inquiryHandler.mjs).
+Anfrageprozess (inquiryHandler.mjs): 
+
+Schritt 1: Kontaktdaten (Name, E-Mail, Telefon). 
+Schritt 2: Lieferdetails: Zeigt die im Kalkulator gewählte Lieferart an. Fragt nur noch die Lieferadresse ab, falls die gewählte Methode dies erfordert (basierend auf requiresAddress in CALC_CONFIG). 
+Schritt 3: Finale Zusammenfassung: Anzeige aller Konfigurationsdetails, Kundendaten, gewählte Lieferart (ggf. mit Adresse), Name der Druckdatei  und finaler Gesamtpreis (inkl. Produktions-/Lieferkosten).  AGB-Checkbox. 
+
+
+Lineare Navigation und Validierung pro Schritt. 
+Finale Anfrage simuliert aktuell das Absenden (Log in Konsole). 
+Modul-Dokumentation (aktueller Stand nach Refaktorierung & Erweiterung):
+
+script.js: Orchestrator der Anwendung. Initialisiert alle Handler-Module, verwaltet den globalen inquiryState und CALC_CONFIG, stößt die zentrale updateApp()-Routine an und managt die Interaktion mit übergeordneten Modalen (PDF-Analyse, Personalisierung, Anfrage).
+CALC_CONFIG (in script.js): Zentrales Konfigurationsobjekt für alle Produktoptionen, Preise, globale Einstellungen, Produktionszeiten und Liefermethoden. 
+bookBlockHandler.mjs: Verwaltet UI-Interaktionen, Zustand und Darstellung für den Buchblock (Seitenanzahl, Papier, Druckmodus, A3, Dicke, PDF-Upload-Status).
+variantHandler.mjs: Zuständig für das Management (Hinzufügen, Entfernen, Konfigurieren) und die Darstellung der Bindungsvarianten und deren Optionen. Löst das Öffnen der Personalisierungs-Interfaces aus.
+extrasHandler.mjs: Verwaltet die UI und Logik für zusätzliche Produkte/Beiwerk (z.B. CDs).
+productionDeliveryHandler.mjs: Verwaltet UI und Auswahl für Produktionszeit und Lieferart.
+cartHandler.mjs: Verantwortlich für die Darstellung aller konfigurierten Elemente und Kosten im Warenkorb/Kalkulationsübersicht.
+calculationService.mjs: Zentralisiert die gesamte Preisberechnung (Buchblock, Varianten, Extras, Produktion/Lieferung, Gesamtsumme) und die Dickenberechnung.
+uiUtils.mjs: Beinhaltet allgemeine UI-Hilfsfunktionen (z.B. Akkordeon-Logik, Management des Bildergalerie-Modals).
+pdfAnalyzer.mjs: Führt die clientseitige Analyse hochgeladener PDF-Dateien durch (Seitenzahl, Formatunterscheidung A4/A3, Erstellung einer Vorschau-URL der ersten Seite). 
+
+offerGenerator.mjs: Generiert clientseitig ein PDF-Dokument als unverbindliches Angebot mit allen Konfigurationsdetails und Preisen. 
+
+personalizationHandler.mjs: Steuert das Modal für (bisherige) Texteingaben und Logo-Upload zur Personalisierung von Bindungen. (Rolle wird sich mit Buchdeckeneditor ggf. ändern).
+inquiryHandler.mjs: Steuert das mehrstufige Anfrage-Modal zur Erfassung von Kundendaten, Überprüfung der Lieferdetails (nur noch Adresseingabe bei Bedarf) und der finalen Bestellübersicht. 
+
+Geplante nächste Schritte:
+
+Integration des externen Buchdeckeneditors:
+Anpassung von variantHandler.mjs, um den neuen Editor für bestimmte Bindungstypen aufzurufen.
+Übergabe der Buchrückenbreite und existierender Personalisierungsdaten an den Editor.
+Implementierung einer Callback-Funktion in script.js (handleCoverEditorSave), um die vom Editor zurückgegebenen Daten (SVG, PNG-Thumbnail, Texte, Template-Infos) zu empfangen und im inquiryState zu speichern.
+Anpassung von cartHandler.mjs zur Anzeige des generierten PNG-Thumbnails.
+Klärung der Rolle/ggf. Anpassung von personalizationHandler.mjs für Bindungen, die den neuen Editor nicht verwenden oder parallel dazu Textfelder benötigen.
+Modul 2: Serverseitige Anfrageverarbeitung (gemäß ursprünglicher Projektbeschreibung): 
+
+PHP-Skript zum Empfang der JSON-Anfragedaten. 
+Serverseitige Validierung. 
+Versand von Bestätigungs-E-Mails (Kunde) und Benachrichtigungs-E-Mails (Admin). 
+Google Sheets Integration zum Speichern der Anfragedaten. 
+Serverseitiges Handling des PDF-Dateiuploads. 
+Optionale spätere Erweiterungen (gemäß ursprünglicher Projektbeschreibung): 
+Detailliertere Terminplanung.
+Direkte Anbindung von Zahlungsdienstleistern.
+SVG-basierte Online-WYSIWYG-Personalisierung (teilweise durch den neuen Buchdeckeneditor abgedeckt).

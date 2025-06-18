@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Drive Uploader</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to top for better content flow */
+            min-height: 100vh;
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 2.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px; /* Max width for readability */
+        }
+        .log-area {
+            background-color: #1f2937; /* Dark background for logs */
+            color: #e5e7eb; /* Light text for contrast */
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            font-family: 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', monospace;
+            white-space: pre-wrap; /* Preserve whitespace and wrap text */
+            word-wrap: break-word; /* Break long words */
+            max-height: 400px; /* Limit height */
+            overflow-y: auto; /* Scroll if content overflows */
+            font-size: 0.875rem; /* Smaller font for logs */
+            line-height: 1.5;
+        }
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #3b82f6; /* Blue spinner */
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 0.5rem;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1.5rem;
+            }
+            .log-area {
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Google Drive Uploader</h1>
+        <p class="text-sm text-red-600 mb-4 p-3 bg-red-100 rounded-md">
+            <strong>WICHTIG:</strong> Ersetzen Sie die Platzhalter-URL im JavaScript-Code (Zeile 100) durch die tatsächliche URL Ihres PHP-Upload-Skripts!
+        </p>
+
+        <form id="uploadForm" class="space-y-6">
+            <div>
+                <label for="textEingabe" class="block text-sm font-medium text-gray-700 mb-1">Text-Eingabe:</label>
+                <textarea id="textEingabe" name="textEingabe" rows="4"
+                          class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          placeholder="Geben Sie hier zusätzlichen Text ein..."></textarea>
+            </div>
+
+            <div>
+                <label for="dateiUpload" class="block text-sm font-medium text-gray-700 mb-1">Datei-Upload:</label>
+                <input type="file" id="dateiUpload" name="dateiUpload"
+                       class="mt-1 block w-full text-sm text-gray-900 border border-gray-300 rounded-md cursor-pointer bg-gray-50 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                <p class="mt-1 text-xs text-gray-500">Maximale Dateigröße hängt von Ihrer PHP-Konfiguration ab.</p>
+            </div>
+
+            <button type="submit" id="submitButton"
+                    class="w-full flex justify-center items-center py-3 px-6 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out">
+                <span id="buttonText">Daten senden & Datei hochladen</span>
+                <span id="loadingSpinner" class="loading-spinner hidden"></span>
+            </button>
+        </form>
+
+        <div class="mt-8">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Server-Antwort & Debug-Logs:</h2>
+            <pre id="logOutput" class="log-area">Warten auf Server-Antwort...</pre>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const uploadForm = document.getElementById('uploadForm');
+            const textEingabe = document.getElementById('textEingabe');
+            const dateiUpload = document.getElementById('dateiUpload');
+            const submitButton = document.getElementById('submitButton');
+            const buttonText = document.getElementById('buttonText');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const logOutput = document.getElementById('logOutput');
+
+            // WICHTIG: Ersetzen Sie diese URL durch die tatsächliche URL Ihres PHP-Upload-Skripts auf Ihrem Server!
+            // Beispiel: 'https://ihre-domain.de/upload.php' oder 'http://localhost/my-uploader/upload.php'
+            const PHP_UPLOAD_ENDPOINT = 'http://localhost/projects/upload.php'; 
+
+            uploadForm.addEventListener('submit', async (event) => {
+                event.preventDefault(); // Standard-Formularübermittlung verhindern
+
+                // Überprüfen, ob die URL aktualisiert wurde
+                if (PHP_UPLOAD_ENDPOINT === 'DEIN_PHP_UPLOAD_ENDPOINT_HIER' || !PHP_UPLOAD_ENDPOINT.startsWith('http')) {
+                    logOutput.textContent = 'FEHLER: Bitte aktualisieren Sie die PHP_UPLOAD_ENDPOINT im JavaScript-Code (Zeile 100) mit Ihrer tatsächlichen PHP-Skript-URL.';
+                    logOutput.classList.add('text-red-400'); // Add red text for error
+                    return;
+                }
+
+                logOutput.textContent = 'Sende Daten an den Server... Bitte warten...';
+                logOutput.classList.remove('text-red-400'); // Remove red text if previously set
+                submitButton.disabled = true; // Button deaktivieren
+                buttonText.textContent = 'Sende...';
+                loadingSpinner.classList.remove('hidden'); // Spinner anzeigen
+
+                const formData = new FormData();
+                formData.append('textEingabe', textEingabe.value);
+
+                if (dateiUpload.files.length > 0) {
+                    const file = dateiUpload.files[0];
+                    formData.append('dateiUpload', file); // Datei direkt hinzufügen
+                    console.log('Client: Datei ausgewählt. Name:', file.name, 'Größe:', file.size, 'Typ:', file.type);
+                } else {
+                    logOutput.textContent += '\n(Keine Datei ausgewählt, sende nur Text.)';
+                    console.log('Client: Keine Datei ausgewählt.');
+                }
+
+                console.log('Client: Sende FormData an PHP-Endpoint.');
+                // FormData wird automatisch als multipart/form-data gesendet,
+                // der Content-Type Header wird von fetch korrekt gesetzt.
+
+                try {
+                    const response = await fetch(PHP_UPLOAD_ENDPOINT, {
+                        method: 'POST',
+                        body: formData 
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        logOutput.textContent = `FEHLER: HTTP-Status ${response.status} - ${response.statusText}\n\nServer-Antwort:\n${errorText}`;
+                    } else {
+                        const responseText = await response.text();
+                        logOutput.textContent = responseText;
+                    }
+                } catch (error) {
+                    logOutput.textContent = `FEHLER bei der Netzwerkanfrage: ${error.message}\n\nStellen Sie sicher, dass der PHP_UPLOAD_ENDPOINT korrekt ist und Ihr PHP-Server erreichbar ist.`;
+                    logOutput.classList.add('text-red-400');
+                    console.error('Fetch-Fehler:', error);
+                } finally {
+                    submitButton.disabled = false;
+                    buttonText.textContent = 'Daten senden & Datei hochladen';
+                    loadingSpinner.classList.add('hidden');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

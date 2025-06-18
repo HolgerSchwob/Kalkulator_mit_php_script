@@ -1,0 +1,1199 @@
+/* Google Font Import für Roboto */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+/* Bestehende Stile von V1.7 ... */
+body {
+    font-family: 'Roboto', sans-serif; /* NEU: Roboto als Standardschrift */
+    line-height: 1.5;
+    margin: 0;
+    padding: 15px 15px 70px 15px; /* Etwas mehr Padding unten für den Mobile Footer */
+    background-color: #f4f4f4;
+    color: #333;
+    font-size: 0.95rem; /* Basisschriftgröße, ggf. anpassen */
+}
+
+.page-container { 
+    display: flex; 
+    flex-wrap: wrap; 
+    gap: 20px; 
+    max-width: 1200px; /* Optional: Maximale Breite für sehr große Bildschirme */
+    margin: 0 auto; /* Zentriert den Container, wenn max-width aktiv ist */
+}
+.configurator-column { 
+    flex: 2; 
+    min-width: 320px; /* Etwas kleiner für bessere Flexibilität auf Tablets */
+}
+.cart-column { 
+    flex: 1; 
+    min-width: 280px; 
+}
+
+.config-section {
+    background: #fff; 
+    padding: 15px; 
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); /* Sanfterer Schatten */
+    margin-bottom: 20px; /* Etwas mehr Abstand */
+    border: 1px solid transparent; /* Basis für Invalid-Border, statt 2px */
+    transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+/* NEUER STIL für ungültige Sektionen */
+.config-section.section-invalid {
+    border-color: #d9534f !important; 
+    box-shadow: 0 0 8px rgba(217, 83, 79, 0.4) !important; /* Leichterer Schatten bei Invalid */
+}
+
+
+.config-section h1 { /* Wird selten in .config-section sein, eher außerhalb */
+    margin-top: 0; 
+    color: #337ab7; 
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px; 
+    margin-bottom: 20px; 
+    font-size: 1.8em; /* Etwas größer für Hauptüberschrift */
+}
+.config-section h2 {
+    margin-top: 0; 
+    color: #337ab7; 
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px; /* Einheitlicher Padding-Bottom */
+    margin-bottom: 18px; /* Etwas mehr Abstand */
+    font-size: 1.3em; /* Etwas größer */
+}
+
+/* Optimierung: Fieldset-Styling zusammenfassen */
+.config-section fieldset,
+#productionTimeOptionsContainer, /* ID-Selektoren sind sehr spezifisch, ggf. Klassen verwenden */
+#deliveryMethodOptionsContainer {
+    margin-bottom: 15px; /* Einheitlicher Abstand */
+    padding: 10px 15px; 
+    border: 1px solid #ddd; 
+    border-radius: 4px;
+}
+.config-section fieldset legend,
+#productionTimeOptionsContainer legend,
+#deliveryMethodOptionsContainer legend {
+    font-weight: bold; 
+    padding: 0 8px; /* Mehr Padding */
+    font-size: 0.95em; /* Etwas größer */
+    color: #337ab7; /* Passend zu h2 */
+}
+.config-section fieldset div,
+#productionTimeOptionsContainer div,
+#deliveryMethodOptionsContainer div { 
+    margin-bottom: 8px; /* Mehr Abstand zwischen Radio/Checkbox-Optionen */
+}
+.config-section fieldset div:last-child,
+#productionTimeOptionsContainer div:last-child,
+#deliveryMethodOptionsContainer div:last-child {
+    margin-bottom: 0; /* Kein Abstand nach dem letzten Element im Fieldset */
+}
+
+
+.config-section fieldset label, /* Genereller Label-Stil in Fieldsets */
+#productionTimeOptionsContainer label,
+#deliveryMethodOptionsContainer label {
+    font-weight: normal; 
+    display: flex; 
+    align-items: center; 
+    cursor: pointer; 
+    font-size: 0.95em; /* Einheitliche Größe */
+}
+.config-section fieldset input[type="radio"],
+.config-section fieldset input[type="checkbox"], /* Checkbox hier auch gestyled */
+#productionTimeOptionsContainer input[type="radio"],
+#deliveryMethodOptionsContainer input[type="radio"] { 
+    width: auto; 
+    margin-right: 8px; /* Mehr Abstand */
+    flex-shrink: 0; /* Verhindert Schrumpfen bei langem Label-Text */
+}
+
+#a3PagesCountContainer label { 
+    font-weight: normal; 
+    margin-left: 25px; /* Etwas mehr Einzug */
+    display: block; 
+    margin-bottom: 5px;
+}
+#a3PagesCountContainer input[type="number"] {
+    margin-left: 25px;
+    width: 80px; /* Feste Breite für bessere Kontrolle */
+}
+
+/* Allgemeine Divs in .config-section, die nicht speziell behandelt werden */
+.config-section > div:not(.accordion-header):not(.accordion-body):not(.production-delivery-grid) { /* Präziserer Selektor */
+    margin-bottom: 15px;
+}
+.config-section > label { /* Nur direkte Label-Kinder von .config-section */
+    display: block; 
+    margin-bottom: 5px; 
+    font-weight: bold; 
+    font-size: 0.95em;
+}
+.config-section input[type="number"], 
+.config-section input[type="file"], /* File-Input Styling hinzugefügt */
+.config-section select {
+    width: 100%; 
+    padding: 8px 10px; /* Etwas mehr Padding */
+    border: 1px solid #ccc; /* Etwas dunklerer Rand für besseren Kontrast */
+    border-radius: 4px; 
+    box-sizing: border-box; 
+    font-size: 0.95em;
+    background-color: #fff; /* Sicherstellen, dass Hintergrund weiß ist */
+}
+.config-section input[type="file"] {
+    padding: 5px; /* Weniger Padding für File-Inputs */
+}
+
+
+.info-text { 
+    font-style: italic; 
+    color: #555; /* Etwas dunkler für bessere Lesbarkeit */
+    font-size: 0.9em; /* Etwas größer */
+    margin-top: 8px; 
+    line-height: 1.4;
+}
+.error-text { /* Für Warnhinweise wie PDF-Upload-Pflicht */
+    color: #d9534f !important; /* Wichtig, um andere Farben zu überschreiben */
+    font-weight: bold;
+    font-size: 0.9em;
+    margin-bottom: 10px !important; 
+    padding: 8px;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+}
+
+
+.accordion-item { 
+    border: 1px solid #ddd; 
+    border-radius: 4px; 
+    margin-bottom: 10px; 
+    background-color: #fff; /* Weißer Hintergrund für Akkordeon-Items */
+    transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+.accordion-item.section-invalid {
+    border: 1px solid #d9534f !important; 
+    box-shadow: 0 0 5px rgba(217, 83, 79, 0.3) !important;
+}
+.accordion-item.section-invalid > .accordion-header {
+    background-color: #f8d7da !important; 
+    color: #721c24; /* Dunklere Schrift für besseren Kontrast */
+}
+
+
+.accordion-header {
+    padding: 12px 15px; /* Mehr Padding */
+    background-color: #f7f7f7; /* Hellerer Hintergrund für Header */
+    cursor: pointer; 
+    display: flex;
+    justify-content: space-between; 
+    align-items: center; 
+    border-bottom: 1px solid #eee; /* Sanftere Trennlinie */
+}
+.accordion-header.expanded { 
+    background-color: #e9e9e9; /* Etwas dunkler bei expanded */
+}
+.accordion-header h3, .accordion-header h4 { 
+    margin: 0; 
+    font-size: 1.1em; /* Etwas größer */
+    color: #337ab7; /* Passend zu Sektionsüberschriften */
+}
+.accordion-header-summary { 
+    font-size: 0.88em; /* Etwas größer */
+    color: #444; 
+    margin-top: 3px;
+}
+.accordion-controls button { 
+    margin-left: 10px; /* Mehr Abstand */
+}
+.accordion-body { 
+    padding: 15px; 
+    border-top: 1px solid #eee; /* Linie auch oben für klare Trennung */
+}
+
+.variant-body .binding-description { 
+    font-style: italic; 
+    font-size: 0.9em; 
+    color: #555; 
+    margin-bottom: 12px; 
+    padding: 8px 10px; /* Etwas Padding */
+    border-left: 3px solid #337ab7; /* Farbe passend zu Überschriften */
+    background-color: #f9f9f9; /* Leichter Hintergrund */
+}
+.variant-body .options-section { 
+    padding-left: 0; 
+    border-left: none; 
+    margin-top: 10px; 
+    margin-bottom: 10px; 
+}
+.variant-body .variant-option-group { 
+    border: 1px solid #e9e9e9; /* Sanfterer Rand */
+    border-radius: 4px; 
+    padding: 10px 15px; 
+    margin-bottom: 12px; 
+    background-color: #fdfdfd; 
+}
+.variant-body .variant-option-group legend { 
+    font-weight: bold; 
+    font-size: 1em; /* Größer */
+    padding: 0 5px; 
+    color: #337ab7; 
+}
+.variant-body .variant-option-group label { 
+    font-weight: normal; 
+    display: flex; 
+    align-items: center; 
+    margin-bottom: 5px; 
+    cursor: pointer; 
+    font-size: 0.95em; 
+}
+.variant-body .variant-option-group input[type="radio"], 
+.variant-body .variant-option-group input[type="checkbox"] { 
+    width: auto; 
+    margin-right: 8px; 
+}
+.variant-body .gallery-select-control { 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; /* Mehr Abstand */
+    margin-top: 8px; 
+    margin-bottom: 8px; 
+}
+.variant-body .gallery-current-preview-thumb { 
+    width: 40px; /* Etwas größer */
+    height: 60px; 
+    border: 1px solid #ccc; 
+    object-fit: cover; 
+    border-radius: 3px; 
+    background-color: #f0f0f0; /* Placeholder-Farbe */
+}
+.variant-body .gallery-current-preview-thumb.placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7em;
+    color: #888;
+}
+
+.variant-body .gallery-select-control button.open-gallery-btn { 
+    padding: 6px 10px; 
+    font-size: 0.9em; 
+}
+
+/* Konsistenteres Styling für Extra-Items, ähnlich zu Varianten */
+.extra-item .accordion-header { background-color: #f7f7f7; }
+.extra-item .accordion-header.expanded { background-color: #e9e9e9; }
+.extra-body .extra-options-group { 
+    margin-bottom: 10px; 
+    padding: 10px 15px; 
+    border: 1px solid #e9e9e9; 
+    border-radius: 4px; 
+    background-color: #fdfdfd; 
+}
+.extra-body .extra-options-group legend { 
+    font-weight: bold; 
+    font-size: 1em; 
+    padding: 0 5px; 
+    color: #337ab7; 
+}
+.extra-body .extra-options-group label { 
+    font-weight: normal; 
+    display: flex; 
+    align-items: center; 
+    margin-bottom: 5px; 
+    cursor: pointer; 
+    font-size: 0.95em; 
+}
+.extra-body .extra-options-group input[type="radio"] { 
+    width: auto; 
+    margin-right: 8px; 
+}
+
+.production-delivery-grid {
+    display: grid;
+    grid-template-columns: 1fr; 
+    gap: 20px; 
+    margin-top: 10px;
+}
+
+@media (min-width: 600px) { 
+    .production-delivery-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+/* Fieldset-Styling für production-delivery-grid ist oben schon zusammengefasst */
+
+
+.cart-sticky { 
+    background: #f0f2f5; /* Hellerer Hintergrund */
+    padding: 20px; /* Mehr Padding */
+    border-radius: 5px; 
+    height: fit-content; 
+    position: sticky; 
+    top: 20px; /* Mehr Abstand oben */
+    align-self: flex-start; 
+    border: 1px solid #e0e0e0; /* Sanfter Rand */
+}
+.cart-sticky h2 { 
+    margin-top: 0; 
+    color: #337ab7; 
+    font-size: 1.3em; /* Größer */
+    border-bottom: 1px solid #ddd; /* Linie unter Überschrift */
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+.cart-item { 
+    padding-bottom: 10px; 
+    margin-bottom: 10px; 
+    border-bottom: 1px solid #e0e0e0; /* Sanftere Trennlinie */
+}
+.cart-item:last-child { 
+    border-bottom: none; 
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+.cart-item p { 
+    margin: 4px 0; /* Mehr vertikaler Abstand */
+    font-size: 0.95em; 
+}
+.cart-item .item-options, 
+.cart-item .variant-item-details p.item-options, 
+.cart-item .extra-item-details p { 
+    font-size: 0.88em; 
+    color: #444; /* Etwas dunkler */
+    padding-left: 15px; 
+    margin: 3px 0 3px 15px; 
+}
+.cart-item .variant-item-details, 
+.cart-item .extra-item-details { 
+    font-size: 0.88em; 
+    color: #333; 
+    padding-left: 0; 
+    margin-top: 5px; 
+}
+.cart-total { 
+    margin-top: 15px; 
+    padding-top: 15px; /* Abstand oben */
+    border-top: 1px solid #ccc; /* Stärkere Linie vor Gesamtbetrag */
+    font-size: 1.2em; 
+    font-weight: bold; 
+    color: #337ab7; /* Farbe für Gesamtbetrag */
+}
+.cart-total span {
+  /* color: #d9534f; /* Preis in anderer Farbe */
+}
+
+
+.cart-bookblock-info { 
+    padding: 10px 12px; 
+    margin-bottom: 12px; 
+    background-color: #e9f5ff; /* Helleres Blau */
+    border: 1px solid #cce7ff; 
+    border-radius: 4px; 
+    font-size: 0.9em; 
+}
+.cart-bookblock-info p { 
+    margin: 0 0 3px 0; /* Kleinerer Abstand unten */
+    color: #004085; /* Dunkleres Blau für Text */
+    line-height: 1.4; 
+}
+.cart-bookblock-info .a3-info { 
+    font-style: italic; 
+    color: #0056b3; 
+    font-size: 0.95em; 
+    margin-top: 4px;
+}
+
+
+.cart-item-header { 
+    display: flex; 
+    align-items: center; 
+    gap: 12px; /* Mehr Abstand */
+    margin-bottom: 6px; 
+}
+.cart-item-binding-thumbnail { 
+    width: 35px; /* Etwas größer */
+    height: 50px; 
+    object-fit: cover; 
+    border: 1px solid #ddd; 
+    border-radius: 3px; 
+    flex-shrink: 0; 
+    background-color: #fff; 
+}
+.cart-item-invalid-notice { 
+    color: #d9534f; 
+    font-size: 0.88em; 
+    font-style: italic; 
+    font-weight: bold; 
+    margin-top: 5px; 
+    padding: 5px;
+    background-color: #f8d7da;
+    border-left: 3px solid #d9534f;
+}
+
+.mobile-sticky-footer { 
+    position: fixed; 
+    bottom: 0; 
+    left: 0; 
+    right: 0; 
+    background-color: #337ab7; 
+    color: white; 
+    padding: 10px 15px; /* Mehr Padding */
+    display: none; 
+    justify-content: space-between; 
+    align-items: center; 
+    z-index: 1000; 
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.15); /* Sanfterer Schatten */
+}
+.mobile-sticky-footer .footer-price-summary { 
+    font-size: 1.05em; /* Etwas größer */
+}
+.mobile-sticky-footer button { 
+    padding: 8px 12px; 
+    font-size: 0.95em; 
+}
+
+.modal-overlay { 
+    position: fixed; 
+    top: 0; left: 0; right: 0; bottom: 0; 
+    background-color: rgba(0,0,0,0.65); /* Etwas dunkler */
+    display: none; 
+    align-items: center; 
+    justify-content: center; 
+    z-index: 1001; /* Standard-Modal-Z-Index */
+    padding: 20px; /* Mehr Padding für besseren Abstand zum Rand */
+    box-sizing: border-box; 
+}
+.modal-overlay.active { display: flex; }
+
+.modal-content { 
+    background-color: white; 
+    padding: 20px; /* Mehr Padding */
+    border-radius: 6px; /* Etwas runder */
+    width: 100%; 
+    max-width: 550px; /* Etwas breiter für mehr Inhalt */
+    max-height: 90vh; /* Etwas mehr Höhe */
+    display: flex; 
+    flex-direction: column; 
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2); /* Stärkerer Schatten */
+    box-sizing: border-box; 
+}
+/* Spezifische Anpassungen für das PDF-Analyse-Modal-Content */
+.pdf-analysis-modal-content {
+    max-width: 700px; /* Etwas breiter für mehr Text */
+}
+/* Spezifische Anpassungen für das Image-Gallery-Modal-Content */
+.image-gallery-modal-content { 
+    max-width: 800px; 
+    max-height: 90vh; 
+}
+
+
+.modal-header { /* Gilt für alle Modals der Hauptanwendung */
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    border-bottom: 1px solid #e0e0e0; /* Sanftere Linie */
+    padding-bottom: 12px; 
+    margin-bottom: 15px; 
+}
+.modal-header h2 { 
+    margin: 0; 
+    font-size: 1.3em; /* Größer */
+    color: #337ab7; 
+}
+
+.modal-body { /* Gilt für alle Modals der Hauptanwendung */
+    overflow-y: auto; 
+    flex-grow: 1; 
+    padding-right: 10px; /* Padding für Scrollbar */
+    /* Custom Scrollbar (optional, für bessere Optik) */
+    scrollbar-width: thin;
+    scrollbar-color: #ccc #f0f0f0;
+}
+.modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+.modal-body::-webkit-scrollbar-track {
+    background: #f0f0f0;
+    border-radius: 4px;
+}
+.modal-body::-webkit-scrollbar-thumb {
+    background-color: #ccc;
+    border-radius: 4px;
+    border: 2px solid #f0f0f0;
+}
+/* Spezifische Anpassungen für das Image-Gallery-Modal-Body */
+.image-gallery-modal-body { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 15px; 
+}
+
+
+.modal-footer-total { 
+    margin-top: 15px; 
+    padding-top: 15px; 
+    border-top: 1px solid #e0e0e0; 
+    font-size: 1.15em; 
+    font-weight: bold; 
+    text-align: right; 
+}
+.modal-footer { /* Gilt für alle Modals der Hauptanwendung */
+    display: flex;
+    justify-content: flex-end; 
+    gap: 12px; 
+    padding-top: 15px;
+    border-top: 1px solid #e0e0e0;
+    margin-top: 15px;
+}
+/* Spezifische Anpassungen für das Image-Gallery-Modal-Footer */
+.image-gallery-modal-footer { 
+    display: flex; 
+    justify-content: flex-end; 
+    padding-top: 15px; 
+    border-top: 1px solid #e0e0e0; 
+    margin-top: 15px; 
+}
+
+
+/* Button Styling: Konsistenter und moderner */
+.button-primary, .button-secondary, .button-danger, .button-small {
+    border: none;
+    padding: 10px 18px; /* Einheitlicheres Padding, anpassbar für .button-small */
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.95em;
+    font-weight: bold; /* Buttons etwas hervorheben */
+    transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out, transform 0.1s ease;
+    text-align: center;
+}
+.button-primary:hover, .button-secondary:hover, .button-danger:hover {
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    transform: translateY(-1px); /* Leichter Hover-Effekt */
+}
+.button-primary:active, .button-secondary:active, .button-danger:active {
+    transform: translateY(0px);
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+}
+
+
+.button-primary { background-color: #337ab7; color: white; }
+.button-primary:hover { background-color: #286090; }
+.button-primary:disabled { background-color: #a0c7e8; cursor: not-allowed; box-shadow: none; transform: none; }
+
+.button-secondary { background-color: #6c757d; color: white; }
+.button-secondary:hover { background-color: #5a6268; }
+
+.button-danger { background-color: #d9534f; color: white; padding: 6px 10px; font-size: 0.9em;} /* Kleiner für Close/Remove Buttons */
+.button-danger:hover { background-color: #c9302c; }
+.button-danger:disabled { background-color: #eeb3b1; cursor: not-allowed; opacity: 0.7; box-shadow: none; transform: none;}
+
+.button-small { padding: 6px 12px; font-size: 0.9em; font-weight: normal; }
+
+
+@media (max-width: 768px) {
+    body { padding: 10px 10px 70px 10px; /* Padding unten für Footer angepasst */ }
+    .page-container { flex-direction: column; gap: 15px; }
+    .configurator-column, .cart-column { min-width: 100%; }
+    .cart-column { display: none; } /* Desktop-Cart auf Mobil ausblenden */
+    .mobile-sticky-footer { display: flex; }
+    .modal-content { padding: 15px; max-height: 85vh; } /* Etwas mehr Padding auf Mobil */
+}
+
+.gallery-preview-area { 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center; 
+    padding: 10px; 
+    border: 1px solid #e0e0e0; 
+    border-radius: 4px; 
+    background-color: #f9f9f9; 
+    min-height: 300px; /* Etwas höher */
+}
+.gallery-preview-image { 
+    max-width: 100%; 
+    max-height: 350px; /* Etwas höher */
+    object-fit: contain; 
+    margin-bottom: 10px; 
+    border: 1px solid #ddd; 
+    background-color: #fff; 
+}
+.gallery-preview-name { 
+    font-size: 0.9em; 
+    color: #444; 
+    margin-top: 5px; 
+    text-align: center; 
+    word-break: break-all; 
+}
+.gallery-thumbnails-area { 
+    display: flex; 
+    flex-wrap: wrap; 
+    gap: 10px; 
+    padding: 10px; 
+    border: 1px solid #e0e0e0; 
+    border-radius: 4px; 
+    max-height: 300px; 
+    overflow-y: auto; 
+    justify-content: center; 
+    background-color: #fdfdfd;
+}
+.gallery-thumbnail-item { 
+    width: 75px; /* Etwas größer */
+    height: 110px; 
+    border: 2px solid transparent; 
+    border-radius: 4px; 
+    cursor: pointer; 
+    overflow: hidden; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    background-color: #fff; 
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+    transition: border-color 0.2s ease-in-out, transform 0.1s ease-in-out, box-shadow 0.2s ease; 
+}
+.gallery-thumbnail-item:hover { 
+    border-color: #337ab7; /* Stärkere Hover-Farbe */
+    transform: scale(1.05); 
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+.gallery-thumbnail-item.active-thumbnail { 
+    border-color: #286090; /* Dunkler für aktiv */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2); 
+}
+.gallery-thumbnail-item img { max-width: 100%; max-height: 100%; object-fit: cover; }
+.gallery-thumbnail-item.swatch { width: 50px; height: 50px; } /* Größere Swatches */
+.gallery-thumbnail-item.swatch img { object-fit: contain; }
+
+
+@media (max-width: 600px) {
+    .image-gallery-modal-content { max-width: 95vw; }
+    .gallery-preview-image { max-height: 250px; }
+    .gallery-thumbnails-area { max-height: 200px; }
+    .gallery-thumbnail-item { width: 60px; height: 90px; }
+    .gallery-thumbnail-item.swatch { width: 40px; height: 40px; }
+    .production-delivery-grid { grid-template-columns: 1fr; } 
+}
+
+.hidden { display: none !important; } 
+
+#pdfUploadControls label {
+    font-weight: normal; 
+    font-size: 0.95em;
+}
+#pdfUploadControls input[type="file"] {
+    display: block; 
+    margin-top: 8px; /* Mehr Abstand */
+    margin-bottom: 15px; /* Mehr Abstand */
+}
+
+.info-box { 
+    padding: 12px 15px; /* Mehr Padding */
+    background-color: #e9f5ff; 
+    border: 1px solid #b8d6f0; /* Passenderer Rand */
+    border-radius: 4px;
+    margin-top: 12px;
+    font-size: 0.9em;
+    color: #004085; /* Dunklerer Text für Kontrast */
+}
+
+.analysis-text-box {
+    white-space: pre-wrap;
+    font-family: monospace; /* Beibehalten für Analyse-Text */
+    font-size: 0.9em; /* Etwas größer */
+    border: 1px solid #e0e0e0;
+    padding: 12px;
+    min-height: 80px; 
+    max-height: 220px; 
+    overflow-y: auto;
+    background-color: #fdfdfd;
+    border-radius: 4px;
+    line-height: 1.5; /* Bessere Lesbarkeit für Monospace */
+}
+
+.preview-canvas-box {
+    border: 1px solid #ccc;
+    max-width: 100%;
+    height: auto; 
+    display: block; 
+    margin: 10px auto; /* Etwas Margin oben/unten */
+    background-color: #fff; 
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); /* Leichter Schatten für das Canvas */
+}
+
+.inquiry-step-content h4 {
+    margin-top: 0;
+    color: #337ab7; 
+    border-bottom: 1px solid #eee;
+    padding-bottom: 8px;
+    margin-bottom: 18px; /* Mehr Abstand */
+    font-size: 1.2em; /* Etwas größer */
+}
+
+.inquiry-step-content form div:not(#inquiryShippingAddressFields) { 
+    margin-bottom: 15px; /* Mehr Abstand */
+}
+.inquiry-step-content form label {
+    display: block;
+    margin-bottom: 6px; /* Mehr Abstand */
+    font-weight: bold;
+    font-size: 0.95em;
+}
+.inquiry-step-content form input[type="text"],
+.inquiry-step-content form input[type="email"],
+.inquiry-step-content form input[type="tel"],
+.inquiry-step-content form textarea {
+    width: 100%;
+    padding: 10px; /* Mehr Padding */
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 1em; /* Normale Schriftgröße für Inputs */
+}
+.inquiry-step-content form textarea {
+    min-height: 80px; /* Etwas höher */
+    resize: vertical;
+}
+
+.inquiry-summary-box {
+    background-color: #f9f9f9;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    padding: 18px; /* Mehr Padding */
+    font-size: 0.95em; /* Etwas größer */
+}
+.inquiry-summary-box h4 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    color: #337ab7;
+    font-size: 1.15em;
+}
+.inquiry-summary-box p {
+    margin: 0 0 10px 0; /* Mehr Abstand */
+}
+.inquiry-summary-box ul {
+    margin-top: 4px;
+    margin-bottom: 10px;
+    padding-left: 25px; 
+}
+.inquiry-summary-box ul li {
+    margin-bottom: 3px; /* Abstand zwischen Listenelementen */
+}
+
+
+#selectedDeliveryMethodInfo {
+    margin-bottom: 18px;
+    padding: 12px;
+    background-color: #e9f5ff;
+    border: 1px solid #cce7ff;
+    border-radius: 4px;
+    font-size: 0.95em;
+}
+#inquiryShippingAddressFields {
+    margin-left: 0; 
+    margin-top: 12px;
+    padding-left: 0; 
+    border-left: none; 
+}
+#noAddressNeededInfo {
+    font-style: italic;
+    color: #555;
+    font-size: 0.95em;
+    padding: 12px;
+    background-color: #f9f9f9;
+    border: 1px solid #eee;
+    border-radius: 4px;
+}
+
+/* BEGINN: Stile für Buchdeckeneditor */
+/* Wichtig: Die .editor-modal-overlay Klasse wird auch vom Editor verwendet, aber mit spezifischeren Kindelementen.
+   Die Hauptanwendung hat .modal-overlay. Wir stellen sicher, dass die Editor-Styles spezifisch sind. */
+
+#editor-modal, #preview-modal { /* Diese IDs sind die Haupt-Overlay-Container für den Editor */
+    /* display: none; Wird von JS gesteuert - ist schon in .modal-overlay der Hauptanwendung */
+    /* position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; */ /* Übernommen von .modal-overlay */
+    /* overflow: hidden; */ /* Editor-HTML hatte 'hidden', Hauptanwendung nicht explizit für .modal-overlay */
+    /* background-color: rgba(0,0,0,0.4); */ /* Übernommen von .modal-overlay */
+    /* align-items: center; justify-content: center; */ /* Übernommen von .modal-overlay */
+    font-family: Arial, sans-serif; /* Spezifische Schriftart für den Editor-Inhalt, falls gewünscht */
+    z-index: 1002; /* Potenziell höherer z-index als andere Modals, falls nötig */
+}
+
+#editor-modal .editor-modal-content,
+#preview-modal .editor-modal-content {
+    background-color: #fefefe;
+    margin: auto; /* Zentriert, wenn .editor-modal-overlay flex ist */
+    padding: 15px;
+    border: 1px solid #888;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    /* WICHTIG: Die .modal-content der Hauptanwendung hat max-width, max-height.
+       Hier werden spezifische Größen für den Editor gesetzt. */
+    width: 95%;
+    max-width: 1200px; /* Editor-spezifisch */
+    max-height: 95vh;   /* Editor-spezifisch */
+    overflow: hidden; /* Verhindert, dass Inhalt überläuft, body hat scroll */
+}
+
+#editor-modal .modal-header, /* Spezifisch für Editor-Modal */
+#preview-modal .modal-header { /* Spezifisch für Preview-Modal */
+    padding-bottom: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 0; /* Überschreibt ggf. .modal-header der Haupt-App */
+}
+
+#editor-modal .modal-header h1.editor-title, /* Spezifisch für Editor-Modal */
+#preview-modal .modal-header h2 { /* Spezifisch für Preview-Modal */
+    margin: 0; 
+    font-size: 1.4em; 
+    /* Farbe wird von Hauptanwendung .modal-header h2 geerbt oder hier explizit setzen */
+}
+
+#editor-modal .modal-body, /* Spezifisch für Editor-Modal */
+#preview-modal .modal-body { /* Spezifisch für Preview-Modal */
+    display: flex;
+    flex-direction: row; /* Editor hat row, Hauptanwendung column für .modal-body */
+    gap: 15px;
+    overflow: hidden; /* Wichtig, damit Spalten intern scrollen können */
+    flex-grow: 1;
+    min-height: 0; /* Wichtig für Flexbox-Kinder mit overflow */
+    padding: 0; /* Editor-Modal-Body hat kein eigenes Padding, die Spalten schon */
+    padding-right: 0; /* Überschreibt .modal-body der Hauptanwendung */
+}
+
+
+#editor-modal .editor-controls-column {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 320px;
+    flex-shrink: 0;
+    overflow-y: auto;
+    padding: 10px; /* Eigenes Padding für die Spalte */
+    background-color: #f9f9f9; /* Leichter Hintergrund für Kontrollspalte */
+    border-radius: 6px;
+}
+
+#editor-modal .editor-preview-column {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex-grow: 1;
+    min-width: 0; /* Wichtig für Flexbox-Kinder */
+    padding: 10px; /* Eigenes Padding für die Spalte */
+}
+
+#editor-modal .controls, 
+#editor-modal .template-selector-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+    background-color: #fdfdfd;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+#editor-modal .template-selector-container {
+     align-items: stretch; /* Editor-spezifisch */
+     flex-direction: row; /* Für horizontale Anordnung der Pfeile und Slider */
+     justify-content: space-between;
+}
+#editor-modal .view-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    padding: 8px; /* Etwas mehr Padding */
+    background-color: #fdfdfd;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    margin-top: auto; /* Schiebt es nach unten in der Flex-Spalte */
+}
+#editor-modal .view-controls button {
+    padding: 8px 12px;
+    font-size: 0.9em;
+    cursor: pointer;
+    background-color: #6c757d; /* Angepasst an button-secondary */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+#editor-modal .view-controls button:hover { 
+    background-color: #5a6268; /* Angepasst an button-secondary hover */
+}
+
+#editor-modal .control-group {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+}
+#editor-modal .control-group label {
+    font-weight: normal; /* Editor-spezifisch */
+    font-size: 0.85em;
+    white-space: nowrap;
+    color: #333; /* Dunklere Farbe für bessere Lesbarkeit */
+    margin-bottom: 2px; /* Kleiner Abstand zum Input */
+}
+#editor-modal .control-group input[type="text"],
+#editor-modal .control-group input[type="number"] {
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    font-size: 0.9em;
+    width: 100%;
+    box-sizing: border-box;
+}
+#editor-modal .color-palette { 
+    display: flex; 
+    align-items: center; 
+    gap: 4px; 
+    flex-wrap: wrap; /* Erlaubt Umbruch bei vielen Farben */
+}
+#editor-modal .color-palette button {
+    width: 24px; height: 24px; border: 1px solid #ccc;
+    border-radius: 3px; cursor: pointer;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+#editor-modal .color-palette button.active {
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0,123,255,.5);
+}
+#editor-modal #svg-container {
+    width: 100%;
+    border: 1px solid #ccc;
+    position: relative;
+    overflow: hidden;
+    background-color: #e9e9e9;
+    cursor: grab;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-grow: 1;
+    min-height: 250px; /* Mindesthöhe für den SVG-Bereich */
+    border-radius: 4px;
+}
+#editor-modal #svg-container:active { cursor: grabbing; }
+
+#editor-modal #svg-canvas { /* Das Kind-Div, in das SVG.js rendert */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+#editor-modal #svg-canvas > svg {
+    /* Größe wird von JS gesetzt (viewBox und preserveAspectRatio) */
+    max-width: 100%;
+    max-height: 100%;
+}
+
+#editor-modal .template-slider { 
+    display: flex; 
+    align-items: center; 
+    overflow: hidden; 
+    flex-grow: 1; 
+    margin: 0 8px; 
+}
+#editor-modal .template-miniatures { 
+    display: flex; 
+    transition: transform 0.3s ease-in-out; 
+}
+#editor-modal .template-miniature {
+    width: 80px; height: 53px; border: 2px solid transparent; margin-right: 8px; cursor: pointer;
+    object-fit: contain; background-color: #ddd; /* Platzhalterfarbe für Miniaturen */
+    border-radius: 3px;
+    transition: border-color 0.2s ease;
+}
+#editor-modal .template-miniature:hover {
+    border-color: #aaa;
+}
+#editor-modal .template-miniature.active { 
+    border-color: #007bff; /* Angepasst an primäre Akzentfarbe */
+}
+#editor-modal .slider-arrow {
+    background: none; border: 1px solid #ccc; border-radius:4px;
+    padding: 4px 8px; font-size: 1em; cursor: pointer;
+    background-color: #f8f9fa;
+    transition: background-color 0.2s ease;
+}
+#editor-modal .slider-arrow:hover { background-color: #e9ecef; }
+
+#editor-modal .modal-footer, /* Spezifisch für Editor-Modal */
+#preview-modal .modal-footer { /* Spezifisch für Preview-Modal */
+    padding-top: 10px; 
+    border-top: 1px solid #eee; 
+    gap: 10px;
+    display: flex; 
+    justify-content: space-between; /* Editor hat links und rechts Aktionen */
+    align-items: center;
+    margin-top: 0; /* Überschreibt ggf. .modal-footer der Haupt-App */
+}
+#editor-modal .modal-footer .footer-actions-right button,
+#editor-modal .modal-footer .footer-actions-left button,
+#preview-modal .modal-footer button {
+     padding: 8px 15px; 
+     font-size: 0.9em;
+     border:none; 
+     border-radius:4px;
+     cursor: pointer;
+     transition: background-color 0.2s ease;
+}
+/* Button-Styling für Editor an Hauptanwendung anpassen oder spezifisch lassen */
+#editor-modal .modal-footer .footer-actions-right button#editor-confirm-button {
+    background-color: #5cb85c; /* Grün für Bestätigen */
+    color: white; 
+}
+#editor-modal .modal-footer .footer-actions-right button#editor-confirm-button:hover { background-color: #4cae4c;}
+
+#editor-modal .modal-footer .footer-actions-right button#editor-cancel-button,
+#editor-modal .modal-footer .footer-actions-left button#editor-preview-button, /* Vorschau-Button */
+#preview-modal .modal-footer button { /* Alle Buttons im Preview Footer */
+    background-color: #6c757d; /* Grau (button-secondary) */
+    color: white; 
+}
+#editor-modal .modal-footer .footer-actions-right button#editor-cancel-button:hover,
+#editor-modal .modal-footer .footer-actions-left button#editor-preview-button:hover,
+#preview-modal .modal-footer button:hover { 
+    background-color: #5a6268;
+}
+
+
+/* Preview Modal Styles */
+#preview-modal .editor-modal-content { /* Spezifische Größe für Preview-Modal */
+    width: 90vw;
+    height: 90vh;
+    max-width: 1600px; /* Sehr breit für große Vorschau */
+}
+#preview-modal .modal-body { /* Spezifisch für Preview-Modal Body */
+    padding: 0; /* Kein Padding, da SVG-Container den Platz füllt */
+    display: flex; /* Ist schon von #preview-modal .modal-body geerbt */
+    flex-grow: 1;
+}
+#preview-modal #preview-svg-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #ddd; /* Hintergrund für den SVG-Vorschau-Bereich */
+    overflow: hidden;
+    border-radius: 4px;
+}
+#preview-modal #preview-svg-canvas { /* Das Kind-Div für die Vorschau */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+#preview-modal #preview-svg-canvas > svg {
+    /* Größe wird von JS gesetzt */
+    max-width: 100%;
+    max-height: 100%;
+}
+#preview-modal .modal-header .close-preview-button {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #aaa;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0 5px;
+    line-height: 1;
+}
+#preview-modal .modal-header .close-preview-button:hover {
+    color: #000;
+}
+#preview-modal .modal-footer { /* Spezifisch für Preview-Modal Footer */
+    justify-content: flex-end; /* Nur rechte Aktionen (z.B. Schließen oder Download) */
+}
+
+/* ENDE: Stile für Buchdeckeneditor */
+
+/* Stile für Testausgabe (aus editor.html, ggf. entfernen) */
+/* Diese Stile sind für den Test-Div gedacht, der in der Haupt-HTML auskommentiert wurde */
+#result-output-test { 
+    border: 1px solid #ccc; padding: 15px; margin-top: 20px; 
+    background-color: #fff; white-space: pre-wrap; word-break: break-all; 
+    text-align: left; 
+}
+#result-output-test img { 
+    max-width: 100%; border: 1px solid #ddd; margin-top: 10px; margin-bottom: 10px; 
+}
+#result-output-test button { 
+    margin: 5px; padding: 8px 12px; background-color: #007bff; 
+    color: white; border: none; border-radius: 4px; cursor: pointer; 
+}
+#result-output-test button:hover { background-color: #0056b3; }
+#result-output-test h4 { margin-top: 15px; margin-bottom: 5px; }
+#result-output-test pre { 
+    background-color: #f8f9fa; padding: 10px; border-radius: 4px; 
+    max-height: 200px; overflow-y: auto; 
+}
+.loading-overlay {
+    position: fixed; /* Bleibt an Ort und Stelle, auch beim Scrollen */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.85); /* Halbtransparenter weißer Hintergrund */
+    backdrop-filter: blur(5px); /* Weichzeichner-Effekt für den Hintergrund */
+    display: none; /* Standardmäßig unsichtbar */
+    align-items: center;
+    justify-content: center;
+    z-index: 9999; /* Muss über allen anderen Inhalten liegen */
+    opacity: 0; /* Für sanftes Ein-/Ausblenden */
+    transition: opacity 0.3s ease-in-out;
+}
+
+.loading-overlay.active {
+    display: flex; /* Sichtbar machen */
+    opacity: 1;
+}
+
+.loading-content {
+    text-align: center;
+}
+
+.loading-content svg {
+    width: 150px;
+    height: 150px;
+    border-radius: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    padding: 10px;
+    background-color: #ffffff;
+}
+
+.loading-text {
+    margin-top: 20px;
+    font-size: 1.1em;
+    color: #333;
+    font-weight: bold;
+}
+
+/* CSS-Keyframe-Animation für die Drehung (aus deiner Logo.html) */
+@keyframes rotateLogoCounterClockwise {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(-360deg); /* Gegen den Uhrzeigersinn */
+    }
+}
+
+/* Anwenden der Animation auf die spezifische SVG-Gruppe (aus deiner Logo.html) */
+#_1485002030976 {
+    /* Setzt den Drehpunkt der Transformation auf die Mitte der viewBox (2000, 2000) */
+    transform-origin: 2000px 2000px;
+    animation: rotateLogoCounterClockwise 2s linear infinite;
+}
+

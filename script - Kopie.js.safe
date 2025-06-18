@@ -1,0 +1,534 @@
+// script.js (Haupt-Kalkulator-Skript - Refactored) V1.9.4
+// V1.9.4: Überarbeiteter PDF-Upload, Validierungs-Highlighting
+
+import { GlobalWorkerOptions } from './pdf.mjs';
+import { analyzePdfFile } from './pdfAnalyzer.mjs';
+import { generateOfferPdf } from './offerGenerator.mjs';
+import { initInquiryModal, openInquiryModal } from './inquiryHandler.mjs';
+import { initPersonalizationModal, openPersonalizationModal } from './personalizationHandler.mjs';
+
+import { initBookBlockHandler, updateBookBlockUI, getBookBlockState, applyPdfAnalysisToBookBlock, updateMainPdfStatusUI } from './bookBlockHandler.mjs';
+import { initVariantHandler, updateVariantsUI, getConfiguredVariants, getNextVariantId } from './variantHandler.mjs';
+import { initExtrasHandler, updateExtrasUI, getConfiguredExtras, getNextExtraInstanceId } from './extrasHandler.mjs';
+import { initCartHandler, updateCartUI } from './cartHandler.mjs';
+import { calculateAllPrices } from './calculationService.mjs';
+import { initUiUtils } from './uiUtils.mjs';
+import { initProductionDeliveryHandler, getProductionDeliveryState, updateProductionDeliveryUI } from './productionDeliveryHandler.mjs';
+
+
+try {
+    GlobalWorkerOptions.workerSrc = './pdf.worker.mjs';
+} catch (e) {
+    console.error("Fehler beim Setzen von GlobalWorkerOptions.workerSrc:", e);
+    if (typeof pdfjsLib !== 'undefined' && pdfjsLib.GlobalWorkerOptions) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = './pdf.worker.mjs';
+    } else {
+        alert("PDF.js Worker konnte nicht initialisiert werden. Die PDF-Analyse-Funktion wird nicht korrekt funktionieren.");
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("Kalkulator DOMContentLoaded V1.9.4 - Überarbeiteter PDF-Upload & Validierung");
+
+const CALC_CONFIG = {
+    general: {
+        orderBaseFee: 10.00, currencySymbol: "€", maxVariants: 3,
+        absoluteMinThicknessMm: 2.00, absoluteMaxThicknessMm: 50.00,
+        defaultFallbackBindingId: "softcover_foil",
+        a3PagePrice: 0.85,
+        vatRate: 7,
+    },
+    productionAndDelivery: {
+        productionTimes: [
+            { id: 'prod_standard', name: 'Standard (ca. 3-5 WT)', price: 0.00, default: true },
+            { id: 'prod_express', name: 'Express Produktion (ca. 1-2 WT)', price: 35.00 }
+        ],
+        deliveryMethods: [
+            { id: 'pickup', name: 'Selbstabholung', price: 0.00, requiresAddress: false, default: true },
+            { id: 'standard_shipping', name: 'Standardversand (DE)', price: 5.90, requiresAddress: true },
+            { id: 'express_shipping', name: 'Express-Versand (DE)', price: 19.90, requiresAddress: true }
+        ]
+    },
+    papers: [
+        { id: "soporset_100", name: "Soporset 100 g/qm", pricePerSheetMaterial: 0.02, pricePerPagePrint: 0.14, paperThickness: 0.10 },
+        { id: "soporset_120", name: "Soporset 120 g/qm", pricePerSheetMaterial: 0.03, pricePerPagePrint: 0.14, paperThickness: 0.12 },
+        { id: "soporset_150", name: "Soporset 150 g/qm", pricePerSheetMaterial: 0.05, pricePerPagePrint: 0.14, paperThickness: 0.15 }
+    ],
+    bindings: [
+        {
+            id: "softcover_foil", name: "Paperback (Folienvariante)",
+            description: "Umschlagkarton mit transparenter Deckfolie. Die erste Seite Ihres Dokuments dient als Titelseite.",
+            bindingTypeBaseFee: 2.50, pricePerItem: 4.50,
+            minBlockThicknessMm: 2.00, maxBlockThicknessMm: 30.00,
+            requiresPersonalization: false,
+            // personalizationInterface: 'textModal', // Oder weglassen, Standardverhalten
+            options: [
+                { id: "foil_type_selection_sf", name: "Folientyp", type: "radio", optionKey: "foil_type", choices: [ { id: "foil_glossy", name: "Glänzend", price: 0.00, default: true },{ id: "foil_matte", name: "Mattiert", price: 0.50 } ] },
+                { id: "cover_color_foil_sf", name: "Umschlagkarton Farbe", type: "gallery_select", optionKey: "cover_selection_foil", galleryTitle: "Farbe für Umschlagkarton wählen", imageFolderPath: "kalkulator_assets/images/bindings/softcover_foil_colors/", availableImages: ["schwarz.png", "grau.png", "weinrot.png", "weiss.png", "mittelblau.png", "dunkelblau.png", "creme.png"], defaultSelection: "schwarz.png", imageDisplayType: "swatch", price: 0.00, requiresProof: false }
+            ]
+        },
+        {
+            id: "softcover_wrap", name: "Paperback (Umlaufend bedruckt)",
+            description: "Klassischer Paperback-Einband, Karton wird bedruckt (optional mit Weißdruck).",
+            bindingTypeBaseFee: 3.50, pricePerItem: 6.00,
+            minBlockThicknessMm: 3.00, maxBlockThicknessMm: 40.00,
+            requiresPersonalization: true,
+            // personalizationInterface: 'coverEditor', // Hier könntest du es auch aktivieren
+            personalizationFields: [
+                { id: 'cover_mainTitle', label: 'Haupttitel (für Buchdecke)', type: 'textarea', rows: 3, required: true },
+                { id: 'cover_authorName', label: 'Vor- und Nachname des Autors', type: 'text', required: true }
+            ],
+            options: [
+                { id: "white_print_sw", name: "Textdruck in Weiß (auf farbigen Karton)", type: "checkbox", optionKey: "white_print", price: 1.50, defaultState: false },
+                { id: "cover_layout_wrap_sw", name: "Umschlagkarton & Layout", type: "gallery_select", optionKey: "cover_selection_wrap", galleryTitle: "Umschlagkarton-Farbe wählen", imageFolderPath: "kalkulator_assets/images/bindings/softcover_wrap_layouts/", availableImages: ["pb-classic_standard_schwarz.png", "pb-classic_standard_grau.png"], defaultSelection: "pb-classic_standard_schwarz.png", imageDisplayType: "thumbnail", price: 0.00, requiresProof: true }
+            ]
+        },
+        {
+            id: "hardcover_classic_efalin", name: "Hardcover Classic (Efalin-Bezug)",
+            description: "Robuster Hardcover-Einband mit feinleinen-geprägtem Efalin-Papier bezogen. Textdruck in Weiß.",
+            bindingTypeBaseFee: 12.00, pricePerItem: 18.00,
+            minBlockThicknessMm: 8.00, maxBlockThicknessMm: 50.00,
+            requiresPersonalization: true,
+            // personalizationInterface: 'textModal', // Oder weglassen, Standardverhalten
+            personalizationFields: [
+                { id: 'cover_workType', label: 'Art der Arbeit (z.B. Bachelorarbeit)', type: 'text', required: true },
+                { id: 'cover_mainTitle', label: 'Haupttitel (für Buchdecke)', type: 'textarea', rows: 4 },
+                { id: 'cover_subTitle', label: 'Untertitel (optional, für Buchdecke)', type: 'textarea', rows: 4 },
+                { id: 'cover_authorName', label: 'Vor- und Nachname des Autors', type: 'text', required: true },
+                { id: 'cover_studentId', label: 'Matrikel-Nummer (optional)', type: 'text' },
+                { id: 'cover_submissionDate', label: 'Datum (z.B. Abgabedatum, Jahr)', type: 'text' },
+                { id: 'cover_useCustomLogo', label: 'Eigenes Logo auf Buchdecke verwenden?', type: 'checkbox', default: false },
+                { id: 'cover_customLogoFile', label: 'Logo-Datei hochladen', type: 'file', accept: '.png,.jpg,.jpeg,.svg,.pdf', dependsOn: 'cover_useCustomLogo', dependsValue: true },
+                { id: 'spine_workType', label: 'Art der Arbeit (für Buchrücken)', type: 'text' },
+                { id: 'spine_authorName', label: 'Name des Autors (für Buchrücken)', type: 'text' },
+                { id: 'spine_title', label: 'Titel (ggf. gekürzt, für Buchrücken)', type: 'text' }
+            ],
+            options: [ { id: "cover_color_classic_hc", name: "Efalin-Farbe & Layout", type: "gallery_select", optionKey: "cover_selection_classic", galleryTitle: "Efalin-Farbe & Layout wählen", imageFolderPath: "kalkulator_assets/images/bindings/hardcover_classic_efalin/", availableImages: ["hc-classic_simple_schwarz.png", "hc-classic_simple_dunkelblau.png", "hc-classic_vintage_weinrot.png"], defaultSelection: "hc-classic_simple_schwarz.png", imageDisplayType: "thumbnail", price: 0.00, requiresProof: true } ]
+        },
+        {
+            id: "hardcover_modern_fullcolor", name: "Hardcover Modern (Vollfarbdruck)",
+            description: "Individuell gestaltbarer Hardcover-Einband, vollfarbig bedruckt und matt foliert.",
+            bindingTypeBaseFee: 15.00, pricePerItem: 22.00,
+            minBlockThicknessMm: 8.00, maxBlockThicknessMm: 50.00,
+            requiresPersonalization: true,
+            personalizationInterface: 'coverEditor', // NEU: Dieser Typ verwendet den Buchdeckeneditor
+            personalizationFields: [ // Diese Felder können zur Vorbefüllung des Editors oder als Fallback dienen
+                { id: 'cover_workType', label: 'Art der Arbeit (z.B. Bachelorarbeit)', type: 'text', required: true },
+                { id: 'cover_mainTitle', label: 'Haupttitel (für Buchdecke)', type: 'textarea', rows: 4 },
+                { id: 'cover_subTitle', label: 'Untertitel (optional, für Buchdecke)', type: 'textarea', rows: 4 },
+                { id: 'cover_authorName', label: 'Vor- und Nachname des Autors', type: 'text', required: true },
+                { id: 'cover_studentId', label: 'Matrikel-Nummer (optional)', type: 'text' },
+                { id: 'cover_submissionDate', label: 'Datum (z.B. Abgabedatum, Jahr)', type: 'text' },
+                { id: 'cover_useCustomLogo', label: 'Eigenes Logo auf Buchdecke verwenden?', type: 'checkbox', default: false },
+                // Das 'cover_customLogoFile' Feld wird vom Buchdeckeneditor intern gehandhabt,
+                // aber die Info, ob ein Logo verwendet wird, kann nützlich sein.
+                { id: 'spine_workType', label: 'Art der Arbeit (für Buchrücken)', type: 'text' },
+                { id: 'spine_authorName', label: 'Name des Autors (für Buchrücken)', type: 'text' },
+                { id: 'spine_title', label: 'Titel (ggf. gekürzt, für Buchrücken)', type: 'text' }
+            ],
+            options: [ { id: "cover_template_modern_hm", name: "Cover-Design & Farbe", type: "gallery_select", optionKey: "cover_selection_modern", galleryTitle: "Cover-Design & Farbe wählen", imageFolderPath: "kalkulator_assets/images/bindings/hardcover_modern_templates/", availableImages: ["hc-modern_wave_rot.png", "hc-modern_line_dunkelgruen.png", "hc-modern_shapes_magenta.png"], defaultSelection: "hc-modern_wave_rot.png", imageDisplayType: "thumbnail", price: 0.00, requiresProof: true } ]
+        }
+    ],
+    extras: [
+        { id: "cd_action_service", name: "CD/DVD: Aktion", options: [ { groupName: "CD Aktion wählen", type: "radio", optionKey: "cd_action", choices: [ { id: "cd_no_action", name: "Keine Aktion", price: 0.00, default: true }, { id: "cd_burn_only", name: "Nur Brennen", price: 1.50 }, { id: "cd_print_color", name: "Nur Farbdruck", price: 1.20 }, { id: "cd_burn_print_bw", name: "Brennen & S/W-Druck", price: 2.00 } ]} ], hasIndependentQuantity: true, defaultQuantity: 1 },
+        { id: "cd_packaging_service", name: "CD/DVD: Verpackung", options: [ { groupName: "CD Verpackung wählen", type: "radio", optionKey: "cd_packaging", choices: [ { id: "cd_pack_loose", name: "Lose (keine Verpackung)", price: 0.00, default: true }, { id: "cd_sleeve", name: "Papiertasche", price: 0.40 }, { id: "cd_adhesive_pocket", name: "Klebetasche", price: 0.65 } ]} ], hasIndependentQuantity: true, defaultQuantity: 1 },
+        { id: "shipping_box_books", name: "Versandverpackung Bücher", options: [], hasIndependentQuantity: true, defaultQuantity: 1, unitPrice: 3.50 }
+    ]
+};
+
+    let inquiryState = { 
+        customerName: '', customerEmail: '', customerPhone: '',
+        personalizations: {}, 
+        mainPdfFile: null, mainPdfFileName: null, // File-Objekt und Name
+        agbAccepted: false,
+        bookBlock: null, 
+        productionAndDelivery: null 
+    };
+    let overallTotalForPdf = 0; 
+    let currentModalAnalysisData = { // Hält Analyseergebnisse UND das Original File-Objekt
+        analysisReportText: '',
+        calculatedA4Pages: 0,
+        a3PageCount: 0,
+        firstPagePreviewDataURL: null,
+        pdfTotalPages: 0,
+        originalFile: null // Wichtig für das File-Objekt
+    }; 
+    let currentCalculationResults = null; 
+
+    const downloadOfferPdfButton = document.getElementById('downloadOfferPdfButton');
+    const startInquiryButton = document.getElementById('startInquiryButton');
+    const pdfUploadRequirementNotice = document.getElementById('pdfUploadRequirementNotice');
+    const personalizationRequirementNotice = document.getElementById('personalizationRequirementNotice');
+
+    const pdfAnalysisModalOverlay = document.getElementById('pdfAnalysisModalOverlay');
+    const closePdfAnalysisModalButton = document.getElementById('closePdfAnalysisModalButton');
+    const modalPdfFile = document.getElementById('modalPdfFile');
+    const modalLoadingMessage = document.getElementById('modalLoadingMessage');
+    const modalAnalysisResultArea = document.getElementById('modalAnalysisResultArea');
+    const modalAnalysisResultText = document.getElementById('modalAnalysisResultText');
+    const modalPreviewContainer = document.getElementById('modalPreviewContainer');
+    const modalPreviewCanvas = document.getElementById('modalPreviewCanvas');
+    const applyPdfDataButton = document.getElementById('applyPdfDataButton');
+    const cancelPdfAnalysisButton = document.getElementById('cancelPdfAnalysisButton');
+
+    // DOM-Elemente für Hervorhebung
+    const bookBlockSection_DOM = document.getElementById('bookBlockSection');
+    const bindingVariantsSection_DOM = document.getElementById('bindingVariantsSection');
+
+
+    function updateApp() {
+        const currentBookBlockState = getBookBlockState(); 
+        const currentProductionDeliveryState = getProductionDeliveryState();
+
+        inquiryState.bookBlock = currentBookBlockState; 
+        inquiryState.productionAndDelivery = currentProductionDeliveryState;
+
+        const configuredVariants = getConfiguredVariants();
+        const configuredExtras = getConfiguredExtras();
+        
+        currentCalculationResults = calculateAllPrices(
+            currentBookBlockState,
+            configuredVariants,
+            configuredExtras,
+            currentProductionDeliveryState,
+            CALC_CONFIG
+        );
+
+        overallTotalForPdf = currentCalculationResults.overallTotal;
+
+        updateBookBlockUI(currentCalculationResults.bookBlockCalculations.thickness, inquiryState.mainPdfFileName);
+        updateProductionDeliveryUI(); 
+        updateVariantsUI(currentCalculationResults.variantCalculations, currentBookBlockState, inquiryState.personalizations);
+        updateExtrasUI(currentCalculationResults.extraCalculations);
+        updateCartUI(
+            currentBookBlockState,
+            configuredVariants, 
+            configuredExtras,   
+            currentProductionDeliveryState, 
+            currentCalculationResults, 
+            CALC_CONFIG
+        );
+
+        const canDownloadPdf = currentCalculationResults.overallTotal > 0;
+        if (downloadOfferPdfButton) downloadOfferPdfButton.disabled = !canDownloadPdf;
+        // Der "Anfrage stellen"-Button wird jetzt erst beim Klick validiert,
+        // aber die Grundvoraussetzung (Preis > 0) bleibt für die Aktivierung.
+        if (startInquiryButton) startInquiryButton.disabled = !canDownloadPdf;
+
+        // Die Notices werden jetzt erst beim Klick auf "Anfrage stellen" gesteuert
+        // Aber wir können sie hier schon mal verstecken, falls sie sichtbar waren.
+        if (pdfUploadRequirementNotice) pdfUploadRequirementNotice.classList.add('hidden');
+        if (personalizationRequirementNotice) personalizationRequirementNotice.classList.add('hidden');
+        // Und Hervorhebungen entfernen
+        removeValidationHighlights();
+    }
+
+    function getBindingConfigById(bindingId) { return CALC_CONFIG.bindings.find(b => b.id === bindingId); }
+
+    function removeValidationHighlights() {
+        bookBlockSection_DOM?.classList.remove('section-invalid');
+        bindingVariantsSection_DOM?.classList.remove('section-invalid');
+        document.querySelectorAll('#bindingVariantsContainer .accordion-item.section-invalid').forEach(item => {
+            item.classList.remove('section-invalid');
+        });
+    }
+
+    function checkAllRequirementsMetAndHighlight() {
+        removeValidationHighlights(); // Zuerst alle alten Highlights entfernen
+
+        let allOk = true;
+        let pdfUploaded = !!inquiryState.mainPdfFile; // Prüft jetzt auf das File-Objekt
+
+        if (!pdfUploaded) {
+            allOk = false;
+            if (pdfUploadRequirementNotice) pdfUploadRequirementNotice.classList.remove('hidden');
+            if (bookBlockSection_DOM) bookBlockSection_DOM.classList.add('section-invalid');
+        } else {
+            if (pdfUploadRequirementNotice) pdfUploadRequirementNotice.classList.add('hidden');
+        }
+
+        let allPersonalizationsDone = true;
+        let hasPersonalizableBinding = false;
+        getConfiguredVariants().forEach(v => {
+            const bConf = getBindingConfigById(v.bindingTypeId);
+            if (bConf && bConf.requiresPersonalization && bConf.personalizationFields) {
+                hasPersonalizableBinding = true;
+                const persoData = inquiryState.personalizations[v.id] || {};
+                const requiredFieldsDone = bConf.personalizationFields
+                    .filter(pf => pf.required)
+                    .every(pf => {
+                        if (pf.type === 'file' && pf.dependsOn) { 
+                            const controllingCheckboxId = pf.dependsOn;
+                            if (persoData[controllingCheckboxId] === true) { 
+                                return persoData[pf.id] instanceof File || typeof persoData[pf.id] === 'string'; 
+                            }
+                            return true; 
+                        }
+                        return persoData.hasOwnProperty(pf.id) && 
+                               (typeof persoData[pf.id] === 'boolean' || (persoData[pf.id] && String(persoData[pf.id]).trim() !== ''));
+                    });
+                if (!requiredFieldsDone) {
+                    allPersonalizationsDone = false;
+                    // Highlight this specific variant
+                    const variantItemDOM = document.querySelector(`.accordion-item[data-variant-id="${v.id}"]`);
+                    if (variantItemDOM) variantItemDOM.classList.add('section-invalid');
+                }
+            }
+        });
+
+        if (hasPersonalizableBinding && !allPersonalizationsDone) {
+            allOk = false;
+            if (personalizationRequirementNotice) personalizationRequirementNotice.classList.remove('hidden');
+            // Die Sektion für Varianten wird durch die Einzel-Highlights schon hervorgehoben
+            if (bindingVariantsSection_DOM && !bindingVariantsSection_DOM.classList.contains('section-invalid') && getConfiguredVariants().some(v => document.querySelector(`.accordion-item[data-variant-id="${v.id}"]`)?.classList.contains('section-invalid'))) {
+                // Optional: Gesamte Sektion auch markieren, wenn einzelne Items invalid sind
+                // bindingVariantsSection_DOM.classList.add('section-invalid'); 
+            }
+        } else {
+            if (personalizationRequirementNotice) personalizationRequirementNotice.classList.add('hidden');
+        }
+        
+        return allOk;
+    }
+
+
+    function addPdfAnalysisModalEventListeners() {
+        if (!pdfAnalysisModalOverlay) return;
+        if (closePdfAnalysisModalButton) closePdfAnalysisModalButton.addEventListener('click', closePdfAnalysisModal);
+        if (cancelPdfAnalysisButton) cancelPdfAnalysisButton.addEventListener('click', closePdfAnalysisModal);
+        pdfAnalysisModalOverlay.addEventListener('click', (e) => { if (e.target === pdfAnalysisModalOverlay) closePdfAnalysisModal(); });
+        if (modalPdfFile) modalPdfFile.addEventListener('change', handleModalPdfFileSelect);
+        
+        if (applyPdfDataButton) applyPdfDataButton.addEventListener('click', () => {
+            if (currentModalAnalysisData && currentModalAnalysisData.originalFile) {
+                // Übergib das File-Objekt an applyPdfAnalysisToBookBlock
+                applyPdfAnalysisToBookBlock(currentModalAnalysisData, currentModalAnalysisData.originalFile); 
+            }
+            closePdfAnalysisModal();
+            updateApp(); 
+        });
+    }
+
+    async function handleModalPdfFileSelect(event) {
+        const file = event.target.files[0];
+        if (!file || file.type !== 'application/pdf') {
+            if(modalAnalysisResultText) modalAnalysisResultText.textContent = 'Bitte eine gültige PDF-Datei auswählen.';
+            if(modalPreviewContainer) modalPreviewContainer.classList.add('hidden');
+            if(modalLoadingMessage) modalLoadingMessage.classList.add('hidden');
+            if(applyPdfDataButton) applyPdfDataButton.disabled = true;
+            currentModalAnalysisData.originalFile = null; // Wichtig: File zurücksetzen
+            return;
+        }
+
+        currentModalAnalysisData.originalFile = file; // Speichere das File-Objekt
+
+        if(modalLoadingMessage) modalLoadingMessage.classList.remove('hidden');
+        if(modalAnalysisResultText) modalAnalysisResultText.textContent = 'Verarbeite PDF...';
+        if(modalAnalysisResultArea) modalAnalysisResultArea.classList.remove('hidden');
+        if(modalPreviewContainer) modalPreviewContainer.classList.add('hidden');
+        if(applyPdfDataButton) applyPdfDataButton.disabled = true;
+
+        try {
+            const fileReader = new FileReader();
+            fileReader.onload = async function() {
+                try {
+                    const analysisResults = await analyzePdfFile(this.result); 
+                    currentModalAnalysisData = { ...currentModalAnalysisData, ...analysisResults }; // Merge results
+
+                    if (modalAnalysisResultText) modalAnalysisResultText.textContent = currentModalAnalysisData.analysisReportText;
+
+                    if (currentModalAnalysisData.firstPagePreviewDataURL && modalPreviewCanvas) {
+                        const img = new Image();
+                        img.onload = () => {
+                            const ctx = modalPreviewCanvas.getContext('2d');
+                            modalPreviewCanvas.width = img.width;
+                            modalPreviewCanvas.height = img.height;
+                            ctx.drawImage(img, 0, 0);
+                            if(modalPreviewContainer) modalPreviewContainer.classList.remove('hidden');
+                        };
+                        img.onerror = () => { console.error("Fehler beim Laden des Vorschau-Bildes für Canvas."); }
+                        img.src = currentModalAnalysisData.firstPagePreviewDataURL;
+                    }
+                    if(applyPdfDataButton) applyPdfDataButton.disabled = false;
+                } catch (analysisError) {
+                    console.error('Fehler bei der PDF-Analyse:', analysisError);
+                    if(modalAnalysisResultText) modalAnalysisResultText.textContent = `Fehler bei der PDF-Analyse: ${analysisError.message || 'Unbekannter Fehler'}`;
+                    currentModalAnalysisData.originalFile = null; // Bei Fehler kein gültiges File für Übernahme
+                } finally {
+                    if(modalLoadingMessage) modalLoadingMessage.classList.add('hidden');
+                }
+            };
+            fileReader.onerror = () => {
+                console.error("FileReader Fehler:", fileReader.error);
+                if(modalAnalysisResultText) modalAnalysisResultText.textContent = `Fehler beim Lesen der Datei.`;
+                if(modalLoadingMessage) modalLoadingMessage.classList.add('hidden');
+                currentModalAnalysisData.originalFile = null;
+            };
+            fileReader.readAsArrayBuffer(file);
+        } catch (error) {
+            console.error('Fehler (vor Analyse):', error);
+            if(modalAnalysisResultText) modalAnalysisResultText.textContent = `Fehler: ${error.message || 'Unbekannter Fehler'}`;
+            if(modalLoadingMessage) modalLoadingMessage.classList.add('hidden');
+            currentModalAnalysisData.originalFile = null;
+        }
+    }
+    function openPdfAnalysisModalFromScript() { 
+        if (!pdfAnalysisModalOverlay) return;
+        if(modalPdfFile) modalPdfFile.value = ''; // Input leeren für neue Auswahl
+        if(modalAnalysisResultText) modalAnalysisResultText.textContent = 'Noch keine Datei ausgewählt.';
+        if(modalAnalysisResultArea) modalAnalysisResultArea.classList.remove('hidden');
+        if(modalPreviewContainer) modalPreviewContainer.classList.add('hidden');
+        if(modalLoadingMessage) modalLoadingMessage.classList.add('hidden');
+        if(applyPdfDataButton) applyPdfDataButton.disabled = true;
+        currentModalAnalysisData = { originalFile: null }; // Reset, besonders originalFile
+        pdfAnalysisModalOverlay.classList.add('active');
+    }
+    function closePdfAnalysisModal() {
+        if (pdfAnalysisModalOverlay) pdfAnalysisModalOverlay.classList.remove('active');
+    }
+    
+    function handleFinalInquirySubmit(fullInquiryData) {
+        console.log("Finale Anfragedaten für Serverübermittlung:", JSON.parse(JSON.stringify(fullInquiryData, (key, value) => value instanceof File ? {name: value.name, type: value.type, size: value.size} : value)));
+        alert("Vielen Dank! Ihre unverbindliche Anfrage wurde (simuliert) gesendet.\nDie Daten finden Sie in der Browser-Konsole.");
+        
+        inquiryState = {
+            customerName: '', customerEmail: '', customerPhone: '',
+            personalizations: {},
+            mainPdfFile: null, mainPdfFileName: null,
+            agbAccepted: false,
+            bookBlock: getBookBlockState(), 
+            productionAndDelivery: getProductionDeliveryState() 
+        };
+        updateMainPdfStatusUI(null); // PDF-Status in bookBlockHandler UI zurücksetzen
+        updateApp();
+    }
+    function handleInquiryCancel() {
+        console.log("Anfrageprozess vom Nutzer abgebrochen.");
+    }
+
+    function handleInquiryDataUpdate(dataType, data, itemId) {
+        if (dataType === 'customerData') {
+            inquiryState.customerName = data.name;
+            inquiryState.customerEmail = data.email;
+            inquiryState.customerPhone = data.phone;
+        } else if (dataType === 'deliveryAddressData') { 
+            if (inquiryState.productionAndDelivery?.deliveryMethodId && CALC_CONFIG.productionAndDelivery.deliveryMethods.find(dm => dm.id === inquiryState.productionAndDelivery.deliveryMethodId)?.requiresAddress) {
+                inquiryState.shippingAddress = { ...data.shippingAddress };
+            } else {
+                inquiryState.shippingAddress = { street: '', zip: '', city: '' };
+            }
+        } else if (dataType === 'agbAcceptedUpdate') {
+            inquiryState.agbAccepted = data.accepted;
+        } else if (dataType === 'getVariantData') { 
+            return getConfiguredVariants().find(v => v.id === itemId);
+        } else if (dataType === 'getPersonalizationData') { 
+             return inquiryState.personalizations[itemId] || {};
+        } else if (dataType === 'getPdfUploadData') { 
+             if (data === 'mainPdfFile') return inquiryState.mainPdfFile; // Gibt das File-Objekt zurück
+             if (data === 'mainPdfFileName') return inquiryState.mainPdfFileName;
+             return null;
+        } else if (dataType === 'getBookBlockState') { 
+            return getBookBlockState();
+        } else if (dataType === 'getProductionDeliveryState') { 
+            return getProductionDeliveryState();
+        }
+    }
+
+    function handleSavePersonalizationData(variantId, personalizationData, logoFileObject = null) {
+        const variantToUpdate = getConfiguredVariants().find(v => v.id === variantId);
+        if (variantToUpdate) {
+            inquiryState.personalizations[variantId] = { ...personalizationData }; 
+
+            if (logoFileObject) { 
+                inquiryState.personalizations[variantId].cover_customLogoFile = logoFileObject;
+            } else if (personalizationData.cover_useCustomLogo === true && inquiryState.personalizations[variantId]?.cover_customLogoFile) {
+            } else if (personalizationData.cover_useCustomLogo === false) {
+                delete inquiryState.personalizations[variantId].cover_customLogoFile;
+            }
+            
+            console.log(`Personalisierung für Variante ${variantId} im inquiryState gespeichert:`, inquiryState.personalizations[variantId]);
+            updateApp();
+        }
+    }
+
+    function initializeApp() {
+        inquiryState.bookBlock = getBookBlockState(); 
+        inquiryState.productionAndDelivery = getProductionDeliveryState(); 
+
+        initUiUtils({});
+
+        initBookBlockHandler(
+            CALC_CONFIG,
+            updateApp,
+            openPdfAnalysisModalFromScript, 
+            (uploadedFile, generatedName) => { // Callback für main PDF update
+                inquiryState.mainPdfFile = uploadedFile; // Speichert das File-Objekt
+                inquiryState.mainPdfFileName = uploadedFile ? (uploadedFile.name || generatedName) : null;
+                updateApp();
+            }
+        );
+        initProductionDeliveryHandler(CALC_CONFIG, updateApp); 
+        initVariantHandler(
+            CALC_CONFIG,
+            updateApp,
+            inquiryState, 
+            openPersonalizationModal 
+        );
+        initExtrasHandler(CALC_CONFIG, updateApp);
+        initCartHandler(CALC_CONFIG);  
+
+        addPdfAnalysisModalEventListeners(); 
+        initPersonalizationModal(handleSavePersonalizationData);
+        initInquiryModal(handleFinalInquirySubmit, handleInquiryCancel, handleInquiryDataUpdate, CALC_CONFIG); 
+        
+        if (downloadOfferPdfButton) {
+            downloadOfferPdfButton.addEventListener('click', async () => {
+                if (downloadOfferPdfButton.disabled || !currentCalculationResults) return; 
+                const currentBookBlockState = getBookBlockState();
+                const currentProdDelState = getProductionDeliveryState();
+                await generateOfferPdf(
+                    currentBookBlockState,
+                    getConfiguredVariants(),
+                    getConfiguredExtras(),
+                    currentProdDelState, 
+                    CALC_CONFIG,
+                    currentBookBlockState.totalPages, 
+                    overallTotalForPdf,
+                    currentCalculationResults 
+                );
+            });
+        }
+
+        if (startInquiryButton) {
+            startInquiryButton.addEventListener('click', () => {
+                if (startInquiryButton.disabled) { // Sollte nur bei Preis = 0 disabled sein
+                     alert("Bitte konfigurieren Sie zuerst Ihr Produkt, sodass ein Preis berechnet werden kann.");
+                    return;
+                }
+                
+                if (checkAllRequirementsMetAndHighlight()) {
+                    // Alle Anforderungen erfüllt, Modal öffnen
+                    const calculatorDataForInquiry = {
+                        bookBlockState: getBookBlockState(), 
+                        configuredVariants: getConfiguredVariants(),
+                        configuredExtras: getConfiguredExtras(),
+                        productionAndDeliveryState: getProductionDeliveryState(), 
+                        CALC_CONFIG: CALC_CONFIG, 
+                        overallTotal: overallTotalForPdf 
+                    };
+                    openInquiryModal(calculatorDataForInquiry, inquiryState); 
+                } else {
+                    // Nicht alle Anforderungen erfüllt, Hinweise wurden angezeigt/hervorgehoben
+                    alert("Bitte überprüfen Sie die rot markierten Bereiche und füllen Sie alle erforderlichen Informationen aus, bevor Sie eine Anfrage stellen.");
+                }
+            });
+        }
+        
+        window.mainAppGetConfiguredVariants = getConfiguredVariants;
+        window.mainAppGetConfiguredExtras = getConfiguredExtras;
+
+        updateApp(); 
+    }
+
+    initializeApp();
+});

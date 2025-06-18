@@ -1,0 +1,199 @@
+Projektdokumentation: Online-Kalkulator für Druckaufträge (Aktueller Stand)
+Projekttitel: Dynamischer Online-Kalkulator für Druck- und Bindeaufträge (Abschlussarbeiten) mit PDF-Analyse und Anfragefunktion
+
+Projektziel (ursprünglich & erweitert):
+Entwicklung eines webbasierten Kalkulators in reinem Vanilla JavaScript, HTML und CSS, der es Kunden ermöglicht, Preise für den Druck und die Bindung von Abschlussarbeiten transparent zu kalkulieren. Das System ist darauf ausgelegt, detaillierte, unverbindliche Anfragen zu generieren, die alle notwendigen Informationen (Produktkonfiguration, Personalisierung, Druckdaten) enthalten. Diese Anfragen sollen anschließend manuell vom Anbieter geprüft und bestätigt werden. Langfristig ist eine serverseitige Verarbeitung der Anfragen mit E-Mail-Benachrichtigungen und Google Sheets-Integration geplant (Modul 2).
+
+Aktueller Umsetzungsstand (Kernfunktionalitäten – ca. V1.8.12):
+
+I. Technische Basis:
+
+Frontend: Reines Vanilla JavaScript (ES6-Module), HTML5, CSS3.
+
+PDF-Verarbeitung (clientseitig): pdf.js-Bibliothek von Mozilla (extern eingebunden).
+
+Modulare Code-Struktur:
+
+script.js: Hauptskript für die Kalkulatorlogik, DOM-Manipulation und Orchestrierung.
+
+pdfAnalyzer.mjs: Modul für die clientseitige Analyse hochgeladener PDFs (Seitenzahl, Format, erste Seite als Vorschau).
+
+offerGenerator.mjs: Modul zur clientseitigen Erstellung eines PDF-Angebots mittels pdfmake.
+
+personalizationHandler.mjs: Modul zur Steuerung des Modals für die Texteingabe zur Personalisierung von Buchdecken.
+
+inquiryHandler.mjs: Modul zur Steuerung des mehrstufigen Anfrage-Modals (Kontaktdaten, Lieferart, Zusammenfassung).
+
+II. Kernfunktionalitäten des Kalkulators:
+
+Zentrale Konfiguration (CALC_CONFIG in script.js):
+
+Definiert alle Produkte (Papiersorten, Bindungstypen, Extras), deren Optionen, Preise, Aufpreise und allgemeine Kalkulationsparameter (Auftragsgrundpauschale, Währung, max. Varianten, Dickenlimits, A3-Preis, Fallback-Bindung, Versandkosten, MwSt.-Satz).
+
+Bindungskonfigurationen enthalten jetzt Flags (requiresPersonalization) und Felddefinitionen (personalizationFields) für die Umschlaggestaltung.
+
+Extras können als isSingleton markiert werden (z.B. "Produktionsgeschwindigkeit"), um Mehrfachauswahl zu verhindern und sie ggf. standardmäßig hinzuzufügen.
+
+Buchblock-Konfiguration:
+
+Eingabe der Gesamtseitenanzahl (A4).
+
+Auswahl des Druckmodus (ein-/beidseitig).
+
+Auswahl der Papiersorte.
+
+Optionale Angabe von DIN A3-Seiten (Anzahl, werden auf A4 gefalzt und preislich berücksichtigt).
+
+Dynamische Berechnung und Anzeige der geschätzten Buchblockdicke.
+
+PDF-Analyse (optional): Button zum Öffnen eines Modals, um eine PDF-Datei hochzuladen. pdfAnalyzer.mjs wertet die Datei aus (Gesamtseiten, A4/A3-Unterscheidung, Seitenausrichtung) und extrahiert die erste Seite als Bild-Vorschau (firstPagePreviewDataURL). Die ermittelten Werte können in den Kalkulator übernommen werden.
+
+Bindungsvarianten:
+
+Nutzer kann bis zu maxVariants Bindungsvarianten hinzufügen.
+
+Auswahl des Bindungstyps aus CALC_CONFIG.bindings.
+
+Dynamische Anzeige und Auswahl von Optionen basierend auf dem gewählten Bindungstyp (z.B. Folientyp, Farbe des Umschlagkartons via Bildergalerie).
+
+Dickenvalidierung: Die Auswahl eines Bindungstyps wird gegen die aktuelle Buchblockdicke geprüft. Bei Inkompatibilität wird auf die defaultFallbackBindingId zurückgegriffen und der Nutzer per alert() informiert.
+
+Personalisierung (NEU):
+
+Für Bindungen mit requiresPersonalization: true wird im Akkordeon-Body der Variante ein Button "Bindung personalisieren" / "Personalisierung bearbeiten" angezeigt.
+
+Ein Klick öffnet ein separates Modal (personalizationHandler.mjs), in dem definierte Felder (z.B. Text für Titelseite, Buchrücken) eingegeben/editiert werden können.
+
+Die eingegebenen Daten werden im inquiryState (in script.js) und in der configuredVariant gespeichert.
+
+Der Status der Personalisierung (erledigt/offen) wird visuell im Akkordeon-Body der Variante signalisiert (Button-Text, CSS-Klasse).
+
+Eingabe der gewünschten Menge pro Variante.
+
+Dynamische Preisberechnung pro Variante und Aktualisierung der Gesamtsumme.
+
+Akkordeon-Interface zur übersichtlichen Darstellung mehrerer Varianten.
+
+Zusätzliche Produkte / Extras:
+
+Nutzer kann Extras aus CALC_CONFIG.extras hinzufügen.
+
+Auswahl von Optionen für Extras (z.B. CD-Aktion, Verpackung).
+
+Singleton-Extras: Das Extra "Produktionsgeschwindigkeit" wird bei Initialisierung automatisch hinzugefügt, ist standardmäßig aufgeklappt und kann nicht mehrfach gewählt werden. Es kann jedoch entfernt und bei Bedarf wieder hinzugefügt werden.
+
+Dynamische Preisberechnung für Extras.
+
+Akkordeon-Interface.
+
+PDF-Upload für Druckinhalt (NEU - im Hauptkalkulator):
+
+Eine dedizierte Sektion "4. Ihre Druckdatei (Inhalt)" im Hauptkalkulator ermöglicht den Upload der finalen Inhalts-PDF.
+
+Der Dateiname wird im inquiryState.mainPdfFileName und das File-Objekt in inquiryState.mainPdfFile gespeichert.
+
+Ein Status-Text (mainPdfUploadStatus) informiert über die ausgewählte Datei.
+
+Wenn zuvor eine PDF-Analyse durchgeführt wurde, wird deren Vorschau-URL (bookBlockState.firstPagePreviewDataURL) berücksichtigt. Der Nutzer kann diese implizit als Haupt-PDF verwenden oder explizit eine neue Datei hochladen, was die Analyse-PDF für die Anfrage überschreibt (inquiryState.mainPdfFileOverridden).
+
+Warenkorb / Kalkulationsübersicht:
+
+Permanente Anzeige im Desktop-Layout (rechte Spalte).
+
+Mobiles Modal für die Detailansicht.
+
+Dynamische Aktualisierung bei jeder Konfigurationsänderung.
+
+Anzeige von Buchblockdetails, A3-Seiten, allen konfigurierten Varianten (mit Optionen und Personalisierungs-Kurzinfos) und Extras.
+
+Ausweis der Gesamtkosten.
+
+Aktionsbuttons ("Nächste Schritte"):
+
+"Angebot als PDF herunterladen": Generiert clientseitig mit offerGenerator.mjs und pdfmake ein PDF-Dokument.
+
+Enthält Firmendaten (teilweise von Webseite recherchiert, teilweise manuell ergänzt), Kundendaten-Platzhalter, Angebotsdetails, alle konfigurierten Positionen (Buchblock, Varianten mit Optionen, Extras) und Preise.
+
+Berücksichtigt die korrekte MwSt.-Logik (Endpreise inkl. 7% MwSt., Netto und MwSt.-Anteil werden ausgewiesen).
+
+Enthält den rechtlichen Hinweis zur Anwendung des ermäßigten MwSt.-Satzes.
+
+Fügt die Titelseiten-Vorschau (firstPagePreviewDataURL) ein, falls vorhanden.
+
+Der Button ist nur aktiv, wenn eine sinnvolle Konfiguration vorliegt.
+
+"Konfiguration prüfen und Anfrage stellen":
+
+Ist nur aktiv, wenn:
+
+Eine gültige Produktkonfiguration mit Preis > 0 vorliegt.
+
+Alle als requiresPersonalization markierten und ausgewählten Varianten personalisiert wurden.
+
+Eine Haupt-Druckdatei (entweder durch expliziten Upload oder Übernahme der Analyse-PDF) definiert ist.
+
+Entsprechende Hinweismeldungen (personalizationRequirementNotice, pdfUploadRequirementNotice) werden angezeigt, falls Bedingungen nicht erfüllt sind.
+
+Ein Klick öffnet das Anfrage-Modal (inquiryHandler.mjs).
+
+III. Anfrageprozess (Frontend – gesteuert durch inquiryHandler.mjs):
+
+Mehrstufiges Modal:
+
+Schritt 1: Kontaktdaten: Erfassung von Name (Pflicht), E-Mail (Pflicht), Telefon (optional).
+
+Schritt 2: Lieferart & Adresse:
+
+Auswahl zwischen "Selbstabholung" (Standard, kostenlos) und "Versand" (mit Kosten aus CALC_CONFIG).
+
+Bei "Versand" werden Adressfelder (Straße, PLZ, Ort) eingeblendet und sind Pflicht.
+
+Schritt 3: Finale Zusammenfassung & Bestätigung:
+
+Anzeige aller Konfigurationsdetails (Buchblock, Varianten, Personalisierungen, Extras).
+
+Anzeige der erfassten Kundendaten und der gewählten Lieferart (ggf. mit Adresse).
+
+Anzeige des Namens der hochgeladenen Haupt-Druckdatei.
+
+Berechnung und Anzeige des finalen Gesamtpreises inkl. eventueller Versandkosten.
+
+Checkbox zur Bestätigung der AGB und Datenschutzerklärung (Pflicht).
+
+Navigation: Lineare Navigation mit "Weiter"- und "Zurück"-Buttons.
+
+Validierung: Pro Schritt werden Pflichtfelder validiert, bevor zum nächsten Schritt gewechselt werden kann.
+
+Datenübergabe: Die im Modal erfassten Daten werden an script.js zurückgegeben und im inquiryState zusammengeführt.
+
+Finale Anfrage: Der Button "Unverbindliche Anfrage jetzt absenden" ist erst aktiv, wenn alle Schritte im Modal durchlaufen und die AGB akzeptiert wurden. Ein Klick darauf simuliert aktuell das Absenden (Log in Konsole).
+
+IV. Geplante nächste Schritte (gemäß ursprünglicher Projektbeschreibung):
+
+Modul 2: Serverseitige Anfrageverarbeitung:
+
+PHP-Skript auf dem Webserver (WordPress-Umgebung).
+
+Empfang der Anfragedaten (JSON-Payload vom Frontend).
+
+Validierung der Daten serverseitig.
+
+Versand von E-Mail-Benachrichtigungen:
+
+Bestätigungs-E-Mail an den Kunden.
+
+Benachrichtigungs-E-Mail an den Admin (Dich).
+
+Google Sheets Integration: Schreiben der relevanten Anfragedaten in eine Google Sheets Tabelle.
+
+Dateiupload-Handling serverseitig: Verarbeitung der hochgeladenen PDF-Datei.
+
+Optionale spätere Erweiterungen:
+
+Detailliertere Terminplanung.
+
+Direkte Anbindung von Zahlungsdienstleistern.
+
+SVG-basierte Online-WYSIWYG-Personalisierung.
+
+Diese Zusammenfassung sollte alle wesentlichen Aspekte des aktuellen Projektstandes abdecken und eine gute Grundlage für die Fortführung bieten.

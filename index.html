@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Abschlussarbeits-Kalkulator V1.9.4 (mit Buchdeckeneditor)</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js" xintegrity="sha512-w61kvDEdEhMoPUGWAjPA3GRG3VvGQAif3EVHGT8VOcUp2lG0g0ZgPshMky2DkM3Fv99ZkDRmYgElhWbWbQpA/w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js" xintegrity="sha512-n/E7NPKkOgwZmCD3yROGFG1A//gHh5EV2Qj5C7yKk3mC1Yx+fPqKvJ4LS2Z6W2kGj6L37N1P7hV6ZgNfLqLg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@svgdotjs/svg.js@latest/dist/svg.min.js"></script>
+</head>
+<body>
+    <div class="page-container">
+        <div class="configurator-column">
+            <h1>Abschlussarbeits-Kalkulator</h1>
+
+            <section class="config-section" id="bookBlockSection">
+                <h2>1. Buchblock-Details & Inhalt</h2>
+                <div>
+                    <label for="totalPages">Gesamtseitenanzahl (A4):</label>
+                    <input type="number" id="totalPages" name="totalPages" min="1" value="50">
+                </div>
+
+                <fieldset class="bookblock-options-group" style="margin-top: 15px;">
+                    <legend>Druckmodus (A4):</legend>
+                    <div><label><input type="radio" name="printMode" value="double_sided" checked> Beidseitig</label></div>
+                    <div><label><input type="radio" name="printMode" value="single_sided"> Einseitig</label></div>
+                </fieldset>
+
+                <div id="bookBlockOptionsContainer">
+                    </div>
+
+                <fieldset class="bookblock-options-group" id="a3PagesOptions">
+                    <legend>Optionale DIN A3 Seiten</legend>
+                    <div><label><input type="checkbox" id="hasA3Pages"> DIN A3 Seiten enthalten?</label></div>
+                    <div id="a3PagesCountContainer" class="hidden">
+                        <label for="a3PagesCount">Anzahl DIN A3 Seiten (auf A4 gefalzt):</label>
+                        <input type="number" id="a3PagesCount" name="a3PagesCount" min="0" max="15" value="0">
+                    </div>
+                </fieldset>
+                <p id="bookBlockThicknessInfo" class="info-text">Bitte Seitenzahl und Papier wählen für Dickenabschätzung.</p>
+
+                <div style="margin-top: 20px; padding-top:15px; border-top: 1px dashed #ccc;">
+                    <h3 style="font-size: 1.1em; color: #337ab7; margin-bottom:10px;">Druckdatei für Inhalt</h3>
+                    <p>Laden Sie hier Ihre PDF für den Inhalt hoch. Die Datei wird analysiert und die Seitenzahlen können übernommen werden.</p>
+                    <button id="uploadAndAnalyzePdfBtn" class="button-primary" style="margin-bottom:10px;">Druckdatei (Inhalt) hochladen & prüfen</button>
+                    <div id="mainPdfStatusInBookBlock" class="info-text" style="margin-top:5px;">Noch keine Datei hochgeladen.</div>
+                    <p id="pdfUploadRequirementNotice" class="error-text hidden">Bitte laden Sie Ihre Druckdatei für den Inhalt hoch (siehe Sektion 1).</p> </div>
+            </section>
+            <section class="config-section" id="bindingVariantsSection">
+                 <h2>2. Bindungsvarianten</h2>
+                <div id="bindingVariantsContainer">
+                    </div>
+                <button id="addVariantButton" class="button-primary">+ Weitere Variante hinzufügen</button>
+                <p id="personalizationRequirementNotice" class="error-text hidden">Bitte schließen Sie alle erforderlichen Personalisierungen ab.</p>
+            </section>
+
+            <section class="config-section" id="extrasSection">
+                <h2>3. Zusätzliche Produkte / Beiwerk</h2>
+                <div id="extrasContainer">
+                    </div>
+                <button id="addExtraButton" class="button-primary">+ Extra hinzufügen</button> 
+            </section>
+
+            <section class="config-section" id="productionDeliveryOptionsSection">
+                <h2>4. Produktionszeit & Lieferung</h2>
+                <div class="production-delivery-grid">
+                    <fieldset id="productionTimeOptionsContainer">
+                        <legend>Produktionszeit</legend>
+                        <p class="info-text">Wählen Sie die gewünschte Bearbeitungsgeschwindigkeit.</p>
+                        </fieldset>
+                    <fieldset id="deliveryMethodOptionsContainer">
+                        <legend>Lieferart</legend>
+                        <p class="info-text">Wählen Sie die gewünschte Lieferart.</p>
+                        </fieldset>
+                </div>
+            </section>
+
+            <section class="config-section" id="furtherActions">
+                <h2>5. Nächste Schritte</h2>
+                <div class="action-buttons-container" style="margin-top:10px;">
+                    <button id="downloadOfferPdfButton" class="button-primary" disabled>Angebot als PDF herunterladen</button>
+                    <button id="startInquiryButton" class="button-primary" disabled>Konfiguration prüfen und Anfrage stellen</button>
+                </div>
+            </section>
+        </div>
+
+        <div class="cart-column" id="desktopCartColumn">
+            <div class="cart-sticky">
+                <h2>Deine Kalkulation</h2>
+                <div id="cartItemsContainerDesktop">
+                    </div>
+                <hr> <div class="cart-total">
+                    <strong>Gesamtkosten Auftrag: <span id="orderTotalDesktop">0.00</span> €</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mobile-sticky-footer" id="mobileStickyFooter">
+        <div class="footer-price-summary">Gesamtkosten: <strong id="orderTotalMobileFooter">0.00 €</strong></div>
+        <button id="showMobileCartButton" class="button-secondary">Kalkulation anzeigen</button>
+    </div>
+
+    <div class="modal-overlay" id="mobileCartModalOverlay">
+         <div class="modal-content">
+            <div class="modal-header">
+                <h2>Deine Kalkulation (Details)</h2>
+                <button id="closeMobileCartButton" class="button-danger">&times; Schließen</button>
+            </div>
+            <div class="modal-body" id="cartItemsContainerMobile">
+                </div>
+            <div class="modal-footer-total">
+                 <strong>Gesamtkosten Auftrag: <span id="orderTotalMobileModal">0.00</span> €</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="imageGalleryModalOverlay">
+        <div class="modal-content image-gallery-modal-content">
+            <div class="modal-header">
+                <h2 id="imageGalleryTitle">Bildauswahl</h2>
+                <button id="closeImageGalleryModalButton" class="button-danger">×</button>
+            </div>
+            <div class="modal-body image-gallery-modal-body">
+                <div class="gallery-preview-area">
+                    <img src="" alt="Vorschau" id="galleryImagePreview" class="gallery-preview-image">
+                    <p id="galleryImageNamePreview" class="gallery-preview-name"></p>
+                </div>
+                <div class="gallery-thumbnails-area" id="galleryThumbnailsContainer">
+                    </div>
+            </div>
+            <div class="modal-footer image-gallery-modal-footer">
+                <button id="selectImageFromGalleryButton" class="button-primary">Auswählen & Übernehmen</button>
+                </div>
+        </div>
+    </div>
+    
+    <div class="modal-overlay" id="pdfAnalysisModalOverlay">
+        <div class="modal-content pdf-analysis-modal-content">
+            <div class="modal-header">
+                <h2 id="pdfAnalysisTitle">Inhalt aus PDF auswerten & übernehmen</h2>
+                <button id="closePdfAnalysisModalButton" class="button-danger">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="pdfUploadControls">
+                    <p>Laden Sie Ihre PDF für den Inhalt hoch. Die Datei wird analysiert, die Seitenzahlen können übernommen und eine Vorschau der ersten Seite wird angezeigt.</p>
+                    <label for="modalPdfFile">PDF-Datei für Inhalt auswählen:</label>
+                    <input type="file" id="modalPdfFile" accept=".pdf" style="margin-top: 5px;">
+                </div>
+                <div id="modalLoadingMessage" class="hidden info-box">Verarbeite PDF... Bitte warten.</div>
+                <div id="modalAnalysisResultArea" class="hidden" style="margin-top:15px;">
+                    <h4>Analyseergebnis:</h4>
+                    <div id="modalAnalysisResultText" class="analysis-text-box"></div>
+                </div>
+                <div id="modalPreviewContainer" class="hidden" style="margin-top:15px;">
+                    <h4>Vorschau erste Seite (Original):</h4>
+                    <canvas id="modalPreviewCanvas" class="preview-canvas-box"></canvas>
+                </div>
+            </div>
+            <div class="modal-footer">
+                 <button id="applyPdfDataButton" class="button-primary" disabled>Daten übernehmen & PDF verwenden</button>
+                 <button id="cancelPdfAnalysisButton" class="button-secondary">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="personalizationModalOverlay">
+        <div class="modal-content personalization-modal-content"> <div class="modal-header">
+                <h2 id="personalizationModalTitle">Bindung personalisieren</h2>
+                <button id="closePersonalizationModalButton" class="button-danger">&times;</button>
+            </div>
+            <div class="modal-body" id="personalizationModalBody">
+                </div>
+            <div class="modal-footer">
+                <button id="savePersonalizationButton" class="button-primary">Personalisierung speichern</button>
+                <button id="cancelPersonalizationModalButton" class="button-secondary">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal-overlay" id="inquiryModalOverlay">
+        <div class="modal-content inquiry-modal-content"> <div class="modal-header">
+                <h2 id="inquiryModalTitle">Unverbindliche Anfrage stellen</h2>
+                <button id="closeInquiryModalButton" class="button-danger">&times;</button>
+            </div>
+            <div class="modal-body" id="inquiryModalBody">
+                <div id="inquiryStepCustomerData" class="inquiry-step-content">
+                     <h4>Schritt 1: Ihre Kontaktdaten</h4>
+                    <form id="inquiryCustomerForm">
+                        <div>
+                            <label for="inquiryCustomerName">Name:*</label>
+                            <input type="text" id="inquiryCustomerName" name="customerName" required>
+                        </div>
+                        <div>
+                            <label for="inquiryCustomerEmail">E-Mail:*</label>
+                            <input type="email" id="inquiryCustomerEmail" name="customerEmail" required>
+                        </div>
+                        <div>
+                            <label for="inquiryCustomerPhone">Telefon (optional):</label>
+                            <input type="tel" id="inquiryCustomerPhone" name="customerPhone">
+                        </div>
+                        <p class="info-text">* Pflichtfeld</p>
+                    </form>
+                </div>
+                <div id="inquiryStepDeliveryAddress" class="inquiry-step-content hidden">
+                    <h4>Schritt 2: Lieferdetails</h4>
+                    <p>Die Lieferart wurde bereits im Kalkulator gewählt. Hier können Sie ggf. Ihre Adresse eingeben.</p>
+                    <div id="selectedDeliveryMethodInfo" style="margin-bottom: 15px; padding:10px; background-color:#f0f8ff; border:1px solid #ddeeff; border-radius:4px;">
+                        Gewählte Lieferart: <strong id="displaySelectedDeliveryMethod">Wird geladen...</strong>
+                    </div>
+                    <form id="inquiryDeliveryForm">
+                        <div id="inquiryShippingAddressFields" class="hidden" style="margin-left: 0; margin-top: 10px; border-left:none; padding-left:0;">
+                            <p>Bitte geben Sie Ihre Lieferadresse ein:</p>
+                            <div>
+                                <label for="inquiryStreet">Straße & Hausnummer:*</label>
+                                <input type="text" id="inquiryStreet" name="street">
+                            </div>
+                            <div>
+                                <label for="inquiryZip">PLZ:*</label>
+                                <input type="text" id="inquiryZip" name="zip" pattern="[0-9]{5}">
+                            </div>
+                            <div>
+                                <label for="inquiryCity">Ort:*</label>
+                                <input type="text" id="inquiryCity" name="city">
+                            </div>
+                            <p class="info-text">* Pflichtfeld bei Versand</p>
+                        </div>
+                         <p id="noAddressNeededInfo" class="info-text hidden">Für die gewählte Lieferart ist keine Adressangabe notwendig.</p>
+                    </form>
+                </div>
+                <div id="inquiryStepFinalReview" class="inquiry-step-content hidden">
+                     <h4>Schritt 3: Zusammenfassung & Bestätigung</h4>
+                    <div id="inquiryFinalSummaryDetails" class="inquiry-summary-box" style="margin-bottom:15px;">
+                        <p>Zusammenfassung wird geladen...</p>
+                    </div>
+                     <div class="cart-total" style="text-align: right; margin-bottom: 15px;">
+                        <strong>Endsumme Anfrage: <span id="inquiryFinalTotal">0.00</span> €</strong>
+                    </div>
+                     <div class="legal-notes" style="margin-top:15px; font-size:0.85em; color:#555;">
+                        <p><strong>Wichtige Hinweise:</strong></p>
+                        <p>"Dies ist eine unverbindliche Anfrage. Ein Vertrag kommt erst nach unserer Prüfung und expliziter Auftragsbestätigung per E-Mail zustande."</p>
+                        <p>"Alle Preise verstehen sich inkl. 7% MwSt. Dieses Angebot gilt ausschließlich für Druckschriften wie Abschlussarbeiten und wissenschaftliche Publikationen."</p>
+                        <div>
+                            <label style="display:flex; align-items:center; margin-top:10px;">
+                                <input type="checkbox" id="inquiryAcceptTerms" name="acceptTerms" required style="width:auto; margin-right:5px;">
+                                Ich habe die <a href="/agb-platzhalter" target="_blank" rel="noopener noreferrer">AGB</a> und die <a href="/datenschutz-platzhalter" target="_blank" rel="noopener noreferrer">Datenschutzerklärung</a> gelesen und akzeptiere diese.*
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" id="inquiryModalFooter">
+                 <button id="inquiryModalBackButton" class="button-secondary hidden">Zurück</button>
+                 <button id="inquiryModalNextButton" class="button-primary">Weiter</button>
+                 <button id="submitInquiryFormButton" class="button-primary hidden">Unverbindliche Anfrage jetzt absenden</button>
+                 <button id="cancelInquiryModalButton" class="button-secondary">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="editor-modal" class="modal-overlay"> <div class="editor-modal-content"> <div class="modal-header">
+                <h1 class="editor-title">Buchdecke Personalisieren</h1>
+                <button id="closeEditorModalButton" class="button-danger" aria-label="Editor schließen">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="editor-controls-column">
+                    <div class="template-selector-container">
+                        <button class="slider-arrow" id="prev-template" aria-label="Vorheriges Template">&lt;</button>
+                        <div class="template-slider">
+                            <div class="template-miniatures" id="template-miniatures-list">
+                                </div>
+                        </div>
+                        <button class="slider-arrow" id="next-template" aria-label="Nächstes Template">&gt;</button>
+                    </div>
+
+                    <div class="controls">
+                        <div class="control-group">
+                            <label for="text-title-input">Titel (U1):</label>
+                            <input type="text" id="text-title-input" value="Mein Buchtitel">
+                        </div>
+                        <div class="control-group">
+                            <label for="text-subtitle-input">Untertitel (U1):</label>
+                            <input type="text" id="text-subtitle-input" value="Ein spannender Untertitel">
+                        </div>
+                        <div class="control-group">
+                            <label for="text-author-input">Autor (U4):</label>
+                            <input type="text" id="text-author-input" value="Max Mustermann">
+                        </div>
+                        <div class="control-group">
+                            <label for="text-spine-title-input">Rückentitel:</label>
+                            <input type="text" id="text-spine-title-input" value="Rückentext Hier">
+                        </div>
+                        <div class="control-group">
+                            <label for="spine-width-input">Rückenbreite (mm):</label>
+                            <input type="number" id="spine-width-input" value="35" min="5" max="100">
+                        </div>
+                        <div class="control-group">
+                            <label>Farbe U1:</label>
+                            <div class="color-palette" id="palette-u1">
+                                </div>
+                        </div>
+                         <div class="control-group">
+                            <label>Farbe U4:</label>
+                            <div class="color-palette" id="palette-u4">
+                                </div>
+                        </div>
+                        <div class="control-group" id="logoUploadGroup">
+                            <label for="logo-upload-input">Logo hochladen (optional):</label>
+                            <input type="file" id="logo-upload-input" accept="image/png, image/jpeg, image/svg+xml">
+                            <button id="remove-logo-button" class="button-small button-danger hidden" style="margin-top: 5px;">Logo entfernen</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="editor-preview-column">
+                    <div id="svg-container">
+                        <div id="svg-canvas"></div> </div>
+                    <div class="view-controls">
+                        <button id="zoom-in-button" aria-label="Hineinzoomen">+</button>
+                        <button id="zoom-out-button" aria-label="Herauszoomen">-</button>
+                        <button id="zoom-reset-button" aria-label="Zoom zurücksetzen">Reset Zoom</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <div class="footer-actions-left">
+                    <button id="editor-preview-button" class="button-secondary">Vorschau</button>
+                </div>
+                <div class="footer-actions-right">
+                    <button id="editor-cancel-button" class="button-secondary">Abbrechen</button>
+                    <button id="editor-confirm-button" class="button-primary">Fertigstellen & Übernehmen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="preview-modal" class="modal-overlay"> <div class="editor-modal-content">
+            <div class="modal-header">
+                <h2>Vorschau Buchdecke</h2>
+                <button class="close-preview-button" id="close-preview-modal-button" aria-label="Vorschau schließen">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="preview-svg-container">
+                    <div id="preview-svg-canvas"></div> </div>
+            </div>
+            <div class="modal-footer">
+                 <button id="download-preview-svg-button" class="button-secondary">Vorschau-SVG Herunterladen</button>
+                 <button id="close-preview-with-footer-button" class="button-secondary">Schließen</button> </div>
+        </div>
+    </div>
+    <!--
+    <div style="padding: 20px; text-align:center; margin-top:20px; border: 1px dashed blue; background: #eef;">
+        <h2>Hauptanwendung (Testbereich für Editor-Integration)</h2>
+        <p>Dieser Bereich dient nur zum Testen des Buchdeckeneditors im Kontext der Hauptanwendung.</p>
+        <button id="open-editor-button-test" class="button-primary">Buchdeckeneditor öffnen (Test)</button>
+        <div id="result-output-test" style="border: 1px solid #ccc; padding: 10px; margin-top:10px; background: #fff; text-align:left; white-space: pre-wrap; word-break: break-all;">Ergebnis des Editors wird hier angezeigt...</div>
+    </div>
+    -->
+        <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <!-- Das animierte SVG-Logo aus deiner Logo.html -->
+            <svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" width="150px" height="150px" version="1.1" style="shape-rendering:geometricPrecision; text-rendering:geometricPrecision; image-rendering:optimizeQuality; fill-rule:evenodd; clip-rule:evenodd"
+                viewBox="0 0 4000 4000"
+                xmlns:xlink="http://www.w3.org/1999/xlink">
+                <defs>
+                    <style type="text/css">
+                    <![CDATA[
+                        .fil0 {fill:#233B77;fill-rule:nonzero}
+                    ]]>
+                    </style>
+                </defs>
+                <g id="Ebene_x0020_1">
+                    <metadata id="CorelCorpID_0Corel-Layer"/>
+                    <g id="_1485002030976"> <!-- Diese Gruppe wird durch CSS animiert -->
+                        <path class="fil0" d="M3392 878l-911 350c20,-55 31,-114 31,-175 0,-284 -229,-513 -513,-513 -283,0 -513,229 -513,513 0,196 111,366 273,453 0,0 194,108 597,208 403,101 1154,267 1047,1446 0,0 930,-1010 -11,-2282z"/>
+                        <path class="fil0" d="M2241 2494c0,0 -194,-108 -597,-208 -403,-101 -1154,-267 -1047,-1446 0,0 -930,1010 11,2282l911 -350c-20,55 -31,114 -31,175 0,284 229,513 513,513 283,0 513,-229 513,-513 0,-196 -111,-366 -273,-453z"/>
+                    </g>
+                </g>
+            </svg>
+            <p class="loading-text">Anfrage wird verarbeitet...Bitte Warten und Fenster nicht schliessen</p>
+        </div>
+    </div>
+    
+    <script type="module" src="script.js"></script>
+    <!-- Das Skript für den Editor (z.B. editor.mjs) wird idealerweise von script.js als Modul importiert,
+         wenn es benötigt wird, oder muss hier ebenfalls als type="module" geladen werden, wenn es eigenständig initialisiert wird.
+         <script type="module" src="./editor/editor.mjs"></script> -->
+</body>
+</html>

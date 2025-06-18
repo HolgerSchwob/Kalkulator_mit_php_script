@@ -1,0 +1,79 @@
+    <?php
+    // upload.php - ABSOLUT MINIMALER TEST für XAMPP
+    
+    // WICHTIG: CORS Header für Anfragen vom VS Code Live Server (Port 5500)
+    header("Access-Control-Allow-Origin: http://127.0.0.1:5500"); 
+    header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
+    header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+    
+    // Preflight-Request (OPTIONS) behandeln
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        http_response_code(200); // Erfolgreicher Preflight
+        // error_log("PHP Minimal XAMPP: OPTIONS request received and headers sent."); // Optional: Log in PHP error log
+        exit();
+    }
+    
+    // Für andere Methoden als OPTIONS:
+    http_response_code(200); // Standardmäßig OK für die Antwort
+    header('Content-Type: application/json; charset=utf-8');
+    
+    $responseData = [
+        'status' => 'unknown_method_xampp',
+        'message' => 'PHP Minimal Test (XAMPP): Request received with method ' . $_SERVER['REQUEST_METHOD'],
+        'timestamp' => date('Y-m-d H:i:s'),
+        'script_location' => __FILE__ // Zeigt den Pfad des ausgeführten Skripts
+    ];
+    
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $responseData['status'] = 'success_post_minimal_xampp';
+        $responseData['message'] = 'PHP Minimal Test (XAMPP): POST request successfully received.';
+        $responseData['post_data_exists'] = !empty($_POST);
+        $responseData['files_data_exists'] = !empty($_FILES);
+        
+        if (isset($_POST['jsonData'])) {
+            $responseData['jsonData_preview'] = substr($_POST['jsonData'], 0, 200) . '...';
+        } else {
+            $responseData['jsonData_preview'] = 'Keine jsonData im POST gefunden.';
+        }
+
+        if (!empty($_FILES)) {
+            $responseData['file_keys'] = [];
+            foreach ($_FILES as $key => $fileInfo) {
+                $responseData['file_keys'][] = [
+                    'key' => $key,
+                    'name' => $fileInfo['name'] ?? 'N/A',
+                    'error' => $fileInfo['error'] ?? 'N/A'
+                ];
+            }
+        }
+        // error_log("PHP Minimal XAMPP: POST request processed."); // Optional: Log in PHP error log
+    } elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
+        $responseData['status'] = 'success_get_minimal_xampp';
+        $responseData['message'] = 'PHP Minimal Test (XAMPP): GET request successfully received.';
+        // error_log("PHP Minimal XAMPP: GET request processed."); // Optional: Log in PHP error log
+    } else {
+        // Sollte durch den OPTIONS-Handler oder die spezifischen GET/POST-Blöcke abgedeckt sein
+        $responseData['message'] = 'PHP Minimal Test (XAMPP): Unerwartete Methode: ' . $_SERVER['REQUEST_METHOD'];
+        http_response_code(405); // Method Not Allowed
+    }
+    
+    echo json_encode($responseData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    exit();
+    ?>
+    ```
+    Stelle sicher, dass diese Version als `upload.php` in deinem XAMPP-Projektverzeichnis (`/projects/`) liegt.
+
+3.  **Testen:**
+    * Starte deinen XAMPP-Server (Apache und PHP).
+    * Öffne deine `index.html` über den VS Code Live Server (`http://127.0.0.1:5500`).
+    * Führe den Sendevorgang im Kalkulator aus.
+    * **Beobachte die Browser-Konsole:**
+        * Die `POST`-Anfrage sollte jetzt an `http://localhost/projects/upload.php` (oder die von dir gesetzte URL) gehen.
+        * Du solltest jetzt eine JSON-Antwort vom minimalen PHP-Skript sehen (mit `status: "success_post_minimal_xampp"`).
+        * Der `405`-Fehler sollte weg sein.
+    * **Überprüfe den Netzwerk-Tab im Browser:**
+        * Schaue dir den `OPTIONS`-Request an. Er sollte jetzt die korrekten `Access-Control-Allow-Origin: http://127.0.0.1:5500`-Header in der *Antwort* vom XAMPP-Server haben.
+        * Der `POST`-Request sollte jetzt mit Status `200 OK` durchgehen.
+    * **Überprüfe die Apache Access Logs und PHP Error Logs** auf deinem XAMPP-Server, falls immer noch Probleme auftreten.
+
+Wenn das funktioniert, wissen wir, dass die grundlegende Kommunikation zwischen deinem Frontend (via Live Server) und deinem Backend (PHP auf XAMPP) jetzt korrekt für `POST`-Anfragen mit CORS eingerichtet ist. Danach können wir das *vollständige* `upload.php`-Skript (das mit der Google Drive Integration) wiederherstell
