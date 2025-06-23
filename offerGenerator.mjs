@@ -1,358 +1,566 @@
 // offerGenerator.mjs
-// Modul zur Erstellung eines Angebots-PDFs mit pdfmake (V1.9.2)
-// Anpassung für Produktions- & Lieferoptionen
+// Optimierter Angebots-Generator für SCHWOB DIGITALDRUCK
+// Professional PDF offer generation with enhanced design and company branding
 
-export async function generateOfferPdf(
-    bookBlockState,
-    configuredVariants,
-    configuredExtras,
-    productionDeliveryState, // NEUER PARAMETER
-    CALC_CONFIG,
-    totalPages, // totalPages wird hier separat übergeben, obwohl es Teil von bookBlockState ist. Könnte man konsolidieren.
-    overallTotal,
-    calculationResults // NEU: Um direkten Zugriff auf berechnete Kosten zu haben
-) {
+/**
+ * Helper function to load image as DataURL
+ * @param {string} imagePath - Path to the image file
+ * @returns {Promise<string>} - DataURL of the image
+ */
+async function loadImageAsDataURL(imagePath) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+            resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = function() {
+            console.warn(`Logo nicht gefunden: ${imagePath}. Verwende Fallback-Text.`);
+            resolve(null); // Return null if image fails to load
+        };
+        img.src = imagePath;
+    });
+}
+
+/**
+ * Generates and downloads a professional offer PDF based on the current application state.
+ * @param {object} inquiryState - The complete state of the user's configuration.
+ * @param {object} calculationResults - An object with all calculated prices.
+ * @param {object} config - The main calculator configuration object.
+ */
+export async function generateOfferPdf(inquiryState, calculationResults, config) {
     if (typeof pdfMake === 'undefined' || typeof pdfMake.createPdf !== 'function') {
         alert("pdfMake ist nicht korrekt geladen. Das PDF kann nicht erstellt werden.");
         console.error("pdfMake is not defined or createPdf is not a function.");
         return;
     }
 
+    // Company data configuration
     const companyData = {
         name: "SCHWOB DIGITALDRUCK",
         owner: "Inhaber Holger Schwob",
         street: "Michael-Henkel-Straße 4-6",
         city: "36043 Fulda",
-        phone: "0661 977717",
+        phone: "Tel: 0661 977717",
+        mobile: "Mobil: 0170 1234567", // Add if available
         email: "info@schwob-digitaldruck.de",
+        web: "www.schwob-digitaldruck.de",
         ustIdNr: "DE274642127",
-        logoPlaceholderText: "SCHWOB\nDIGITALDRUCK",
+        // Logo file path - place your logo.png in the same directory or web-accessible path
+        logoPath: "./logo.png"
     };
 
-    // Zugriff auf currencySymbol über das korrekt übergebene CALC_CONFIG Objekt
-    const currencySymbol = CALC_CONFIG.general.currencySymbol || '€';
+    // Load company logo
+    const logoDataURL = await loadImageAsDataURL(companyData.logoPath);
+
+    const currencySymbol = config.general.currencySymbol || '€';
     const today = new Date().toLocaleDateString('de-DE', { year: 'numeric', month: '2-digit', day: '2-digit' });
-    const vatRate = CALC_CONFIG.general.vatRate || 7;
+    const vatRate = config.general.vatRate || 7;
+    const offerNumber = `ANG-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
 
-    const getPaperConfigById = (paperId) => CALC_CONFIG.papers.find(p => p.id === paperId);
-    const getBindingConfigById = (bindingId) => CALC_CONFIG.bindings.find(b => b.id === bindingId);
-    const getExtraConfigById = (extraId) => CALC_CONFIG.extras.find(ex => ex.id === extraId);
-    const getProductionTimeById = (id) => CALC_CONFIG.productionAndDelivery.productionTimes.find(pt => pt.id === id);
-    const getDeliveryMethodById = (id) => CALC_CONFIG.productionAndDelivery.deliveryMethods.find(dm => dm.id === id);
+    const getBindingConfigById = (bindingId) => config.bindings.find(b => b.id === bindingId);
+    
+    // Helper function to format currency
+    const formatCurrency = (amount) => `${amount.toFixed(2)} ${currencySymbol}`;
 
+    let content = [];
 
-    let documentDefinition = {
-        pageSize: 'A4',
-        pageMargins: [40, 90, 40, 70], // top margin erhöht für Logo/Header
-        header: {
-            columns: [
-                {
-                    text: companyData.logoPlaceholderText,
-                    style: 'headerLogo',
-                    alignment: 'left',
-                    margin: [40, 30, 0, 0] // Angepasst für neues pageMargin
-                },
-                {
-                    stack: [
-                        { text: companyData.name, style: 'headerCompanyName', alignment: 'right'},
-                        { text: companyData.owner, style: 'headerOwner', alignment: 'right'},
-                        { text: companyData.street, style: 'headerAddress', alignment: 'right'},
-                        { text: companyData.city, style: 'headerAddress', alignment: 'right'},
-                        { text: `Tel: ${companyData.phone}`, style: 'headerAddress', alignment: 'right'},
-                        { text: `E-Mail: ${companyData.email}`, style: 'headerAddress', alignment: 'right'}
-                    ],
-                    width: '*',
-                    margin: [0, 20, 40, 0] // Angepasst für neues pageMargin
-                }
+    // Header with logo and company info
+    const headerContent = [];
+    
+    // Logo column - use logo if available, otherwise company name as fallback
+    if (logoDataURL) {
+        headerContent.push({
+            width: 120,
+            image: logoDataURL,
+            height: 50,
+            margin: [0, 0, 0, 0]
+        });
+    } else {
+        // Fallback: Text-based logo if image not available
+        headerContent.push({
+            width: 120,
+            stack: [
+                { text: 'SCHWOB', style: 'logoFallbackMain' },
+                { text: 'DIGITALDRUCK', style: 'logoFallbackSub' }
             ],
+            margin: [0, 5, 0, 0]
+        });
+    }
+    
+    // Company info columns
+    headerContent.push(
+        {
+            width: '*',
+            stack: [
+                { text: companyData.name, style: 'companyName' },
+                { text: companyData.owner, style: 'companyOwner' },
+                { text: companyData.street, style: 'companyAddress' },
+                { text: companyData.city, style: 'companyAddress' }
+            ]
         },
-        footer: function(currentPage, pageCount) {
-            return {
-                columns: [
-                    { text: `${companyData.name}, ${companyData.street}, ${companyData.city} - USt-IdNr.: ${companyData.ustIdNr}`, alignment: 'left', style: 'footerText', margin: [40, 30, 0, 0] },
-                    { text: `Seite ${currentPage.toString()} von ${pageCount}`, alignment: 'right', style: 'footerText', margin: [0, 30, 40, 0] }
-                ],
-            };
-        },
-        content: [
+        {
+            width: 150,
+            stack: [
+                { text: companyData.phone, style: 'contactInfo' },
+                { text: companyData.email, style: 'contactInfo' },
+                { text: companyData.web, style: 'contactInfo' },
+                { text: `USt-IdNr: ${companyData.ustIdNr}`, style: 'contactInfoSmall' }
+            ]
+        }
+    );
+
+    content.push({
+        columns: headerContent,
+        margin: [0, 0, 0, 30]
+    });
+
+    // Offer details header
+    content.push({
+        columns: [
             {
-                text: 'An:\n(Kundenname)\n(Kundenstraße)\n(PLZ Ort Kunde)',
-                style: 'recipientAddress',
-                alignment: 'left',
-                margin: [0, 20, 0, 20] 
-            },
-            {
-                columns: [
-                    { text: '', width: '*' },
-                    {
-                        text: `Fulda, den ${today}\nAngebotsnr.: WebKalk-${new Date().getTime().toString().slice(-6)}`,
-                        style: 'offerDetails',
-                        alignment: 'right',
-                        width: 'auto',
-                        margin: [0, 0, 0, 20]
-                    }
+                width: '*',
+                stack: [
+                    { text: 'UNVERBINDLICHES ANGEBOT', style: 'mainTitle' },
+                    { text: `Angebots-Nr.: ${offerNumber}`, style: 'offerNumber' },
+                    { text: `Datum: ${today}`, style: 'offerDate' }
                 ]
             },
-            { text: 'Unverbindliches Angebot', style: 'mainTitle' },
-            { text: 'Sehr geehrte Damen und Herren,', style: 'salutation', margin: [0, 0, 0, 10] },
-            { text: 'vielen Dank für Ihr Interesse an unseren Dienstleistungen. Gerne unterbreiten wir Ihnen folgendes unverbindliches Angebot basierend auf Ihrer Online-Konfiguration:', style: 'paragraph', margin: [0, 0, 0, 15] }, // Mehr Abstand nach unten
+            {
+                width: 200,
+                stack: [
+                    { text: 'Gültig bis:', style: 'validityLabel' },
+                    { text: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('de-DE'), style: 'validityDate' }
+                ],
+                alignment: 'right'
+            }
         ],
-        styles: {
-            headerLogo: { fontSize: 14, bold: true, color: '#333333' },
-            headerCompanyName: { fontSize: 12, bold: true, color: '#2c3e50'},
-            headerOwner: { fontSize: 10, color: '#2c3e50'},
-            headerAddress: { fontSize: 9, color: '#333333', lineHeight: 1.2 },
-            recipientAddress: { fontSize: 10, lineHeight: 1.3, margin: [0,0,0,20] },
-            offerDetails: { fontSize: 10 },
-            mainTitle: { fontSize: 16, bold: true, alignment: 'left', color: '#2c3e50', margin: [0, 0, 0, 15] },
-            salutation: { fontSize: 10, margin: [0, 10, 0, 5] },
-            sectionTitle: { fontSize: 12, bold: true, margin: [0, 15, 0, 8], color: '#34495e', decoration: 'underline', decorationColor: '#bdc3c7' },
-            paragraph: { fontSize: 10, margin: [0, 0, 0, 5], lineHeight: 1.3 },
-            tableHeader: { bold: true, fontSize: 9, color: 'white', fillColor: '#34495e', alignment: 'left' },
-            tableCell: { fontSize: 9, margin: [0, 3, 0, 3], lineHeight: 1.2 },
-            tableCellRight: { fontSize: 9, margin: [0, 3, 0, 3], alignment: 'right', lineHeight: 1.2 },
-            totalRowCell: { bold: false, fontSize: 10, margin: [0, 3, 0, 3] },
-            totalRowCellRight: { bold: false, fontSize: 10, margin: [0, 3, 0, 3], alignment: 'right' },
-            grossTotalCell: { bold: true, fontSize: 11, margin: [0, 5, 0, 5], color: '#c0392b' },
-            grossTotalCellRight: { bold: true, fontSize: 11, margin: [0, 5, 0, 5], alignment: 'right', color: '#c0392b' },
-            footerText: { fontSize: 8, color: '#7f8c8d', alignment: 'center' },
-            listItem: { fontSize: 9, margin: [10, 0, 0, 3], lineHeight: 1.2 },
-            imagePreviewContainer: { margin: [0, 5, 0, 10], alignment: 'center' },
-            imageCaption: {fontSize: 8, italics: true, color: '#555555', alignment: 'center', margin: [0,2,0,0]},
-            vatDisclaimer: {fontSize: 8, italics: true, color: '#7f8c8d', margin: [0,5,0,0], alignment: 'left'}
-        },
-        defaultStyle: {
-            font: 'Roboto' // Standard-Schriftart für pdfmake
+        margin: [0, 0, 0, 25]
+    });
+
+    // Greeting and introduction
+    content.push(
+        { text: 'Sehr geehrte Damen und Herren,', style: 'salutation' },
+        { 
+            text: 'vielen Dank für Ihr Interesse an unseren Druckdienstleistungen. Gerne unterbreiten wir Ihnen das folgende unverbindliche Angebot basierend auf Ihrer Online-Konfiguration:', 
+            style: 'introText' 
         }
-    };
+    );
 
-    // --- Buchblock Details ---
-    if (totalPages > 0 || (bookBlockState.hasA3Pages && bookBlockState.a3PagesCount > 0)) {
-        documentDefinition.content.push({ text: 'I. Buchblock Konfiguration', style: 'sectionTitle' });
-        const paperConf = getPaperConfigById(bookBlockState.paperId);
-        let bookBlockTableBody = [
-            [{text: 'Eigenschaft', style: 'tableHeader'}, {text: 'Spezifikation', style: 'tableHeader'}]
-        ];
-        if (totalPages > 0) {
-            bookBlockTableBody.push([{text: 'Gesamtseiten A4:', style: 'tableCell'}, {text: `${totalPages}`, style: 'tableCell'}]);
-            bookBlockTableBody.push([{text: 'Druckmodus A4:', style: 'tableCell'}, {text: `${bookBlockState.printMode === 'double_sided' ? 'Beidseitig' : 'Einseitig'}`, style: 'tableCell'}]);
-        }
-        bookBlockTableBody.push([{text: 'Papiersorte:', style: 'tableCell'}, {text: `${paperConf ? paperConf.name : 'N/A'}`, style: 'tableCell'}]);
-
-        if (bookBlockState.hasA3Pages && bookBlockState.a3PagesCount > 0) {
-            bookBlockTableBody.push([{text: 'Anzahl A3-Seiten:', style: 'tableCell'}, {text: `${bookBlockState.a3PagesCount} (gefalzt auf A4)`, style: 'tableCell'}]);
-        }
-        documentDefinition.content.push({
-            table: { body: bookBlockTableBody, widths: ['auto', '*'] },
-            layout: 'lightHorizontalLines',
-            margin: [0, 0, 0, 10]
-        });
-
-        if (bookBlockState.firstPagePreviewDataURL) {
-            try {
-                documentDefinition.content.push({
-                    image: bookBlockState.firstPagePreviewDataURL,
-                    width: 120, // Breite des Vorschaubildes
-                    style: 'imagePreviewContainer'
-                });
-                documentDefinition.content.push({text: 'Vorschau Titelseite (basierend auf PDF-Analyse)', style: 'imageCaption'});
-            } catch (e) {
-                console.error("Error embedding title page preview:", e);
-            }
-        }
-    }
-
-    // --- Bindungsvarianten ---
-    if (configuredVariants.length > 0 && calculationResults && calculationResults.variantCalculations) {
-        documentDefinition.content.push({ text: 'II. Bindungsvarianten & Druck', style: 'sectionTitle' });
-        const { variantsWithPrices } = calculationResults.variantCalculations;
-
-        variantsWithPrices.forEach((variantWithPrice, index) => {
-            const originalVariant = configuredVariants.find(v => v.id === variantWithPrice.id);
-            if (!originalVariant || variantWithPrice.isInvalid) return; // Ungültige Varianten nicht im Angebot aufführen
-
-            const bindingConf = getBindingConfigById(originalVariant.bindingTypeId);
-            if (!bindingConf) return;
-
-            let variantDetailsTable = [
-                [{text: 'Pos.', style: 'tableHeader', alignment:'left'}, {text: 'Beschreibung', style: 'tableHeader'}, {text: 'Menge', style: 'tableHeader', alignment:'center'}, {text: 'Einzelpreis (Brutto)', style: 'tableHeader', alignment:'right'}, {text: 'Gesamt (Brutto)', style: 'tableHeader', alignment:'right'}]
-            ];
-
-            let optionsText = [];
-            if (bindingConf.options && Object.keys(originalVariant.options).length > 0) {
-                bindingConf.options.forEach(optConf => {
-                    const selectedOptionValue = originalVariant.options[optConf.optionKey];
-                    if (selectedOptionValue !== undefined && selectedOptionValue !== null && selectedOptionValue !== false) {
-                        let valText = '';
-                        if (optConf.type === 'checkbox') {
-                            if (selectedOptionValue === true) valText = 'Ja'; else return; // Nur anzeigen wenn ausgewählt
-                        } else if (optConf.type === 'radio') {
-                            const choice = optConf.choices.find(c => c.id === selectedOptionValue);
-                            valText = choice ? choice.name : 'N/A';
-                        } else if (optConf.type === 'gallery_select') {
-                            valText = String(selectedOptionValue).replace(/_/g, ' ');
-                        }
-                        if (valText) optionsText.push(`${optConf.name}: ${valText}`);
-                    }
-                });
-            }
-            
-            // Titel der Variante + Optionen
-            let descriptionStack = [{text: `${bindingConf.name} (inkl. Buchblock & Grundpauschale anteilig)`, bold:true}];
-            if (optionsText.length > 0) {
-                descriptionStack.push({ul: optionsText.map(opt => {return {text: opt, style:'listItem', margin:[0,0,0,0]};}) });
-            }
-
-
-            variantDetailsTable.push([
-                {text: `${index + 1}.1`, style: 'tableCell'},
-                {stack: descriptionStack, style: 'tableCell' },
-                {text: `${originalVariant.quantity}`, style: 'tableCell', alignment:'center'},
-                {text: `${variantWithPrice.unitPrice.toFixed(2)} ${currencySymbol}`, style: 'tableCellRight'},
-                {text: `${variantWithPrice.totalPrice.toFixed(2)} ${currencySymbol}`, style: 'tableCellRight', bold:true}
-            ]);
-            
-            documentDefinition.content.push({
-                table: { body: variantDetailsTable, widths: ['auto', '*', 'auto', 'auto', 'auto'] },
-                layout: 'lightHorizontalLines',
-                margin: [0, 5, 0, 10]
-            });
-        });
-    }
-
-    // --- Zusätzliche Produkte / Extras ---
-    if (configuredExtras.length > 0 && calculationResults && calculationResults.extraCalculations) {
-        documentDefinition.content.push({ text: 'III. Zusätzliche Produkte / Extras', style: 'sectionTitle' });
-        const { extrasWithPrices } = calculationResults.extraCalculations;
-        let extrasTableBody = [
-            [{text: 'Pos.', style: 'tableHeader', alignment:'left'}, {text: 'Beschreibung', style: 'tableHeader'}, {text: 'Menge', style: 'tableHeader', alignment:'center'}, {text: 'Einzelpreis (Brutto)', style: 'tableHeader', alignment:'right'}, {text: 'Gesamt (Brutto)', style: 'tableHeader', alignment:'right'}]
-        ];
-        let extraPositionCounter = 1;
-        extrasWithPrices.forEach((extraWithPrice) => {
-            const originalExtra = configuredExtras.find(ex => ex.instanceId === extraWithPrice.instanceId);
-            if (!originalExtra) return;
-
-            const extraConf = getExtraConfigById(originalExtra.extraId);
-            if (!extraConf) return;
-            
-            let optionsText = [];
-            if (extraConf.options && Object.keys(originalExtra.selectedOptions).length > 0) {
-                 extraConf.options.forEach(optGroup => {
-                    const selectedChoiceId = originalExtra.selectedOptions[optGroup.optionKey];
-                    if (selectedChoiceId) {
-                        const choiceConfig = optGroup.choices.find(c => c.id === selectedChoiceId);
-                        const defaultChoice = optGroup.choices.find(c => c.default) || optGroup.choices[0];
-                        if (choiceConfig && (!defaultChoice || choiceConfig.id !== defaultChoice.id || choiceConfig.price > 0 )) { // Nur anzeigen wenn nicht Standard oder Preis hat
-                             optionsText.push(`${optGroup.groupName}: ${choiceConfig.name}`);
-                        }
-                    }
-                 });
-            }
-            
-            let descriptionStackExtras = [{text: extraConf.name, bold:true}];
-            if (optionsText.length > 0) {
-                descriptionStackExtras.push({ul: optionsText.map(opt => {return {text: opt, style:'listItem', margin:[0,0,0,0]};}) });
-            }
-
-            extrasTableBody.push([
-                {text: `${(configuredVariants.length > 0 ? configuredVariants.length : 0) + extraPositionCounter}.1`, style: 'tableCell'},
-                {stack: descriptionStackExtras, style: 'tableCell' },
-                {text: `${originalExtra.quantity}`, style: 'tableCell', alignment:'center'},
-                {text: `${extraWithPrice.unitPrice.toFixed(2)} ${currencySymbol}`, style: 'tableCellRight'},
-                {text: `${extraWithPrice.totalPrice.toFixed(2)} ${currencySymbol}`, style: 'tableCellRight', bold:true}
-            ]);
-            extraPositionCounter++;
-        });
-         documentDefinition.content.push({
-            table: { body: extrasTableBody, widths: ['auto', '*', 'auto', 'auto', 'auto'] },
-            layout: 'lightHorizontalLines',
-            margin: [0, 5, 0, 10]
-        });
-    }
-
-    // --- Produktionszeit & Lieferung ---
-    if (productionDeliveryState && calculationResults && calculationResults.productionAndDeliveryCalculations) {
-        documentDefinition.content.push({ text: 'IV. Produktionszeit & Lieferung', style: 'sectionTitle' });
-        const { selectedProductionTime, productionTimeCost, selectedDeliveryMethod, deliveryMethodCost } = calculationResults.productionAndDeliveryCalculations;
-        
-        let prodDelTableBody = [
-             [{text: 'Option', style: 'tableHeader'}, {text: 'Auswahl', style: 'tableHeader'}, {text: 'Kosten (Brutto)', style: 'tableHeader', alignment:'right'}]
-        ];
-
-        if (selectedProductionTime) {
-            prodDelTableBody.push([
-                {text: 'Produktionszeit', style:'tableCell'},
-                {text: selectedProductionTime.name, style:'tableCell'},
-                {text: `${productionTimeCost.toFixed(2)} ${currencySymbol}`, style:'tableCellRight'}
-            ]);
-        }
-        if (selectedDeliveryMethod) {
-             prodDelTableBody.push([
-                {text: 'Lieferart', style:'tableCell'},
-                {text: selectedDeliveryMethod.name, style:'tableCell'},
-                {text: `${deliveryMethodCost.toFixed(2)} ${currencySymbol}`, style:'tableCellRight'}
-            ]);
-        }
-        if (prodDelTableBody.length > 1) { // Nur anzeigen, wenn Optionen gewählt wurden
-            documentDefinition.content.push({
-                table: { body: prodDelTableBody, widths: ['auto', '*', 'auto'] },
-                layout: 'lightHorizontalLines',
-                margin: [0, 5, 0, 10]
-            });
-        }
-    }
-
-
-    // --- Gesamtkosten ---
-    documentDefinition.content.push({ text: 'V. Gesamtkostenübersicht', style: 'sectionTitle' }); // Nummerierung angepasst
+    // Section 1: Book Block Configuration
+    content.push({ text: 'I. BUCHBLOCK KONFIGURATION', style: 'sectionTitle' });
     
-    const grossTotal = overallTotal; // overallTotal kommt jetzt direkt vom calculationService
+    const paperConf = config.papers.find(p => p.id === inquiryState.bookBlock.paperId);
+    const bookBlockData = [
+        ['Gesamtseiten A4:', inquiryState.bookBlock.totalPages.toString()],
+        ['Papiersorte:', paperConf ? paperConf.name : 'N/A'],
+        ['Papiergewicht:', paperConf ? `${paperConf.weight || 'Standard'} g/m²` : 'N/A']
+    ];
+
+    if (inquiryState.bookBlock.hasA3Pages && inquiryState.bookBlock.a3PagesCount > 0) {
+        bookBlockData.push(['Anzahl A3-Seiten:', inquiryState.bookBlock.a3PagesCount.toString()]);
+    }
+
+    content.push({
+        table: {
+            headerRows: 0,
+            widths: ['40%', '*'],
+            body: bookBlockData.map(row => [
+                { text: row[0], style: 'specLabel' },
+                { text: row[1], style: 'specValue' }
+            ])
+        },
+        layout: {
+            fillColor: function (rowIndex) {
+                return (rowIndex % 2 === 0) ? '#f8f9fa' : null;
+            },
+            hLineWidth: () => 0.5,
+            vLineWidth: () => 0,
+            hLineColor: () => '#e9ecef'
+        },
+        margin: [0, 5, 0, 15]
+    });
+
+    // Preview image if available
+    if (inquiryState.bookBlock.firstPagePreviewUrl) {
+        content.push({
+            columns: [
+                { width: '*', text: '' },
+                {
+                    width: 150,
+                    stack: [
+                        { text: 'Vorschau erste Seite:', style: 'previewLabel' },
+                        { 
+                            image: inquiryState.bookBlock.firstPagePreviewUrl, 
+                            width: 120, 
+                            alignment: 'center',
+                            margin: [0, 5, 0, 0]
+                        }
+                    ]
+                },
+                { width: '*', text: '' }
+            ],
+            margin: [0, 0, 0, 20]
+        });
+    }
+
+    // Section 2: Binding Variants & Printing
+    content.push({ text: 'II. BINDUNGSVARIANTEN & PREISE', style: 'sectionTitle' });
+    
+    const variantsTableHeader = [
+        { text: 'Pos.', style: 'tableHeader', alignment: 'center' },
+        { text: 'Beschreibung', style: 'tableHeader' },
+        { text: 'Menge', style: 'tableHeader', alignment: 'center' },
+        { text: 'Einzel (Brutto)', style: 'tableHeader', alignment: 'right' },
+        { text: 'Gesamt (Brutto)', style: 'tableHeader', alignment: 'right' }
+    ];
+
+    let variantsTableBody = [variantsTableHeader];
+    
+    calculationResults.variantsWithPrices.forEach((variant, index) => {
+        const bindingConf = getBindingConfigById(variant.bindingTypeId);
+        variantsTableBody.push([
+            { text: `${index + 1}`, style: 'tableCell', alignment: 'center' },
+            { 
+                stack: [
+                    { text: bindingConf.name, style: 'itemName' },
+                    { text: bindingConf.description || 'Professionelle Bindung', style: 'itemDescription' }
+                ]
+            },
+            { text: variant.quantity.toString(), style: 'tableCell', alignment: 'center' },
+            { text: formatCurrency(variant.unitPrice), style: 'tableCellRight' },
+            { text: formatCurrency(variant.totalPrice), style: 'tableCellRightBold' }
+        ]);
+    });
+
+    content.push({
+        table: {
+            headerRows: 1,
+            widths: ['8%', '45%', '12%', '17%', '18%'],
+            body: variantsTableBody
+        },
+        layout: {
+            fillColor: function (rowIndex) {
+                return rowIndex === 0 ? '#006699' : (rowIndex % 2 === 1) ? '#f8f9fa' : null;
+            },
+            hLineWidth: () => 0.5,
+            vLineWidth: () => 0.5,
+            hLineColor: () => '#dee2e6',
+            vLineColor: () => '#dee2e6'
+        },
+        margin: [0, 5, 0, 15]
+    });
+
+    // Section 3: Extras (if any)
+    if (calculationResults.extrasWithPrices && calculationResults.extrasWithPrices.length > 0) {
+        content.push({ text: 'III. ZUSÄTZLICHE PRODUKTE / EXTRAS', style: 'sectionTitle' });
+        
+        const extrasTableHeader = [
+            { text: 'Pos.', style: 'tableHeader', alignment: 'center' },
+            { text: 'Beschreibung', style: 'tableHeader' },
+            { text: 'Menge', style: 'tableHeader', alignment: 'center' },
+            { text: 'Einzel (Brutto)', style: 'tableHeader', alignment: 'right' },
+            { text: 'Gesamt (Brutto)', style: 'tableHeader', alignment: 'right' }
+        ];
+
+        let extrasTableBody = [extrasTableHeader];
+        
+        calculationResults.extrasWithPrices.forEach((extra, index) => {
+            extrasTableBody.push([
+                { text: `E${index + 1}`, style: 'tableCell', alignment: 'center' },
+                { text: extra.name || 'Zusatzleistung', style: 'tableCell' },
+                { text: extra.quantity?.toString() || '1', style: 'tableCell', alignment: 'center' },
+                { text: formatCurrency(extra.unitPrice || extra.price), style: 'tableCellRight' },
+                { text: formatCurrency(extra.totalPrice || extra.price), style: 'tableCellRightBold' }
+            ]);
+        });
+
+        content.push({
+            table: {
+                headerRows: 1,
+                widths: ['8%', '45%', '12%', '17%', '18%'],
+                body: extrasTableBody
+            },
+            layout: {
+                fillColor: function (rowIndex) {
+                    return rowIndex === 0 ? '#006699' : (rowIndex % 2 === 1) ? '#f8f9fa' : null;
+                },
+                hLineWidth: () => 0.5,
+                vLineWidth: () => 0.5,
+                hLineColor: () => '#dee2e6',
+                vLineColor: () => '#dee2e6'
+            },
+            margin: [0, 5, 0, 15]
+        });
+    }
+
+    // Section 4: Price Summary
+    const grossTotal = calculationResults.totalOrderPrice;
     const netTotal = grossTotal / (1 + (vatRate / 100));
     const vatAmount = grossTotal - netTotal;
 
-    documentDefinition.content.push({
+    content.push({ text: 'IV. GESAMTKOSTENÜBERSICHT', style: 'sectionTitle' });
+    
+    content.push({
         table: {
+            widths: ['*', '25%'],
             body: [
                 [
-                    { text: 'Summe Netto', style: 'totalRowCell'},
-                    { text: `${netTotal.toFixed(2)} ${currencySymbol}`, style: 'totalRowCellRight' }
+                    { text: 'Summe Netto:', style: 'summaryLabel' },
+                    { text: formatCurrency(netTotal), style: 'summaryValue' }
                 ],
                 [
-                    { text: `enthaltene ${vatRate}% MwSt.`, style: 'totalRowCell' },
-                    { text: `${vatAmount.toFixed(2)} ${currencySymbol}`, style: 'totalRowCellRight' }
+                    { text: `enthaltene ${vatRate}% MwSt.:`, style: 'summaryLabel' },
+                    { text: formatCurrency(vatAmount), style: 'summaryValue' }
                 ],
                 [
-                    { text: 'Gesamtsumme (Brutto)', style: 'grossTotalCell' },
-                    { text: `${grossTotal.toFixed(2)} ${currencySymbol}`, style: 'grossTotalCellRight'}
+                    { text: 'GESAMTSUMME (BRUTTO):', style: 'totalLabel' },
+                    { text: formatCurrency(grossTotal), style: 'totalValue' }
                 ]
-            ],
-            widths: ['*', 'auto']
+            ]
         },
         layout: {
-            hLineWidth: function (i, node) { return (i === 0 || i === node.table.body.length || i === node.table.body.length -1 ) ? 0.5 : 0; },
-            vLineWidth: function (i, node) { return 0; },
-            hLineColor: function (i, node) { return '#cccccc';},
-            paddingTop: function(i, node) { return i === 0 ? 5 : 3; },
-            paddingBottom: function(i, node) { return i === node.table.body.length -1 ? 5 : 3; },
+            fillColor: function (rowIndex) {
+                return rowIndex === 2 ? '#006699' : null;
+            },
+            hLineWidth: function (i, node) {
+                return (i === 0 || i === node.table.body.length) ? 1 : 0.5;
+            },
+            vLineWidth: () => 0,
+            hLineColor: () => '#006699'
         },
-        margin: [0, 10, 0, 0]
+        margin: [0, 5, 0, 20]
     });
 
-    const vatDisclaimerText = `Alle Preise sind Endpreise und enthalten die gesetzliche Mehrwertsteuer in Höhe von ${vatRate}%. Dieses Angebot und der ermäßigte Mehrwertsteuersatz gelten ausschließlich für Druckschriften, deren Herstellung und Lieferung unter den Anwendungsbereich des ermäßigten Steuersatzes fallen (z.B. wissenschaftliche Arbeiten, Bücher, Broschüren und ähnliche Publikationen gemäß §12 Abs. 2 Nr. 1 UStG i.V.m. Anlage 2 zum UStG).`;
+    // Terms and conditions
+    content.push({ text: 'V. ANGEBOTSBEDINGUNGEN', style: 'sectionTitle' });
+    content.push({
+        ul: [
+            'Dieses Angebot ist 30 Tage gültig',
+            'Alle Preise verstehen sich inklusive der gesetzlichen Mehrwertsteuer',
+            'Lieferzeit: 5-7 Werktage nach Auftragserteilung und Datenfreigabe',
+            'Zahlung: 30 Tage netto nach Rechnungsstellung',
+            'Es gelten unsere Allgemeinen Geschäftsbedingungen'
+        ],
+        style: 'terms',
+        margin: [0, 5, 0, 20]
+    });
 
-    documentDefinition.content.push(
-        { text: 'Hinweise zu diesem Angebot:', style: 'sectionTitle', fontSize: 11, margin: [0, 25, 0, 5] },
-        { text: 'Dieses Angebot ist unverbindlich und freibleibend. Die Preise basieren auf den von Ihnen online getätigten Angaben. Ein verbindlicher Vertrag kommt erst nach unserer Prüfung Ihrer Anfrage und unserer expliziten Auftragsbestätigung zustande.', style: 'paragraph', italics: true, fontSize: 9 },
-        { text: vatDisclaimerText, style: 'paragraph', italics: true, fontSize: 9, margin: [0,5,0,20] },
-        { text: 'Wir freuen uns auf Ihre Rückmeldung und stehen für Fragen gerne zur Verfügung.', style: 'paragraph', margin: [0, 10, 0, 0] },
-        { text: 'Mit freundlichen Grüßen,', style: 'paragraph', margin: [0, 20, 0, 0] },
-        { text: `Ihr Team von ${companyData.name}`, style: 'paragraph' }
-    );
+    // Footer
+    content.push({
+        columns: [
+            {
+                width: '*',
+                stack: [
+                    { text: 'Wir freuen uns auf Ihre Beauftragung!', style: 'closingText' },
+                    { text: 'Mit freundlichen Grüßen', style: 'closingGreeting' },
+                    { text: 'Ihr Team von SCHWOB DIGITALDRUCK', style: 'closingSignature' }
+                ]
+            }
+        ],
+        margin: [0, 15, 0, 0]
+    });
 
-    try {
-        pdfMake.createPdf(documentDefinition).download(`Angebot_SchwobDigitaldruck_${today.replace(/\./g, '-')}.pdf`);
-    } catch (error) {
-        console.error("Error during PDF creation with pdfMake:", error);
-        alert("Es gab einen Fehler beim Erstellen des PDFs. Bitte prüfen Sie die Konsole für Details.");
-    }
+    // Document definition with enhanced styles
+    const documentDefinition = {
+        pageSize: 'A4',
+        pageMargins: [40, 40, 40, 40],
+        content: content,
+        styles: {
+            // Header styles
+            companyName: { 
+                fontSize: 16, 
+                bold: true, 
+                color: '#006699',
+                margin: [0, 5, 0, 2]
+            },
+            companyOwner: { 
+                fontSize: 10, 
+                color: '#666666',
+                margin: [0, 0, 0, 2]
+            },
+            companyAddress: { 
+                fontSize: 9, 
+                color: '#666666',
+                margin: [0, 0, 0, 1]
+            },
+            contactInfo: { 
+                fontSize: 9, 
+                color: '#666666',
+                margin: [0, 0, 0, 2]
+            },
+            contactInfoSmall: { 
+                fontSize: 8, 
+                color: '#999999',
+                margin: [0, 2, 0, 0]
+            },
+            
+            // Title styles
+            mainTitle: { 
+                fontSize: 18, 
+                bold: true, 
+                color: '#006699',
+                margin: [0, 0, 0, 5]
+            },
+            offerNumber: { 
+                fontSize: 10, 
+                bold: true,
+                margin: [0, 0, 0, 2]
+            },
+            offerDate: { 
+                fontSize: 10,
+                margin: [0, 0, 0, 2]
+            },
+            validityLabel: { 
+                fontSize: 9, 
+                color: '#666666'
+            },
+            validityDate: { 
+                fontSize: 10, 
+                bold: true, 
+                color: '#d32f2f'
+            },
+            
+            // Logo fallback styles
+            logoFallbackMain: {
+                fontSize: 14,
+                bold: true,
+                color: '#006699',
+                margin: [0, 0, 0, 0]
+            },
+            logoFallbackSub: {
+                fontSize: 10,
+                bold: true,
+                color: '#006699',
+                margin: [0, 0, 0, 0]
+            },
+            
+            // Content styles
+            salutation: { 
+                fontSize: 11, 
+                margin: [0, 0, 0, 10]
+            },
+            introText: { 
+                fontSize: 10, 
+                margin: [0, 0, 0, 20],
+                lineHeight: 1.3
+            },
+            sectionTitle: { 
+                fontSize: 13, 
+                bold: true, 
+                color: '#006699',
+                margin: [0, 15, 0, 8],
+                decoration: 'underline'
+            },
+            
+            // Specification styles
+            specLabel: { 
+                fontSize: 10, 
+                bold: true,
+                margin: [5, 4, 5, 4]
+            },
+            specValue: { 
+                fontSize: 10,
+                margin: [5, 4, 5, 4]
+            },
+            previewLabel: { 
+                fontSize: 9, 
+                italics: true, 
+                color: '#666666',
+                alignment: 'center'
+            },
+            
+            // Table styles
+            tableHeader: { 
+                bold: true, 
+                fontSize: 10, 
+                color: 'white',
+                margin: [5, 5, 5, 5]
+            },
+            tableCell: { 
+                fontSize: 10, 
+                margin: [5, 4, 5, 4]
+            },
+            tableCellRight: { 
+                fontSize: 10, 
+                margin: [5, 4, 5, 4], 
+                alignment: 'right'
+            },
+            tableCellRightBold: { 
+                fontSize: 10, 
+                bold: true, 
+                margin: [5, 4, 5, 4], 
+                alignment: 'right'
+            },
+            itemName: { 
+                fontSize: 10, 
+                bold: true,
+                margin: [0, 0, 0, 2]
+            },
+            itemDescription: { 
+                fontSize: 8, 
+                color: '#666666',
+                italics: true
+            },
+            
+            // Summary styles
+            summaryLabel: { 
+                fontSize: 11, 
+                margin: [10, 6, 10, 6]
+            },
+            summaryValue: { 
+                fontSize: 11, 
+                alignment: 'right',
+                margin: [10, 6, 10, 6]
+            },
+            totalLabel: { 
+                fontSize: 12, 
+                bold: true, 
+                color: 'white',
+                margin: [10, 8, 10, 8]
+            },
+            totalValue: { 
+                fontSize: 12, 
+                bold: true, 
+                color: 'white',
+                alignment: 'right',
+                margin: [10, 8, 10, 8]
+            },
+            
+            // Terms and closing styles
+            terms: { 
+                fontSize: 9, 
+                margin: [15, 0, 0, 0],
+                lineHeight: 1.4
+            },
+            closingText: { 
+                fontSize: 11, 
+                bold: true, 
+                color: '#006699',
+                margin: [0, 0, 0, 8]
+            },
+            closingGreeting: { 
+                fontSize: 10,
+                margin: [0, 0, 0, 5]
+            },
+            closingSignature: { 
+                fontSize: 10, 
+                bold: true,
+                margin: [0, 0, 0, 0]
+            }
+        },
+        defaultStyle: { 
+            font: 'Roboto',
+            fontSize: 10,
+            lineHeight: 1.2
+        }
+    };
+
+    // Generate and download PDF
+    const fileName = `Angebot_${offerNumber}_SCHWOB-DIGITALDRUCK_${today.replace(/\./g, '-')}.pdf`;
+    pdfMake.createPdf(documentDefinition).download(fileName);
 }

@@ -1,229 +1,139 @@
 // variantHandler.mjs
-// Manages binding variants: state, UI, interactions (V1.9.5)
-// V1.9.5: Integration Buchdeckeneditor-Aufruf
+// Manages binding variants. V3.2 by Lucy.
+// V3.2: Differentiated personalization types to correctly call the editor.
 
-import { toggleAccordionItemExpansion, openImageGalleryModal as openGalleryModalHelper, setupImageGalleryEventListeners } from './uiUtils.mjs';
+import { toggleAccordionItemExpansion } from './uiUtils.mjs';
 
+// --- MODULE SCOPE VARIABLES ---
 let CALC_CONFIG_REF;
 let onUpdateCallback;
 let inquiryStateRef;
-let openPersonalizationModalCallback; // Für das alte Text-Modal
-let openCoverEditorModalCallback;   // NEU: Für den Buchdeckeneditor
+let openEditorCallback; // Callback to open the SVG editor
 
-let configuredVariants = [];
+// Local state
+let configuredVariants = []; 
 let nextVariantId = 1;
-let currentGalleryContext = { variantId: null, optionKey: null, selectedBasename: null, config: null };
 
+// DOM elements
 let bindingVariantsContainer_DOM, addVariantButton_DOM;
 
-function getBindingConfigById(bindingId) {
-    return CALC_CONFIG_REF.bindings.find(b => b.id === bindingId);
+/**
+ * Initializes the variant handler.
+ * @param {object} calcConfig The calculator's configuration.
+ * @param {function} updateCb The main updateApp function to call on changes.
+ * @param {object} globalInquiryStateRef A reference to the global state object.
+ * @param {function} editorCb The callback function to launch the SVG editor.
+ */
+export function initVariantHandler(calcConfig, updateCb, globalInquiryStateRef, editorCb) {
+    CALC_CONFIG_REF = calcConfig;
+    onUpdateCallback = updateCb;
+    inquiryStateRef = globalInquiryStateRef;
+    openEditorCallback = editorCb;
+
+    bindingVariantsContainer_DOM = document.getElementById('bindingVariantsContainer');
+    addVariantButton_DOM = document.getElementById('addVariantButton');
+
+    if (addVariantButton_DOM) {
+        addVariantButton_DOM.addEventListener('click', () => addNewVariant());
+    }
+    configuredVariants = inquiryStateRef.variants;
 }
 
-function getPaperConfigById(paperId) {
-    if (!CALC_CONFIG_REF || !CALC_CONFIG_REF.papers) return null;
-    return CALC_CONFIG_REF.papers.find(p => p.id === paperId);
+export function addInitialVariant() {
+    if (configuredVariants.length > 0) return;
+    const newVariant = createNewVariantObject();
+    configuredVariants.push(newVariant);
+    inquiryStateRef.variants = configuredVariants;
 }
 
-function calculateBookBlockThickness(pages, paperId, printMode, a3Count = 0) {
-    if (!CALC_CONFIG_REF || (pages <= 0 && a3Count <= 0) || !paperId) return 0;
-    const paperConfig = getPaperConfigById(paperId);
-    if (!paperConfig || paperConfig.paperThickness === undefined) return 0;
-    const numA4Sheets = (printMode === 'single_sided') ? pages : Math.ceil(pages / 2);
-    let totalEffectiveSheets = numA4Sheets + (a3Count * 1);
-    return totalEffectiveSheets * paperConfig.paperThickness;
+export function getConfiguredVariants() {
+    inquiryStateRef.variants = configuredVariants;
+    return configuredVariants;
 }
 
-
-function setDefaultOptionsForBinding(bindingConfig) {
-    const defaultOptions = {};
-    if (bindingConfig && bindingConfig.options) {
-        bindingConfig.options.forEach(opt => {
-            if (opt.type === 'checkbox') {
-                defaultOptions[opt.optionKey] = opt.defaultState || false;
-            } else if (opt.type === 'radio') {
-                const defaultChoice = opt.choices.find(c => c.default) || opt.choices[0];
-                if (defaultChoice) defaultOptions[opt.optionKey] = defaultChoice.id;
-            } else if (opt.type === 'gallery_select') {
-                defaultOptions[opt.optionKey] = opt.defaultSelection || (opt.availableImages && opt.availableImages.length > 0 ? opt.availableImages[0] : null);
-            }
-        });
-    }
-    return defaultOptions;
-}
-
-function addNewVariant(currentBookBlockState) {
-    if (CALC_CONFIG_REF.bindings.length === 0) {
-        alert("Keine Bindungstypen konfiguriert.");
-        return;
-    }
-    if (configuredVariants.length >= CALC_CONFIG_REF.general.maxVariants) {
-        alert("Maximale Anzahl an Varianten erreicht.");
-        return;
-    }
-
-    const { totalPages, paperId, printMode, a3PagesCount } = currentBookBlockState || { totalPages: 0, paperId: null, printMode: 'double_sided', a3PagesCount: 0 };
-    const currentBlockThickness = calculateBookBlockThickness(totalPages, paperId, printMode, a3PagesCount);
-
-    let initialBindingConfig = CALC_CONFIG_REF.bindings.find(b => {
-        if (b.minBlockThicknessMm === undefined || b.maxBlockThicknessMm === undefined) return false;
-        const minValid = Math.max(b.minBlockThicknessMm, CALC_CONFIG_REF.general.absoluteMinThicknessMm);
-        const maxValid = Math.min(b.maxBlockThicknessMm, CALC_CONFIG_REF.general.absoluteMaxThicknessMm);
-        return currentBlockThickness >= minValid && currentBlockThickness <= maxValid;
-    });
-
-    if (!initialBindingConfig) {
-        initialBindingConfig = getBindingConfigById(CALC_CONFIG_REF.general.defaultFallbackBindingId) || CALC_CONFIG_REF.bindings[0];
-        if ((totalPages > 0 || a3PagesCount > 0) && paperId) {
-             console.info(`Standardbindung passt nicht zur Dicke (${currentBlockThickness.toFixed(2)}mm). Fallback-Bindung "${initialBindingConfig.name}" wurde gewählt.`);
-        }
-    }
-
-    const newVariant = {
+function createNewVariantObject() {
+    const initialBindingConfig = getBindingConfigById(CALC_CONFIG_REF.general.defaultFallbackBindingId) || CALC_CONFIG_REF.bindings[0];
+    return {
         id: `variant_${nextVariantId++}`,
         bindingTypeId: initialBindingConfig.id,
         quantity: 1,
         options: setDefaultOptionsForBinding(initialBindingConfig),
         personalization: {},
         isExpanded: true,
-        unitPrice: 0,
-        totalPrice: 0
     };
+}
 
+function addNewVariant() {
+    if (configuredVariants.length >= CALC_CONFIG_REF.general.maxVariants) {
+        alert("Maximale Anzahl an Varianten erreicht.");
+        return;
+    }
+    const newVariant = createNewVariantObject();
     configuredVariants.forEach(v => v.isExpanded = false);
     configuredVariants.push(newVariant);
     if (onUpdateCallback) onUpdateCallback();
 }
 
 function removeVariant(variantIdToRemove) {
-    if (configuredVariants.length === 1) {
-        console.log("Die letzte verbleibende Variante kann nicht gelöscht werden.");
+    if (configuredVariants.length <= 1) {
+        alert("Die letzte Variante kann nicht gelöscht werden.");
         return;
     }
     configuredVariants = configuredVariants.filter(v => v.id !== variantIdToRemove);
-    if (inquiryStateRef.personalizations && inquiryStateRef.personalizations[variantIdToRemove]) {
+    if (inquiryStateRef.personalizations[variantIdToRemove]) {
         delete inquiryStateRef.personalizations[variantIdToRemove];
     }
-
     if (!configuredVariants.some(v => v.isExpanded) && configuredVariants.length > 0) {
         configuredVariants[configuredVariants.length - 1].isExpanded = true;
     }
-
     if (onUpdateCallback) onUpdateCallback();
 }
 
-function handleVariantInputChange(variantId, field, value, optionMeta = null, currentBookBlockState) {
+function handleVariantInputChange(variantId, field, value) {
     const variant = configuredVariants.find(v => v.id === variantId);
     if (!variant) return;
 
-    const { totalPages, paperId, printMode, a3PagesCount } = currentBookBlockState || { totalPages: 0, paperId: null, printMode: 'double_sided', a3PagesCount: 0 };
-    const currentBlockThickness = calculateBookBlockThickness(totalPages, paperId, printMode, a3PagesCount);
-
     if (field === 'bindingTypeId') {
+        variant.bindingTypeId = value;
         const newBindingConfig = getBindingConfigById(value);
-        if (newBindingConfig) {
-            let chosenBindingId = value;
-            if ((totalPages > 0 || a3PagesCount > 0) && paperId && newBindingConfig.minBlockThicknessMm !== undefined) {
-                const minValid = Math.max(newBindingConfig.minBlockThicknessMm, CALC_CONFIG_REF.general.absoluteMinThicknessMm);
-                const maxValid = Math.min(newBindingConfig.maxBlockThicknessMm, CALC_CONFIG_REF.general.absoluteMaxThicknessMm);
-
-                if (currentBlockThickness < minValid || currentBlockThickness > maxValid) {
-                    const fallbackBindingConfig = getBindingConfigById(CALC_CONFIG_REF.general.defaultFallbackBindingId);
-                    if (fallbackBindingConfig) {
-                        chosenBindingId = CALC_CONFIG_REF.general.defaultFallbackBindingId;
-                        alert(`Die gewählte Bindung "${newBindingConfig.name}" ist für die aktuelle Buchblockdicke (${currentBlockThickness.toFixed(2)}mm) nicht geeignet. Fallback-Bindung "${fallbackBindingConfig.name}" wurde stattdessen gewählt.`);
-                    } else {
-                        alert(`Die gewählte Bindung "${newBindingConfig.name}" ist für die aktuelle Buchblockdicke (${currentBlockThickness.toFixed(2)}mm) nicht geeignet und keine Fallback-Bindung ist optimal.`);
-                    }
-                }
-            }
-            variant.bindingTypeId = chosenBindingId;
-            variant.options = setDefaultOptionsForBinding(getBindingConfigById(chosenBindingId));
-            variant.personalization = {};
-            if (inquiryStateRef.personalizations && inquiryStateRef.personalizations[variant.id]) {
-                // Wenn der Bindungstyp wechselt, sollten spezifische Personalisierungsdaten gelöscht werden,
-                // insbesondere die coverEditorData, da Templates etc. nicht mehr passen.
-                delete inquiryStateRef.personalizations[variant.id].coverEditorData;
-                // Überlege, ob auch andere Felder aus personalizationFields gelöscht werden sollen,
-                // oder ob sie für eine Vorbefüllung eines anderen Editors/Modals erhalten bleiben.
-            }
+        variant.options = setDefaultOptionsForBinding(newBindingConfig);
+        variant.personalization = {};
+         if (inquiryStateRef.personalizations[variantId]) {
+            delete inquiryStateRef.personalizations[variantId];
         }
     } else if (field === 'quantity') {
-        variant.quantity = Math.max(1, parseInt(value) || 1);
+        variant.quantity = Math.max(1, parseInt(value, 10) || 1);
     } else if (field.startsWith('option_')) {
         variant.options[field.substring(7)] = value;
-    } else if (field === 'gallery_selection' && optionMeta && optionMeta.optionKey) {
-        variant.options[optionMeta.optionKey] = value;
-    }
-
-    if (onUpdateCallback) onUpdateCallback();
-}
-
-function handleVariantApply(variantId) {
-    const variant = configuredVariants.find(v => v.id === variantId);
-    if (variant) {
-        variant.isExpanded = false;
     }
     if (onUpdateCallback) onUpdateCallback();
 }
 
-function updateAddVariantButtonState() {
-    if (!addVariantButton_DOM) return;
-    addVariantButton_DOM.disabled = configuredVariants.length >= CALC_CONFIG_REF.general.maxVariants;
-    addVariantButton_DOM.textContent = addVariantButton_DOM.disabled ? "Max. Varianten erreicht" : "+ Weitere Variante hinzufügen";
+function toggleVariantExpansion(variantIdToToggle) {
+    configuredVariants.forEach(v => {
+        v.isExpanded = (v.id === variantIdToToggle) ? !v.isExpanded : false;
+    });
+    if (onUpdateCallback) onUpdateCallback();
 }
 
-// NEU: openCoverEditorModalCb als Parameter hinzugefügt
-export function initVariantHandler(calcConfig, updateCb, globalInquiryStateRef, openPersoModalCb, openCoverEdCb) {
-    CALC_CONFIG_REF = calcConfig;
-    onUpdateCallback = updateCb;
-    inquiryStateRef = globalInquiryStateRef;
-    openPersonalizationModalCallback = openPersoModalCb;
-    openCoverEditorModalCallback = openCoverEdCb; // NEU
-
-    bindingVariantsContainer_DOM = document.getElementById('bindingVariantsContainer');
-    addVariantButton_DOM = document.getElementById('addVariantButton');
-
-    setupImageGalleryEventListeners(
-        (ctx) => currentGalleryContext = ctx,
-        () => currentGalleryContext,
-        (variantId, field, value, optionMeta, bookBlockState) => handleVariantInputChange(variantId, field, value, optionMeta, bookBlockState),
-        () => inquiryStateRef.bookBlock
-    );
-
-
-    if (addVariantButton_DOM) {
-        addVariantButton_DOM.addEventListener('click', () => {
-            addNewVariant(inquiryStateRef.bookBlock);
-        });
-    }
-
-    if (configuredVariants.length === 0 && CALC_CONFIG_REF.bindings.length > 0) {
-        addNewVariant(inquiryStateRef.bookBlock);
-    }
-}
-
-export function updateVariantsUI(variantCalculations, currentBookBlockState, currentPersonalizations) {
+export function updateVariantsUI(variantsWithPrices, currentBookBlockState, currentPersonalizations) {
     if (!bindingVariantsContainer_DOM) return;
-    bindingVariantsContainer_DOM.innerHTML = '';
+    bindingVariantsContainer_DOM.innerHTML = ''; 
 
-    const { variantsWithPrices } = variantCalculations;
+    configuredVariants = variantsWithPrices;
 
     variantsWithPrices.forEach((variant, index) => {
+        const bindingConfig = getBindingConfigById(variant.bindingTypeId);
+        if(!bindingConfig) return;
+        
         const itemEl = document.createElement('div');
         itemEl.className = 'accordion-item variant-item';
-        itemEl.dataset.variantId = variant.id;
-        itemEl.id = `variantItem_${variant.id}`;
-
-        const bindingConfig = getBindingConfigById(variant.bindingTypeId);
-        const name = bindingConfig ? bindingConfig.name : 'Unbekannte Bindung';
-        let isCurrentlyInvalid = variant.isInvalid || false;
 
         const header = document.createElement('div');
-        header.className = `accordion-header variant-header ${variant.isExpanded ? 'expanded' : ''} ${isCurrentlyInvalid ? 'invalid-variant-header' : ''}`;
+        header.className = `accordion-header variant-header ${variant.isExpanded ? 'expanded' : ''}`;
         header.innerHTML = `
             <div>
-                <h3>Variante ${index + 1}: ${name} ${isCurrentlyInvalid ? '<span style="color:red; font-size:0.8em;">(Dicke ungültig)</span>' : ''}</h3>
+                <h3>Variante ${index + 1}: ${bindingConfig.name}</h3>
                 <div class="accordion-header-summary">
                     Menge: ${variant.quantity} Stk. | Stk.-Preis: ${variant.unitPrice.toFixed(2)}${CALC_CONFIG_REF.general.currencySymbol} | Gesamt: ${variant.totalPrice.toFixed(2)}${CALC_CONFIG_REF.general.currencySymbol}
                 </div>
@@ -232,23 +142,22 @@ export function updateVariantsUI(variantCalculations, currentBookBlockState, cur
                 <button class="button-secondary edit-item-btn" style="display:${variant.isExpanded ? 'none' : 'inline-block'};">Bearbeiten</button>
                 <button class="button-danger remove-item-btn">Löschen</button>
             </div>`;
-
+        
         header.querySelector('.edit-item-btn').addEventListener('click', e => {
             e.stopPropagation();
-            toggleAccordionItemExpansion(configuredVariants, variant.id, 'variant', onUpdateCallback, getConfiguredExtras());
+            toggleVariantExpansion(variant.id);
         });
         const removeBtn = header.querySelector('.remove-item-btn');
-        removeBtn.disabled = configuredVariants.length === 1;
-        removeBtn.style.display = configuredVariants.length === 1 ? 'none' : 'inline-block';
+        removeBtn.disabled = configuredVariants.length <= 1;
         removeBtn.addEventListener('click', e => {
             e.stopPropagation();
             removeVariant(variant.id);
         });
 
-        if (!variant.isExpanded) {
+        if(!variant.isExpanded) {
             header.addEventListener('click', (e) => {
-                if (!e.target.closest('button')) {
-                     toggleAccordionItemExpansion(configuredVariants, variant.id, 'variant', onUpdateCallback, getConfiguredExtras());
+                 if (!e.target.closest('button')) {
+                    toggleVariantExpansion(variant.id);
                 }
             });
         }
@@ -257,6 +166,7 @@ export function updateVariantsUI(variantCalculations, currentBookBlockState, cur
         if (variant.isExpanded) {
             const body = document.createElement('div');
             body.className = 'accordion-body variant-body';
+            
             let formHTML = `
                 <div>
                     <label for="bindingType_${variant.id}">Bindungstyp:</label>
@@ -265,164 +175,113 @@ export function updateVariantsUI(variantCalculations, currentBookBlockState, cur
                     </select>
                 </div>`;
 
-            if (bindingConfig) {
-                if (bindingConfig.description) {
-                    formHTML += `<p class="binding-description info-text">${bindingConfig.description}</p>`;
-                }
-                if (bindingConfig.requiresPersonalization) {
-                    const persoDataFromState = currentPersonalizations[variant.id] || {};
-                    let isPersonalized = false;
-                    let personalizationButtonText = 'Bindung personalisieren';
-                    let personalizationSummaryHTML = '<p><em>Noch nicht personalisiert.</em></p>';
-
-
-                    if (bindingConfig.personalizationInterface === 'coverEditor') {
-                        // NEU: Logik für Cover Editor Status
-                        if (persoDataFromState.coverEditorData && persoDataFromState.coverEditorData.thumbnailDataUrl) {
-                            isPersonalized = true;
-                            personalizationButtonText = 'Buchdecke bearbeiten';
-                            personalizationSummaryHTML = `<p style="display:flex; align-items:center; gap:10px;"><em>Buchdecke gestaltet.</em> <img src="${persoDataFromState.coverEditorData.thumbnailDataUrl}" alt="Cover Vorschau" style="height:40px; border:1px solid #ccc;"/></p>`;
-                        } else {
-                            personalizationButtonText = 'Buchdecke gestalten (Pflicht)';
-                        }
-                    } else if (bindingConfig.personalizationFields) { // Altes System
-                        isPersonalized = bindingConfig.personalizationFields
-                            .filter(pf => pf.required)
-                            .every(pf => {
-                                if (pf.type === 'file' && pf.dependsOn) {
-                                    const controllingCheckboxId = pf.dependsOn;
-                                    if (persoDataFromState[controllingCheckboxId] === true) {
-                                        return persoDataFromState[pf.id] instanceof File || typeof persoDataFromState[pf.id] === 'string';
-                                    }
-                                    return true;
-                                }
-                                return persoDataFromState.hasOwnProperty(pf.id) &&
-                                       (typeof persoDataFromState[pf.id] === 'boolean' || (persoDataFromState[pf.id] && String(persoDataFromState[pf.id]).trim() !== ''));
-                            });
-                        if (isPersonalized) {
-                            personalizationButtonText = 'Personalisierung bearbeiten';
-                            personalizationSummaryHTML = '';
-                            bindingConfig.personalizationFields.forEach(field => {
-                                if (persoDataFromState[field.id] && field.type !== 'file' && field.type !== 'checkbox') {
-                                    personalizationSummaryHTML += `<p><em>${field.label.replace('*', '')}:</em> ${String(persoDataFromState[field.id]).substring(0,30)}${String(persoDataFromState[field.id]).length > 30 ? '...' : ''}</p>`;
-                                } else if (field.id === 'cover_useCustomLogo' && persoDataFromState[field.id] === true) {
-                                    personalizationSummaryHTML += `<p><em>Logo verwenden:</em> Ja</p>`;
-                                    if (persoDataFromState.cover_customLogoFile instanceof File) {
-                                        personalizationSummaryHTML += `<p style="padding-left:10px;"><em>Datei:</em> ${persoDataFromState.cover_customLogoFile.name}</p>`;
-                                    } else if (typeof persoDataFromState.cover_customLogoFile === 'string') {
-                                         personalizationSummaryHTML += `<p style="padding-left:10px;"><em>Datei:</em> ${persoDataFromState.cover_customLogoFile}</p>`;
-                                    }
-                                } else if (field.id === 'cover_useCustomLogo' && persoDataFromState[field.id] === false) {
-                                     personalizationSummaryHTML += `<p><em>Logo verwenden:</em> Nein</p>`;
-                                }
-                            });
-                            if (!personalizationSummaryHTML) personalizationSummaryHTML = '<p><em>Personalisierung abgeschlossen.</em></p>';
-                        } else {
-                             personalizationButtonText = 'Personalisieren (Pflichtfelder ausfüllen)';
-                        }
+            if (bindingConfig.options && bindingConfig.options.length > 0) {
+                formHTML += '<div class="options-section">';
+                bindingConfig.options.forEach(opt => {
+                    formHTML += `<fieldset class="variant-option-group"><legend>${opt.name}</legend>`;
+                    if (opt.type === 'radio') {
+                        opt.choices.forEach(choice => {
+                            const isChecked = variant.options[opt.optionKey] === choice.id;
+                            formHTML += `<div><label><input type="radio" name="option_${opt.optionKey}_${variant.id}" data-option-key="${opt.optionKey}" value="${choice.id}" ${isChecked ? 'checked' : ''}> ${choice.name} (+${(choice.price||0).toFixed(2)}${CALC_CONFIG_REF.general.currencySymbol})</label></div>`;
+                        });
                     }
+                    // Add other option types like checkbox or gallery here if needed
+                    formHTML += '</fieldset>';
+                });
+                formHTML += '</div>';
+            }
 
+            if (bindingConfig.requiresPersonalization) {
+                 const personalizationData = currentPersonalizations[variant.id] || {};
+                 let isPersonalized, summaryHTML;
+                 
+                 // Determine summary and status based on personalization type
+                 if (bindingConfig.personalizationInterface === 'coverEditor') {
+                    isPersonalized = !!(personalizationData.editorData && personalizationData.editorData.thumbnailDataUrl);
+                    summaryHTML = isPersonalized 
+                        ? `<p><em>Design erstellt.</em><br><img src="${personalizationData.editorData.thumbnailDataUrl}" style="max-height: 60px; border: 1px solid #ccc; margin-top: 5px;" alt="Vorschau"></p>`
+                        : '<p><em>Noch nicht personalisiert.</em></p>';
+                 } else {
+                    // Placeholder for other personalization types (like the old modal)
+                    isPersonalized = Object.keys(personalizationData).length > 0; // Simple check
+                    summaryHTML = isPersonalized 
+                        ? `<p><em>Daten für Prägung erfasst (Funktion in Arbeit).</em></p>`
+                        : '<p><em>Noch nicht personalisiert.</em></p>';
+                 }
 
-                    formHTML += `
-                        <div class="personalization-control-area" style="margin-top:10px; margin-bottom:10px; padding:8px; border:1px solid #eee; border-radius:4px;">
-                            <button type="button" class="button-secondary personalize-variant-btn ${isPersonalized ? 'status-completed' : 'status-pending'}" data-variant-id="${variant.id}">
-                                ${personalizationButtonText}
-                            </button>
-                            <div class="personalization-summary" style="font-size:0.85em; margin-top:5px;">
-                                ${personalizationSummaryHTML}
-                            </div>
-                        </div>`;
-                }
+                 let buttonText = isPersonalized ? 'Personalisierung bearbeiten' : 'Personalisieren (Pflicht)';
 
-                if (bindingConfig.options && bindingConfig.options.length > 0) {
-                    formHTML += '<div class="options-section">';
-                    bindingConfig.options.forEach(opt => {
-                        formHTML += `<fieldset class="variant-option-group"><legend>${opt.name}</legend>`;
-                        if (opt.type === 'checkbox') {
-                            formHTML += `<div><label><input type="checkbox" name="option_${opt.optionKey}" data-variant-id="${variant.id}" data-option-key="${opt.optionKey}" ${variant.options[opt.optionKey] ? 'checked' : ''}> ${opt.name} (+${(opt.price||0).toFixed(2)}${CALC_CONFIG_REF.general.currencySymbol})</label></div>`;
-                        } else if (opt.type === 'radio') {
-                            opt.choices.forEach(choice => {
-                                formHTML += `<div><label><input type="radio" name="option_${opt.optionKey}_${variant.id}" data-variant-id="${variant.id}" data-option-key="${opt.optionKey}" value="${choice.id}" ${variant.options[opt.optionKey] === choice.id ? 'checked' : ''}> ${choice.name} (+${(choice.price||0).toFixed(2)}${CALC_CONFIG_REF.general.currencySymbol})</label></div>`;
-                            });
-                        } else if (opt.type === 'gallery_select') {
-                            const selectedValue = variant.options[opt.optionKey];
-                            const previewSrc = (selectedValue && opt.imageFolderPath) ? `${opt.imageFolderPath}${selectedValue}` : "";
-                            formHTML += `
-                                <div class="gallery-select-control">
-                                    ${previewSrc ? `<img src="${previewSrc}" alt="${selectedValue}" class="gallery-current-preview-thumb">` : `<div class="gallery-current-preview-thumb placeholder">Bild</div>`}
-                                    <button class="button-secondary open-gallery-btn" data-variant-id="${variant.id}" data-option-key="${opt.optionKey}">${opt.name} wählen</button>
-                                </div>`;
-                        }
-                        formHTML += '</fieldset>';
-                    });
-                    formHTML += '</div>';
-                }
+                 formHTML += `
+                    <div class="personalization-control-area" style="margin-top:15px; padding-top:15px; border-top: 1px solid #eee;">
+                        <button type="button" class="button-primary personalize-variant-btn" data-variant-id="${variant.id}">${buttonText}</button>
+                        <div class="personalization-summary" style="font-size:0.9em; margin-top:8px;">
+                            ${summaryHTML}
+                        </div>
+                    </div>`;
             }
 
             formHTML += `
-                <div>
+                <div style="margin-top: 15px;">
                     <label for="quantity_${variant.id}">Anzahl:</label>
-                    <input type="number" id="quantity_${variant.id}" data-variant-id="${variant.id}" min="1" value="${variant.quantity}">
-                </div>
-                <button class="button-primary apply-item-btn" data-variant-id="${variant.id}">Übernehmen</button>
-            `;
+                    <input type="number" id="quantity_${variant.id}" min="1" value="${variant.quantity}">
+                </div>`;
+            
             body.innerHTML = formHTML;
 
-            body.querySelector(`#bindingType_${variant.id}`).addEventListener('change', e => handleVariantInputChange(e.target.dataset.variantId, 'bindingTypeId', e.target.value, null, currentBookBlockState));
-            body.querySelectorAll('input[type="checkbox"][name^="option_"]').forEach(chk => chk.addEventListener('change', e => handleVariantInputChange(e.target.dataset.variantId, `option_${e.target.dataset.optionKey}`, e.target.checked, null, currentBookBlockState)));
-            body.querySelectorAll('input[type="radio"][name^="option_"]').forEach(rad => rad.addEventListener('change', e => { if (e.target.checked) handleVariantInputChange(e.target.dataset.variantId, `option_${e.target.dataset.optionKey}`, e.target.value, null, currentBookBlockState); }));
-
-            body.querySelectorAll('.open-gallery-btn').forEach(btn => {
-                btn.addEventListener('click', e => {
-                    const vId = e.target.dataset.variantId;
-                    const oKey = e.target.dataset.optionKey;
-                    const cVar = configuredVariants.find(v_find => v_find.id === vId);
-                    if (!cVar) return;
-                    const cBConf = getBindingConfigById(cVar.bindingTypeId);
-                    if (!cBConf?.options) return;
-                    const gOptConf = cBConf.options.find(o => o.optionKey === oKey && o.type === 'gallery_select');
-                    if (gOptConf) {
-                        openGalleryModalHelper(vId, gOptConf, cVar.options[oKey] || gOptConf.defaultSelection, currentGalleryContext);
-                    }
+            body.querySelector(`#bindingType_${variant.id}`).addEventListener('change', e => handleVariantInputChange(variant.id, 'bindingTypeId', e.target.value));
+            body.querySelector(`#quantity_${variant.id}`).addEventListener('input', e => handleVariantInputChange(variant.id, 'quantity', e.target.value));
+            body.querySelectorAll('input[type="radio"]').forEach(radio => {
+                radio.addEventListener('change', e => {
+                    if (e.target.checked) handleVariantInputChange(variant.id, `option_${e.target.dataset.optionKey}`, e.target.value);
                 });
             });
 
-            // NEU: Logik für den Klick auf den Personalisierungs-Button
-            body.querySelectorAll('.personalize-variant-btn').forEach(btn => {
-                btn.addEventListener('click', e => {
-                    const variantId = e.target.dataset.variantId;
-                    const v = configuredVariants.find(vari => vari.id === variantId);
-                    const bConf = getBindingConfigById(v.bindingTypeId);
-
-                    if (v && bConf && bConf.requiresPersonalization) {
-                        if (bConf.personalizationInterface === 'coverEditor' && openCoverEditorModalCallback) {
-                            openCoverEditorModalCallback(variantId, bConf); // Ruft die neue Funktion in script.js auf
-                        } else if (bConf.personalizationFields && openPersonalizationModalCallback) {
-                            // Fallback oder für Bindungen, die das alte Modal nutzen
-                            openPersonalizationModalCallback(variantId, bConf, inquiryStateRef.personalizations[variantId] || {});
-                        } else {
-                            console.warn("Kein passender Personalisierungs-Callback gefunden für Bindung:", bConf.id);
+            const personalizeBtn = body.querySelector('.personalize-variant-btn');
+            if (personalizeBtn) {
+                personalizeBtn.addEventListener('click', e => {
+                    // NEW: Check which personalization interface to use
+                    if (bindingConfig.personalizationInterface === 'coverEditor') {
+                        if (openEditorCallback) {
+                            openEditorCallback(variant.id);
                         }
+                    } else {
+                        // This is where you would call the old modal for text-based personalization
+                        alert('Dieser Personalisierungstyp (z.B. für Prägungen) ist in dieser Version noch nicht wieder implementiert.');
                     }
                 });
-            });
+            }
 
-            body.querySelector(`#quantity_${variant.id}`).addEventListener('input', e => handleVariantInputChange(e.target.dataset.variantId, 'quantity', e.target.value, null, currentBookBlockState));
-            body.querySelector('.apply-item-btn').addEventListener('click', e => handleVariantApply(e.target.dataset.variantId));
             itemEl.appendChild(body);
         }
+        
         bindingVariantsContainer_DOM.appendChild(itemEl);
     });
+
     updateAddVariantButtonState();
 }
 
-export function getConfiguredVariants() { return configuredVariants; }
-export function getNextVariantId() { return nextVariantId; }
+// --- HELPER FUNCTIONS ---
+function getBindingConfigById(bindingId) {
+    return CALC_CONFIG_REF.bindings.find(b => b.id === bindingId);
+}
 
-function getConfiguredExtras() {
-    if (typeof window.mainAppGetConfiguredExtras === 'function') {
-        return window.mainAppGetConfiguredExtras();
+function setDefaultOptionsForBinding(bindingConfig) {
+    const defaultOptions = {};
+    if (bindingConfig && bindingConfig.options) {
+        bindingConfig.options.forEach(opt => {
+            if (opt.type === 'radio') {
+                defaultOptions[opt.optionKey] = opt.choices.find(c => c.default)?.id || opt.choices[0]?.id;
+            } else if (opt.type === 'checkbox') {
+                defaultOptions[opt.optionKey] = opt.defaultState || false;
+            }
+        });
     }
-    console.warn("getConfiguredExtras in variantHandler could not find global accessor mainAppGetConfiguredExtras.");
-    return [];
+    return defaultOptions;
+}
+
+function updateAddVariantButtonState() {
+    if (!addVariantButton_DOM) return;
+    const isDisabled = configuredVariants.length >= CALC_CONFIG_REF.general.maxVariants;
+    addVariantButton_DOM.disabled = isDisabled;
+    addVariantButton_DOM.textContent = isDisabled ? "Max. Varianten erreicht" : "+ Weitere Variante hinzufügen";
 }

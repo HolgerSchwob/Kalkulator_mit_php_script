@@ -1,0 +1,247 @@
+// script.js
+// Orchestrates the entire calculator application. V2.6 by Lucy.
+// V2.6: Integrated mobileUIHandler for responsive cart functionality.
+
+// --- MODULE IMPORTS ---
+import { initVariantHandler, updateVariantsUI, getConfiguredVariants, addInitialVariant } from './variantHandler.mjs';
+import { initExtrasHandler, updateExtrasUI, getConfiguredExtras } from './extrasHandler.mjs';
+import { initPdfHandler } from './pdfHandler.mjs';
+import { initMobileUIHandler, updateMobileCartUI } from './mobileUIHandler.mjs'; // <-- NEU
+import { calculateVariantPrices, calculateExtrasPrices, calculateTotalOrderPrice, calculateBookBlockThickness, calculateBookBlockPrice } from './priceCalculator.mjs';
+import { initUiUtils } from './uiUtils.mjs';
+import { GlobalWorkerOptions } from './pdf.mjs';
+
+// --- GLOBAL STATE & CONFIGURATION ---
+let CALC_CONFIG;
+let inquiryState = {
+    bookBlock: {
+        totalPages: 50,
+        paperId: null,
+        printMode: 'double_sided',
+        hasA3Pages: false,
+        a3PagesCount: 0,
+        mainPdfFile: null,
+        firstPagePreviewUrl: null,
+    },
+    variants: [],
+    extras: [],
+    production: {
+        productionTimeId: null,
+        deliveryMethodId: null,
+    },
+    personalizations: {},
+    customer: {}
+};
+
+// --- DOM ELEMENT REFERENCES ---
+const DOM = {
+    totalPagesInput: document.getElementById('totalPages'),
+    printModeRadios: document.querySelectorAll('input[name="printMode"]'),
+    bookBlockOptionsContainer: document.getElementById('bookBlockOptionsContainer'),
+    bookBlockThicknessInfo: document.getElementById('bookBlockThicknessInfo'),
+    hasA3PagesCheckbox: document.getElementById('hasA3Pages'),
+    a3PagesCountContainer: document.getElementById('a3PagesCountContainer'),
+    a3PagesCountInput: document.getElementById('a3PagesCount'),
+    cartItemsContainerDesktop: document.getElementById('cartItemsContainerDesktop'),
+    orderTotalDesktop: document.getElementById('orderTotalDesktop'),
+    addExtraButton: document.getElementById('addExtraButton'),
+    uploadAndAnalyzePdfBtn: document.getElementById('uploadAndAnalyzePdfBtn'),
+};
+
+/**
+ * Main application update function.
+ */
+function updateApp() {
+    if (!CALC_CONFIG) return;
+    console.log("🔥 updateApp triggered. Current state:", JSON.parse(JSON.stringify(inquiryState)));
+
+    inquiryState.variants = getConfiguredVariants();
+    inquiryState.extras = getConfiguredExtras();
+
+    const { variantsWithPrices } = calculateVariantPrices(inquiryState, CALC_CONFIG);
+    const { extrasWithPrices } = calculateExtrasPrices(inquiryState, CALC_CONFIG);
+    const bookBlockWithPrice = calculateBookBlockPrice(inquiryState.bookBlock, CALC_CONFIG);
+    const totalOrderPrice = calculateTotalOrderPrice(variantsWithPrices, bookBlockWithPrice, extrasWithPrices, inquiryState, CALC_CONFIG);
+    const bookBlockThickness = calculateBookBlockThickness(inquiryState.bookBlock, CALC_CONFIG);
+
+    updateVariantsUI(variantsWithPrices, inquiryState.bookBlock, inquiryState.personalizations);
+    updateExtrasUI(extrasWithPrices);
+    updateCartUI(variantsWithPrices, bookBlockWithPrice, extrasWithPrices, totalOrderPrice);
+    updateBookBlockUI(bookBlockThickness);
+}
+
+/**
+ * Updates UI elements within the book block section itself.
+ */
+function updateBookBlockUI(thickness) {
+    if (DOM.bookBlockThicknessInfo) {
+        if (thickness > 0) {
+            DOM.bookBlockThicknessInfo.textContent = `Geschätzte Buchblockdicke: ${thickness.toFixed(2)} mm`;
+            DOM.bookBlockThicknessInfo.classList.remove('error-text');
+        } else {
+            DOM.bookBlockThicknessInfo.textContent = 'Bitte Seitenzahl und Papier wählen für Dickenabschätzung.';
+            DOM.bookBlockThicknessInfo.classList.add('error-text');
+        }
+    }
+    DOM.totalPagesInput.value = inquiryState.bookBlock.totalPages;
+    DOM.a3PagesCountInput.value = inquiryState.bookBlock.a3PagesCount;
+    DOM.hasA3PagesCheckbox.checked = inquiryState.bookBlock.hasA3Pages;
+    DOM.a3PagesCountContainer.classList.toggle('hidden', !inquiryState.bookBlock.hasA3Pages);
+}
+
+/**
+ * Renders dynamic options for the book block.
+ */
+function renderBookBlockOptions() {
+    let paperOptionsHTML = `<fieldset class="bookblock-options-group"><legend>Papiersorte (A4)</legend>`;
+    CALC_CONFIG.papers.forEach(paper => {
+        const isChecked = paper.id === inquiryState.bookBlock.paperId;
+        paperOptionsHTML += `<div><label>
+                                <input type="radio" name="paperType" value="${paper.id}" ${isChecked ? 'checked' : ''}>
+                                ${paper.name}
+                             </label></div>`;
+    });
+    paperOptionsHTML += '</fieldset>';
+    DOM.bookBlockOptionsContainer.innerHTML = paperOptionsHTML;
+}
+
+/**
+ * Updates the shopping cart / calculation summary view for both desktop and mobile.
+ */
+function updateCartUI(variantsWithPrices, bookBlockWithPrice, extrasWithPrices, totalOrderPrice) {
+    let thumbnailHTML = '';
+    if (inquiryState.bookBlock.firstPagePreviewUrl) {
+        thumbnailHTML = `<img src="${inquiryState.bookBlock.firstPagePreviewUrl}" alt="Vorschau der ersten Seite" class="cart-item-binding-thumbnail">`;
+    }
+
+    let cartItemsHTML = '<h4>Buchblock</h4>';
+    cartItemsHTML += `<div class="cart-bookblock-info" style="display: flex; align-items: flex-start; gap: 15px;">
+                ${thumbnailHTML}
+                <div>
+                    <p>Seiten: ${bookBlockWithPrice.totalPages} A4, ${inquiryState.bookBlock.a3PagesCount} A3</p>
+                    <p>Papier: ${bookBlockWithPrice.paperName}</p>
+                    <p>Preis: ${bookBlockWithPrice.price.toFixed(2)} ${CALC_CONFIG.general.currencySymbol}</p>
+                </div>
+             </div>`;
+    
+    cartItemsHTML += '<h4>Bindungen</h4>';
+    variantsWithPrices.forEach((variant, index) => {
+        cartItemsHTML += `<div class="cart-item">
+                    <p><strong>Variante ${index + 1}: ${variant.name}</strong> (x${variant.quantity})</p>
+                    <div class="variant-item-details"><p class="item-price">Gesamt: ${variant.totalPrice.toFixed(2)} ${CALC_CONFIG.general.currencySymbol}</p></div>
+                </div>`;
+    });
+
+    if (extrasWithPrices.length > 0) {
+        cartItemsHTML += '<h4>Extras</h4>';
+        extrasWithPrices.forEach(extra => {
+             cartItemsHTML += `<div class="cart-item">
+                        <p><strong>${extra.name}</strong> (x${extra.quantity})</p>
+                        <div class="extra-item-details"><p class="item-price">Gesamt: ${extra.totalPrice.toFixed(2)} ${CALC_CONFIG.general.currencySymbol}</p></div>
+                    </div>`;
+        });
+    }
+    
+    // Update Desktop UI
+    if (DOM.cartItemsContainerDesktop) DOM.cartItemsContainerDesktop.innerHTML = cartItemsHTML;
+    if (DOM.orderTotalDesktop) DOM.orderTotalDesktop.textContent = totalOrderPrice.toFixed(2);
+    
+    // Update Mobile UI via the handler
+    updateMobileCartUI(cartItemsHTML, totalOrderPrice, CALC_CONFIG.general.currencySymbol);
+}
+
+
+/**
+ * Callback function to handle the data coming from the PDF handler.
+ */
+function handlePdfAnalysisApply(analysisData) {
+    console.log("Received data from PDF Handler:", analysisData);
+    
+    inquiryState.bookBlock.totalPages = analysisData.calculatedA4Pages;
+    inquiryState.bookBlock.a3PagesCount = analysisData.a3PageCount;
+    inquiryState.bookBlock.hasA3Pages = analysisData.a3PageCount > 0;
+    inquiryState.bookBlock.mainPdfFile = analysisData.fileObject;
+    inquiryState.bookBlock.firstPagePreviewUrl = analysisData.firstPagePreviewDataURL;
+
+    updateApp();
+}
+
+/**
+ * Binds event listeners to the main application controls.
+ */
+function bindEventListeners() {
+    DOM.totalPagesInput.addEventListener('input', (e) => {
+        inquiryState.bookBlock.totalPages = parseInt(e.target.value, 10) || 0;
+        updateApp();
+    });
+
+    DOM.printModeRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            inquiryState.bookBlock.printMode = e.target.value;
+            updateApp();
+        });
+    });
+
+    DOM.bookBlockOptionsContainer.addEventListener('change', (e) => {
+        if (e.target.name === 'paperType') {
+            inquiryState.bookBlock.paperId = e.target.value;
+            updateApp();
+        }
+    });
+
+    DOM.hasA3PagesCheckbox.addEventListener('change', (e) => {
+        inquiryState.bookBlock.hasA3Pages = e.target.checked;
+        if (!e.target.checked) {
+            inquiryState.bookBlock.a3PagesCount = 0;
+        }
+        updateApp();
+    });
+
+    DOM.a3PagesCountInput.addEventListener('input', (e) => {
+        inquiryState.bookBlock.a3PagesCount = parseInt(e.target.value, 10) || 0;
+        if(inquiryState.bookBlock.a3PagesCount > 0) {
+            inquiryState.bookBlock.hasA3Pages = true;
+        }
+        updateApp();
+    });
+}
+
+/**
+ * Initializes the entire application.
+ */
+async function initApp() {
+    GlobalWorkerOptions.workerSrc = `./pdf.worker.mjs`;
+
+    try {
+        const response = await fetch('./config.json');
+        if (!response.ok) throw new Error(`Failed to load config.json: ${response.statusText}`);
+        CALC_CONFIG = await response.json();
+        console.log("✅ Configuration loaded successfully.");
+
+        if (CALC_CONFIG.papers.length > 0) {
+            inquiryState.bookBlock.paperId = CALC_CONFIG.papers[0].id;
+        }
+        inquiryState.production.productionTimeId = CALC_CONFIG.productionAndDelivery.productionTimes.find(p => p.default)?.id;
+        inquiryState.production.deliveryMethodId = CALC_CONFIG.productionAndDelivery.deliveryMethods.find(d => d.default)?.id;
+
+        renderBookBlockOptions();
+        
+        initVariantHandler(CALC_CONFIG, updateApp, inquiryState);
+        initExtrasHandler(CALC_CONFIG, updateApp, inquiryState);
+        initPdfHandler(handlePdfAnalysisApply);
+        initMobileUIHandler(); // <-- NEU
+
+        addInitialVariant(); 
+        bindEventListeners();
+        updateApp();
+        
+        console.log("🚀 Application initialized successfully.");
+
+    } catch (error) {
+        console.error("❌ Fatal Error during app initialization:", error);
+        document.body.innerHTML = `<div style="padding: 20px; text-align: center; color: red;"><h1>Fehler bei der Initialisierung</h1><p>Anwendung konnte nicht gestartet werden.</p><p><em>${error.message}</em></p></div>`;
+    }
+}
+
+// --- APP START ---
+document.addEventListener('DOMContentLoaded', initApp);

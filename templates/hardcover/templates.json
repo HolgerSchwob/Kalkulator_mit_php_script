@@ -1,0 +1,17 @@
+{
+  "description": "Liste der verfügbaren Hardcover-Templates. Hier werden neue Designs eingetragen.",
+  "templates": [
+    {
+      "file": "Template_Wave1_production.svg",
+      "name": "Template_Wave1_production"
+    },
+    {
+      "file": "Template_Wave2_production.svg",
+      "name": "Template_Wave2_production"
+    },
+    {
+      "file": "Template_Wave3_production.svg",
+      "name": "Template_Wave3_production"
+    }
+  ]
+}

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="de" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projektdokumentation: Kalkulator 2.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        code, pre {
+            font-family: 'Roboto Mono', monospace;
+        }
+
+        .gradient-text {
+            background: linear-gradient(to right, #6366F1, #A855F7, #EC4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .content-section h2 {
+            position: relative;
+            padding-bottom: 0.75rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .content-section h2::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100px;
+            height: 2px;
+            background: #6366F1;
+        }
+
+        .nav-link.active {
+            background-color: #4F46E5;
+            color: white;
+            font-weight: 600;
+        }
+
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div class="flex">
+        <!-- Sticky Sidebar Navigation -->
+        <aside class="sticky top-0 h-screen w-64 bg-slate-900 text-white flex-shrink-0 overflow-y-auto">
+            <div class="p-6">
+                <h1 class="text-xl font-bold">Kalkulator 2.0</h1>
+                <p class="text-xs text-slate-400">Projektdokumentation</p>
+            </div>
+            <nav id="main-nav" class="px-4 space-y-2">
+                <a href="#section-abstract" class="nav-link flex items-center px-4 py-2 text-sm rounded-md text-slate-300 hover:bg-slate-700">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Abstract & Vision
+                </a>
+                <a href="#section-workflow" class="nav-link flex items-center px-4 py-2 text-sm rounded-md text-slate-300 hover:bg-slate-700">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                    Kunden-Workflow
+                </a>
+                <a href="#section-architektur" class="nav-link flex items-center px-4 py-2 text-sm rounded-md text-slate-300 hover:bg-slate-700">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    Technische Architektur
+                </a>
+                <a href="#section-config" class="nav-link flex items-center px-4 py-2 text-sm rounded-md text-slate-300 hover:bg-slate-700">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    `config.json`
+                </a>
+                 <a href="#section-preis" class="nav-link flex items-center px-4 py-2 text-sm rounded-md text-slate-300 hover:bg-slate-700">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 9l-2 2-2-2m5 5l-2 2-2-2m-2-5l-2-2 2-2m5 5l2 2-2 2m-5-3l-2-2 2-2m2 5l2 2-2-2m-3-2l-2-2 2-2m5 5l2 2-2 2"></path></svg>
+                    Preisfindung
+                </a>
+                <a href="#section-editor" class="nav-link flex items-center px-4 py-2 text-sm rounded-md text-slate-300 hover:bg-slate-700">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                    SVG-Editor Deep Dive
+                </a>
+                <a href="#section-wartung" class="nav-link flex items-center px-4 py-2 text-sm rounded-md text-slate-300 hover:bg-slate-700">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    Wartung & Erweiterung
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-8 md:p-12 overflow-y-auto h-screen">
+            <div id="section-abstract" class="content-section scroll-mt-24">
+                <h2 class="text-3xl font-extrabold tracking-tight text-slate-900">Abstract & Projektvision</h2>
+                <div class="mt-6 prose prose-slate max-w-none prose-a:text-indigo-600 hover:prose-a:text-indigo-800">
+                    <p class="text-xl leading-8">Dieses Dokument beschreibt die Architektur und Funktionalität des Kalkulator 2.0, einer hochmodernen Web-Anwendung zur Konfiguration und Personalisierung von Druckprodukten. Die Kernvision des Projekts war die Schaffung einer nahtlosen User Experience, die einen leistungsstarken Online-Kalkulator mit einem intelligenten SVG-Buchdecken-Editor vereint.</p>
+                </div>
+            </div>
+
+            <div id="section-workflow" class="content-section mt-16 scroll-mt-24">
+                 <h2 class="text-3xl font-extrabold tracking-tight text-slate-900">Der Kunden-Workflow</h2>
+                <div class="mt-6 prose prose-slate max-w-none">
+                   <p>Der Prozess für den Kunden ist linear und intuitiv gestaltet, um ihn von der ersten Idee bis zur fertigen Anfrage zu führen.</p>
+                    <ol class="list-decimal pl-5 space-y-4 mt-4">
+                        <li><strong>1. Buchblock konfigurieren:</strong> Der Kunde gibt Seitenzahl, Papiersorte und Druckmodus an.</li>
+                        <li><strong>2. Bindungsvarianten wählen:</strong> Der Kunde fügt eine oder mehrere Bindungsvarianten hinzu.</li>
+                        <li><strong>3. Personalisieren:</strong> Für Bindungen, die dies erfordern, startet der Kunde den Editor, um die Optik zu gestalten.</li>
+                        <li><strong>4. Extras & Lieferung:</strong> Weitere Optionen werden gewählt.</li>
+                        <li><strong>5. Angebot & Anfrage:</strong> Der Kunde kann ein PDF-Angebot herunterladen oder den Anfrageprozess starten.</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <div id="section-architektur" class="content-section mt-16 scroll-mt-24">
+                <h2 class="text-3xl font-extrabold tracking-tight text-slate-900">Technische Architektur</h2>
+                 <div class="mt-6 prose prose-slate max-w-none">
+                    <p>Das Herzstück der Anwendung ist die Architektur des "Dirigenten und der Spezialisten".</p>
+                    <h3 class="font-semibold mt-6">Das Prinzip</h3>
+                    <ul class="list-disc pl-5 space-y-2 mt-2">
+                        <li><strong>Der Dirigent (<code>script.js</code>):</strong> Die zentrale Steuereinheit. Sie besitzt den alleinigen, globalen Zustand (<code>inquiryState</code>) und ist die "Single Source of Truth".</li>
+                        <li><strong>Die Spezialisten (<code>*.mjs</code>):</strong> Jedes Modul hat eine klar definierte Aufgabe. Es verwaltet keinen eigenen Zustand.</li>
+                    </ul>
+
+                    <h4 class="font-semibold mt-6">Visueller Datenfluss</h4>
+                    <pre class="bg-slate-800 text-slate-200 rounded-md p-4 text-xs overflow-x-auto"><code>
+Nutzer-Aktion (z.B. Klick)
+           |
+           v
+[Spezialist.mjs] (z.B. variantHandler)
+  - Erkennt Aktion
+  - Ruft Callback auf
+           |
+           v
+[script.js] (Dirigent)
+  - Modifiziert den zentralen `inquiryState`
+  - Ruft updateApp() auf
+           |
+           v
+[updateApp()]
+  - Ruft priceCalculator auf -> erhält Preise
+  - Ruft alle update...UI() Funktionen der Spezialisten auf
+           |
+           +---------------------------------+
+           |                                 |
+           v                                 v
+[updateVariantsUI()]               [updateCartUI()]
+  - Erhält neue Daten               - Erhält neue Daten
+  - Zeichnet sein HTML neu          - Zeichnet sein HTML neu
+                    </code></pre>
+
+                    <h3 class="font-semibold mt-8">Die Module im Detail</h3>
+                    <div class="space-y-4 mt-4">
+                        <p><strong><code>script.js</code></strong>: Orchestriert die gesamte App.</p>
+                        <p><strong><code>priceCalculator.mjs</code></strong>: Berechnet alle Preise.</p>
+                        <p><strong><code>variantHandler.mjs</code></strong>: Zuständig für die "Bindungsvarianten"-Sektion.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="section-config" class="content-section mt-16 scroll-mt-24">
+                <h2 class="text-3xl font-extrabold tracking-tight text-slate-900">Die <code>config.json</code> - Das Herzstück</h2>
+                 <div class="mt-6 prose prose-slate max-w-none">
+                    <p>Alle geschäftsrelevanten Daten sind in der <code>config.json</code> zentralisiert.</p>
+                     <h4 class="font-semibold mt-8">Best Practice: JSON Schema</h4>
+                     <p>Für zukünftige Entwicklungen wird die Verwendung eines <a href="https://json-schema.org/" target="_blank">JSON Schemas</a> empfohlen. Ein Schema definiert formal die erwartete Struktur und die Datentypen der <code>config.json</code>. Dies verhindert Fehler durch Tippfehler (z.B. ein <code>String</code> statt einer <code>Zahl</code> bei einem Preis) und dient als "lebende Dokumentation" der Konfigurationsmöglichkeiten.</p>
+                 </div>
+            </div>
+
+            <div id="section-preis" class="content-section mt-16 scroll-mt-24">
+                <h2 class="text-3xl font-extrabold tracking-tight text-slate-900">Preisfindungs-Algorithmus</h2>
+                 <div class="mt-6 prose prose-slate max-w-none">
+                    <p>Die Preisberechnung verfolgt die "Smarte & ehrliche Methode": maximale Transparenz für den Kunden bei gleichzeitiger Abbildung der internen Kostenstruktur.</p>
+                    <h3 class="font-semibold mt-8">Die Berechnung des Stückpreises im Warenkorb</h3>
+                    <p>Um dem Kunden einen einfachen und verständlichen Preis zu präsentieren, werden die Kosten für Buchblock und Bindung zu einem einzigen Stückpreis pro Variante zusammengefasst. Dieser Stückpreis berücksichtigt die Menge, um einen fairen Rabatt-Effekt zu erzielen:</p>
+                    <pre class="bg-slate-100 rounded-md p-4 text-sm overflow-x-auto"><code>Stückpreis = (Variable_Kosten_Buchblock + Variable_Kosten_Bindung) + ((Grundpauschale_Buchblock + Grundpauschale_Bindung) / MENGE)</code></pre>
+                 </div>
+            </div>
+
+            <div id="section-editor" class="content-section mt-16 scroll-mt-24">
+                <h2 class="text-3xl font-extrabold tracking-tight text-slate-900">SVG-Editor Deep Dive</h2>
+                 <div class="mt-6 prose prose-slate max-w-none">
+                    <p>Die Intelligenz des Editors liegt darin, dass die Design-Logik vollständig in den SVG-Templates selbst definiert ist.</p>
+                    
+                    <h3 class="font-semibold mt-8">Nomenklatur: Die Sprache der SVGs</h3>
+                    <p>Damit der Editor ein Template versteht, muss eine strikte Namenskonvention für die Element-IDs eingehalten werden:</p>
+                    <ul class="list-disc pl-5 space-y-2 mt-4">
+                        <li><strong><code>tpl-group-*</code></strong>: Gruppen für U1, U4 und Buchrücken.</li>
+                        <li><strong><code>tpl-*</code></strong>: Präfix für steuerbare Elemente (Texte, Logos).</li>
+                        <li><strong><code>*_bbox</code></strong>: Ein unsichtbares Rechteck als Begrenzungsrahmen für Text.</li>
+                    </ul>
+
+                     <h3 class="font-semibold mt-8">Behandlung von Grenzfällen (Edge Cases)</h3>
+                     <ul class="list-disc pl-5 space-y-2 mt-4">
+                        <li><strong>Zu langer Text:</strong> Wird für einen Text eine <code>_bbox</code> definiert, versucht der Editor, den Text durch Skalierung in die Box einzupassen. Unterschreitet die nötige Skalierung ein Minimum (z.B. 75%), wird der Text mit der Minimalskalierung dargestellt und eine sichtbare Warnung im SVG eingeblendet.</li>
+                        <li><strong>Zeilenumbrüche:</strong> Textfelder, die im SVG das Attribut <code>data-multiline="true"</code> tragen, werden im Editor als <code>&lt;textarea&gt;</code> dargestellt. Der Editor erzeugt für jeden Zeilenumbruch ein neues <code>&lt;tspan&gt;</code>-Element und stellt so die korrekte Darstellung im SVG sicher.</li>
+                     </ul>
+                </div>
+            </div>
+
+            <div id="section-wartung" class="content-section mt-16 scroll-mt-24">
+                <h2 class="text-3xl font-extrabold tracking-tight text-slate-900">Wartung & Erweiterung</h2>
+                 <div class="mt-6 prose prose-slate max-w-none">
+                    <p>Dank der modularen Architektur sind Anpassungen und Erweiterungen einfach und risikoarm durchzuführen.</p>
+                     <h3 class="font-semibold mt-6">Der "Config-First"-Ansatz: Ein Editor für alles</h3>
+                     <p>Die Weiterentwicklung des Editors folgt einem klaren Prinzip: Es wird nur <strong>einen einzigen <code>CoverEditor.mjs</code></strong> geben. Anstatt für jeden Bindungstyp eine neue Klasse zu erstellen, wird das Verhalten des Editors ausschließlich über Konfigurationsprofile und die SVG-Templates selbst gesteuert. Dies ermöglicht maximale Flexibilität und Wartbarkeit.</p>
+                     
+                     <h4 class="font-semibold mt-6">Editor-Profile in <code>config.json</code></h4>
+                     <p>Jeder Bindungstyp, der den Editor verwendet, verweist auf ein Profil im neuen <code>editorProfiles</code>-Objekt der <code>config.json</code>. Dieses Profil ist der Bauplan für den Editor:</p>
+                     <pre class="bg-slate-100 rounded-md p-4 text-sm overflow-x-auto"><code>"hardcover-modern": {
+    "templatePath": "templates/hardcover/",
+    "dimensions": { "width": 215, "height": 302 },
+    "features": ["textInput", "logoUpload", "spineText"]
+},
+"paperback-foil": {
+    "templatePath": "templates/paperback-foil/",
+    "dimensions": { "width": 210, "height": 297 },
+    "features": ["acceptsPdfThumbnail", "hasFoilOverlay"]
+},
+"wire-o": {
+    "templatePath": "templates/wire-o/",
+    "dimensions": { "width": 210, "height": 297 },
+    "features": ["acceptsPdfThumbnail", "dynamicSpineVisuals"],
+    "spineVisualRules": [
+      { "maxThickness": 12, "elementId": "wire-o-3-to-1" },
+      { "maxThickness": 999, "elementId": "wire-o-2-to-1" }
+    ]
+}</code></pre>
+                    <h4 class="font-semibold mt-6">Implementierungs-Beispiele</h4>
+                     <ul class="list-disc pl-5 space-y-2 mt-4">
+                        <li><strong>Paperback mit Folie:</strong> Das Profil aktiviert das Feature <code>acceptsPdfThumbnail</code>. Der <code>editorHandler</code> übergibt dem Editor die URL des PDF-Thumbnails. Der Editor zeigt dann eine UI-Option an, um dieses Thumbnail auf einem vordefinierten Platzhalter im SVG (z.B. <code>&lt;rect id="u1-content-placeholder" /&gt;</code>) zu platzieren. Das Feature <code>hasFoilOverlay</code> wird durch einen Radio-Button im Haupt-Kalkulator gesteuert und schaltet die Sichtbarkeit eines entsprechenden <code>&lt;rect id="foil-overlay" /&gt;</code> im Template um.</li>
+                        <li><strong>Wire-O:</strong> Das Profil aktiviert <code>dynamicSpineVisuals</code> und liefert ein Regelset. Der Editor liest die übergebene Rückenbreite, vergleicht sie mit den <code>maxThickness</code>-Werten und blendet die korrekte SVG-Gruppe für den Drahtkamm (z.B. <code>&lt;g id="wire-o-3-to-1"&gt;...&lt;/g&gt;</code>) ein, während andere ausgeblendet werden.</li>
+                    </ul>
+                 </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // Simple script for active navigation link highlighting on scroll
+        const sections = document.querySelectorAll('.content-section');
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    navLinks.forEach(link => {
+                        link.classList.remove('active');
+                        if (link.getAttribute('href').substring(1) === entry.target.id) {
+                            link.classList.add('active');
+                        }
+                    });
+                }
+            });
+        }, { rootMargin: '-30% 0px -70% 0px' });
+
+        sections.forEach(section => {
+            observer.observe(section);
+        });
+    </script>
+</body>
+</html>

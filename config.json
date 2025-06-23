@@ -1,6 +1,7 @@
 {
     "general": {
         "orderBaseFee": 10.00,
+        "bookBlockBaseFee": 5.00,
         "currencySymbol": "€",
         "maxVariants": 3,
         "absoluteMinThicknessMm": 2.00,
@@ -16,20 +17,17 @@
         ],
         "deliveryMethods": [
             { "id": "pickup", "name": "Selbstabholung", "price": 0.00, "requiresAddress": false, "default": true },
-            { "id": "standard_shipping", "name": "Standardversand (DE)", "price": 5.90, "requiresAddress": true },
-            { "id": "express_shipping", "name": "Express-Versand (DE)", "price": 19.90, "requiresAddress": true }
+            { "id": "standard_shipping", "name": "Standardversand (DE)", "price": 5.90, "requiresAddress": true }
         ]
     },
     "papers": [
         { "id": "soporset_100", "name": "Soporset 100 g/qm", "pricePerSheetMaterial": 0.02, "pricePerPagePrint": 0.14, "paperThickness": 0.10 },
-        { "id": "soporset_120", "name": "Soporset 120 g/qm", "pricePerSheetMaterial": 0.03, "pricePerPagePrint": 0.14, "paperThickness": 0.12 },
-        { "id": "soporset_150", "name": "Soporset 150 g/qm", "pricePerSheetMaterial": 0.05, "pricePerPagePrint": 0.14, "paperThickness": 0.15 }
+        { "id": "soporset_120", "name": "Soporset 120 g/qm", "pricePerSheetMaterial": 0.03, "pricePerPagePrint": 0.14, "paperThickness": 0.12 }
     ],
     "bindings": [
         {
             "id": "softcover_foil",
             "name": "Paperback (Folienvariante)",
-            "description": "Umschlagkarton mit transparenter Deckfolie. Die erste Seite Ihres Dokuments dient als Titelseite.",
             "bindingTypeBaseFee": 2.50,
             "pricePerItem": 4.50,
             "minBlockThicknessMm": 2.00,
@@ -37,7 +35,6 @@
             "requiresPersonalization": false,
             "options": [
                 { 
-                    "id": "foil_type_selection_sf", 
                     "name": "Folientyp", 
                     "type": "radio", 
                     "optionKey": "foil_type", 
@@ -45,159 +42,39 @@
                         { "id": "foil_glossy", "name": "Glänzend", "price": 0.00, "default": true },
                         { "id": "foil_matte", "name": "Mattiert", "price": 0.50 }
                     ] 
-                },
-                { 
-                    "id": "cover_color_foil_sf", 
-                    "name": "Umschlagkarton Farbe", 
-                    "type": "gallery_select", 
-                    "optionKey": "cover_selection_foil", 
-                    "galleryTitle": "Farbe für Umschlagkarton wählen", 
-                    "imageFolderPath": "kalkulator_assets/images/bindings/softcover_foil_colors/", 
-                    "availableImages": ["schwarz.png", "grau.png", "weinrot.png", "weiss.png", "mittelblau.png", "dunkelblau.png", "creme.png"], 
-                    "defaultSelection": "schwarz.png", 
-                    "imageDisplayType": "swatch", 
-                    "price": 0.00, 
-                    "requiresProof": false 
                 }
-            ]
-        },
-        {
-            "id": "softcover_wrap",
-            "name": "Paperback (Umlaufend bedruckt)",
-            "description": "Klassischer Paperback-Einband, Karton wird bedruckt (optional mit Weißdruck).",
-            "bindingTypeBaseFee": 3.50,
-            "pricePerItem": 6.00,
-            "minBlockThicknessMm": 3.00,
-            "maxBlockThicknessMm": 40.00,
-            "requiresPersonalization": true,
-            "personalizationFields": [
-                { "id": "cover_mainTitle", "label": "Haupttitel (für Buchdecke)", "type": "textarea", "rows": 3, "required": true },
-                { "id": "cover_authorName", "label": "Vor- und Nachname des Autors", "type": "text", "required": true }
-            ],
-            "options": [
-                { "id": "white_print_sw", "name": "Textdruck in Weiß (auf farbigen Karton)", "type": "checkbox", "optionKey": "white_print", "price": 1.50, "defaultState": false },
-                { 
-                    "id": "cover_layout_wrap_sw", 
-                    "name": "Umschlagkarton & Layout", 
-                    "type": "gallery_select", 
-                    "optionKey": "cover_selection_wrap", 
-                    "galleryTitle": "Umschlagkarton-Farbe wählen", 
-                    "imageFolderPath": "kalkulator_assets/images/bindings/softcover_wrap_layouts/", 
-                    "availableImages": ["pb-classic_standard_schwarz.png", "pb-classic_standard_grau.png"], 
-                    "defaultSelection": "pb-classic_standard_schwarz.png", 
-                    "imageDisplayType": "thumbnail", 
-                    "price": 0.00, 
-                    "requiresProof": true 
-                }
-            ]
-        },
-        {
-            "id": "hardcover_classic_efalin",
-            "name": "Hardcover Classic (Efalin-Bezug)",
-            "description": "Robuster Hardcover-Einband mit feinleinen-geprägtem Efalin-Papier bezogen. Textdruck in Weiß.",
-            "bindingTypeBaseFee": 12.00,
-            "pricePerItem": 18.00,
-            "minBlockThicknessMm": 8.00,
-            "maxBlockThicknessMm": 50.00,
-            "requiresPersonalization": true,
-            "personalizationFields": [
-                { "id": "cover_workType", "label": "Art der Arbeit (z.B. Bachelorarbeit)", "type": "text", "required": true },
-                { "id": "cover_mainTitle", "label": "Haupttitel (für Buchdecke)", "type": "textarea", "rows": 4 },
-                { "id": "cover_subTitle", "label": "Untertitel (optional, für Buchdecke)", "type": "textarea", "rows": 4 },
-                { "id": "cover_authorName", "label": "Vor- und Nachname des Autors", "type": "text", "required": true },
-                { "id": "cover_studentId", "label": "Matrikel-Nummer (optional)", "type": "text" },
-                { "id": "cover_submissionDate", "label": "Datum (z.B. Abgabedatum, Jahr)", "type": "text" },
-                { "id": "cover_useCustomLogo", "label": "Eigenes Logo auf Buchdecke verwenden?", "type": "checkbox", "default": false },
-                { "id": "cover_customLogoFile", "label": "Logo-Datei hochladen", "type": "file", "accept": ".png,.jpg,.jpeg,.svg,.pdf", "dependsOn": "cover_useCustomLogo", "dependsValue": true },
-                { "id": "spine_workType", "label": "Art der Arbeit (für Buchrücken)", "type": "text" },
-                { "id": "spine_authorName", "label": "Name des Autors (für Buchrücken)", "type": "text" },
-                { "id": "spine_title", "label": "Titel (ggf. gekürzt, für Buchrücken)", "type": "text" }
-            ],
-            "options": [ 
-                { 
-                    "id": "cover_color_classic_hc", 
-                    "name": "Efalin-Farbe & Layout", 
-                    "type": "gallery_select", 
-                    "optionKey": "cover_selection_classic", 
-                    "galleryTitle": "Efalin-Farbe & Layout wählen", 
-                    "imageFolderPath": "kalkulator_assets/images/bindings/hardcover_classic_efalin/", 
-                    "availableImages": ["hc-classic_simple_schwarz.png", "hc-classic_simple_dunkelblau.png", "hc-classic_vintage_weinrot.png"], 
-                    "defaultSelection": "hc-classic_simple_schwarz.png", 
-                    "imageDisplayType": "thumbnail", 
-                    "price": 0.00, 
-                    "requiresProof": true 
-                } 
             ]
         },
         {
             "id": "hardcover_modern_fullcolor",
             "name": "Hardcover Modern (Vollfarbdruck)",
-            "description": "Individuell gestaltbarer Hardcover-Einband, vollfarbig bedruckt und matt foliert.",
             "bindingTypeBaseFee": 15.00,
             "pricePerItem": 22.00,
             "minBlockThicknessMm": 8.00,
             "maxBlockThicknessMm": 50.00,
             "requiresPersonalization": true,
             "personalizationInterface": "coverEditor",
-            "personalizationFields": [
-                { "id": "cover_workType", "label": "Art der Arbeit (z.B. Bachelorarbeit)", "type": "text", "required": true },
-                { "id": "cover_mainTitle", "label": "Haupttitel (für Buchdecke)", "type": "textarea", "rows": 4 },
-                { "id": "cover_subTitle", "label": "Untertitel (optional, für Buchdecke)", "type": "textarea", "rows": 4 },
-                { "id": "cover_authorName", "label": "Vor- und Nachname des Autors", "type": "text", "required": true },
-                { "id": "cover_studentId", "label": "Matrikel-Nummer (optional)", "type": "text" },
-                { "id": "cover_submissionDate", "label": "Datum (z.B. Abgabedatum, Jahr)", "type": "text" },
-                { "id": "cover_useCustomLogo", "label": "Eigenes Logo auf Buchdecke verwenden?", "type": "checkbox", "default": false },
-                { "id": "spine_workType", "label": "Art der Arbeit (für Buchrücken)", "type": "text" },
-                { "id": "spine_authorName", "label": "Name des Autors (für Buchrücken)", "type": "text" },
-                { "id": "spine_title", "label": "Titel (ggf. gekürzt, für Buchrücken)", "type": "text" }
-            ],
             "options": []
         }
     ],
     "extras": [
         { 
-            "id": "cd_action_service", 
-            "name": "CD/DVD: Aktion", 
-            "options": [ 
-                { 
-                    "groupName": "CD Aktion wählen", 
-                    "type": "radio", 
-                    "optionKey": "cd_action", 
-                    "choices": [
-                        { "id": "cd_burn_only", "name": "Nur Brennen", "price": 1.50 },
-                        { "id": "cd_print_color", "name": "Nur Farbdruck", "price": 1.20 },
-                        { "id": "cd_burn_print_bw", "name": "Brennen & S/W-Druck", "price": 2.00 }
-                    ]
-                }
-            ], 
-            "hasIndependentQuantity": true, 
-            "defaultQuantity": 1 
-        },
-        { 
             "id": "cd_packaging_service", 
             "name": "CD/DVD: Verpackung", 
+            "unitPrice": 0.0,
             "options": [
                 { 
                     "groupName": "CD Verpackung wählen", 
                     "type": "radio", 
                     "optionKey": "cd_packaging", 
                     "choices": [
-                        { "id": "cd_pack_loose", "name": "Lose (keine Verpackung)", "price": 0.00, "default": true },
-                        { "id": "cd_sleeve", "name": "Papiertasche", "price": 0.40 },
+                        { "id": "cd_sleeve", "name": "Papiertasche", "price": 0.40, "default": true },
                         { "id": "cd_adhesive_pocket", "name": "Klebetasche", "price": 0.65 }
                     ]
                 }
             ], 
             "hasIndependentQuantity": true, 
             "defaultQuantity": 1 
-        },
-        { 
-            "id": "shipping_box_books", 
-            "name": "Versandverpackung Bücher", 
-            "options": [], 
-            "hasIndependentQuantity": true, 
-            "defaultQuantity": 1, 
-            "unitPrice": 3.50 
         }
     ]
 }
