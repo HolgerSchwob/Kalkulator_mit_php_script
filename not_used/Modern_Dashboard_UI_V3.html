@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <title>Auftrags-Dashboard</title>
+  <!-- Google Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/feather-icons"></script>
+
+  <style>
+    :root {
+      --bg-color: #1a1a1a; --surface-color: #2c2c2c; --surface-hover: #3a3a3a;
+      --border-color: #444444; --text-primary: #f0f0f0; --text-secondary: #a0a0a0;
+      --accent-color: #c850c0; --accent-gradient: linear-gradient(45deg, #c850c0, #4158d0);
+      --express-bg: rgba(255, 107, 107, 0.1); --express-border: #ff6b6b;
+      --success-color: #2ecc71; --error-color: #e74c3c;
+      --button-secondary-bg: #4f4f4f;
+      --button-secondary-hover-bg: #5f5f5f;
+    }
+    /* NEU: Keyframes für die Puls-Animation */
+    @keyframes pulse-animation {
+      0% { box-shadow: 0 0 0 0 rgba(200, 80, 192, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(200, 80, 192, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(200, 80, 192, 0); }
+    }
+
+    html { box-sizing: border-box; } *, *:before, *:after { box-sizing: inherit; }
+    body {
+      font-family: 'Inter', sans-serif; margin: 0; background-color: var(--bg-color);
+      color: var(--text-primary); display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+    }
+    .main-container { display: flex; flex-grow: 1; height: 100%; padding: 20px; gap: 20px; }
+    .list-pane, .detail-pane {
+      background-color: var(--surface-color); border-radius: 12px; border: 1px solid var(--border-color);
+      display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+    .list-pane { flex: 0 0 450px; } .detail-pane { flex: 1 1 auto; }
+    .pane-header {
+      padding: 16px 20px; font-size: 1.1rem; font-weight: 600; border-bottom: 1px solid var(--border-color);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    #user-display { font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); }
+    #user-display .username { color: var(--text-primary); }
+    #user-display a { color: var(--accent-color); cursor: pointer; text-decoration: none; margin-left: 10px;}
+    .pane-content { padding: 20px; overflow-y: auto; flex-grow: 1; }
+    #status-buttons { display: flex; flex-wrap: wrap; gap: 10px; padding: 20px 20px 0 20px; border-bottom: 1px solid var(--border-color); }
+    .status-btn {
+      background-color: transparent; border: 1px solid var(--border-color); color: var(--text-secondary);
+      padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 500;
+      transition: all 0.2s ease; display: flex; align-items: center; gap: 6px; position: relative;
+    }
+    .status-btn:hover { color: var(--text-primary); border-color: var(--accent-color); }
+    .status-btn.active { background: var(--accent-gradient); color: white; border-color: transparent; }
+    
+    /* NEU: Puls-Animation für den "Neu"-Button */
+    .status-btn.pulsing {
+      animation: pulse-animation 2s infinite;
+      border-color: var(--accent-color);
+    }
+    
+    /* NEU: Styling für den Zähler-Badge */
+    .count-badge {
+      background-color: var(--bg-color);
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 6px;
+      margin-left: 8px;
+    }
+    .status-btn.active .count-badge {
+      background-color: rgba(255,255,255,0.2);
+      color: white;
+    }
+
+    .order-list-item {
+      padding: 16px; border-radius: 8px; margin-bottom: 10px; cursor: pointer; border: 1px solid var(--border-color);
+      transition: background-color 0.2s ease, border-color 0.2s ease;
+    }
+    .order-list-item:hover { background-color: var(--surface-hover); }
+    .order-list-item.selected { background-color: var(--surface-hover); border-color: var(--accent-color); }
+    .order-list-item.express { background-color: var(--express-bg); border-color: var(--express-border); }
+    .order-list-item h3 { margin: 0 0 8px 0; font-size: 1rem; font-weight: 600; display: flex; justify-content: space-between; }
+    .order-info { font-size: 0.85rem; color: var(--text-secondary); display: flex; justify-content: space-between; }
+    #details-content { padding: 20px; }
+    .detail-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+    .detail-header h2 { margin: 0; font-size: 1.8rem; font-weight: 700; }
+    .detail-header .badge { background: var(--accent-gradient); color: white; padding: 6px 12px; border-radius: 16px; font-size: 0.9rem; font-weight: 500; }
+    .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 24px; }
+    .detail-card { background-color: var(--bg-color); padding: 20px; border-radius: 8px; display: flex; flex-direction: column; }
+    .detail-card h4 { margin: 0 0 16px 0; font-size: 1rem; font-weight: 600; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; }
+    .info-item { display: flex; flex-direction: column; margin-bottom: 12px; }
+    .info-item label { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; }
+    .info-item span, .info-item a { font-size: 0.95rem; color: var(--text-primary); text-decoration: none; word-break: break-word; }
+    .info-item a { color: var(--accent-color); }
+    .toggle-details-btn { font-size: 0.85rem; color: var(--accent-color); cursor: pointer; margin-top: 10px; text-decoration: none; }
+    .variable-details { border-top: 1px solid var(--border-color); margin-top: 16px; padding-top: 16px; }
+    .thumbnail-container { margin-top: auto; padding-top: 16px; }
+    .thumbnail { width: 100%; height: auto; border-radius: 6px; border: 1px solid var(--border-color); }
+    .bookblock-summary { display: flex; align-items: center; gap: 24px; background-color: var(--bg-color); padding: 16px; border-radius: 8px; margin-top: 24px; }
+    .bookblock-info-grid { display: flex; flex-grow: 1; justify-content: space-around; text-align: center; }
+    .bookblock-summary .thumbnail { flex-shrink: 0; width: 100px; height: auto; cursor: pointer; }
+    .action-row select, .action-row textarea, .action-row button { width: 100%; margin-bottom: 10px; }
+    .action-row select, .action-row textarea { background-color: var(--surface-color); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px; border-radius: 6px; font-size: 0.9rem; }
+    .action-row textarea { min-height: 80px; resize: vertical; }
+    button.primary-action {
+      background: var(--accent-gradient); border: none; color: white; padding: 10px 20px; border-radius: 8px;
+      cursor: pointer; font-weight: 500; transition: transform 0.2s, box-shadow 0.2s;
+    }
+    button.primary-action:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    button.secondary-action {
+        background-color: var(--button-secondary-bg);
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+    }
+    button.secondary-action:hover { background-color: var(--button-secondary-hover-bg); }
+    .manual-actions-container { margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px; }
+    .manual-actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .loader, .info-message { text-align: center; padding: 40px; color: var(--text-secondary); font-style: italic; }
+    #toast { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background-color: #333; color: white; padding: 12px 24px; border-radius: 8px; z-index: 1000; opacity: 0; transition: opacity 0.3s, bottom 0.3s; }
+    #toast.show { opacity: 1; bottom: 30px; }
+    #toast.success { background-color: var(--success-color); } #toast.error { background-color: var(--error-color); }
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+    .modal-overlay.show { opacity: 1; pointer-events: auto; }
+    .modal-content { background: var(--surface-color); padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; text-align: center; }
+    .modal-content h3 { margin: 0 0 15px 0; } .modal-content p { margin: 0 0 25px 0; color: var(--text-secondary); }
+    .modal-buttons button { margin: 5px; }
+    #user-selection-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;}
+  </style>
+</head>
+<body>
+
+  <header id="status-buttons"></header>
+
+  <main class="main-container">
+    <div class="list-pane">
+      <div class="pane-header">
+        <div><i data-feather="list"></i> <span id="list-header-text">Aufträge</span></div>
+        <div id="user-display"></div>
+      </div>
+      <div class="pane-content" id="order-list"></div>
+    </div>
+    <div class="detail-pane">
+       <div class="pane-content" id="details-content"></div>
+    </div>
+  </main>
+  
+  <div id="toast"></div>
+  <div class="modal-overlay" id="user-modal">
+    <div class="modal-content">
+      <h3>Wer arbeitet hier?</h3>
+      <p>Bitte wähle deinen Namen aus, um Aufträge zu übernehmen.</p>
+      <div id="user-selection-grid"></div>
+    </div>
+  </div>
+  <div class="modal-overlay" id="action-modal">
+    <div class="modal-content">
+      <h3 id="action-modal-title">Aktion ausführen?</h3>
+      <p id="action-modal-label"></p>
+      <div class="modal-buttons">
+        <button class="primary-action" id="action-confirm-btn">Ja, Aktion ausführen</button>
+        <button class="secondary-action" id="action-skip-btn">Nein, nur Status ändern</button>
+      </div>
+    </div>
+  </div>
+
+
+  <script>
+    let dashboardConfig = {};
+    let selectedOrderNumber = null;
+    let currentUser = null;
+    let currentStatusCounts = {}; // NEU: Zum Speichern der aktuellen Zähler
+    let refreshInterval; // NEU: Variable für das Intervall
+
+    // --- INITIALISIERUNG & USER-HANDLING ---
+    document.addEventListener('DOMContentLoaded', () => {
+      google.script.run.withSuccessHandler(setupDashboard).getDashboardConfig();
+      feather.replace();
+      checkCurrentUser();
+    });
+
+    function checkCurrentUser() {
+      currentUser = localStorage.getItem('dashboardUser');
+      if (currentUser) {
+        document.getElementById('user-display').innerHTML = `Angemeldet als: <span class="username">${currentUser}</span> <a href="#" onclick="changeUser(event)">wechseln</a>`;
+      } else {
+        document.getElementById('user-modal').classList.add('show');
+      }
+    }
+
+    function setupUserSelection() {
+        const userGrid = document.getElementById('user-selection-grid');
+        userGrid.innerHTML = '';
+        dashboardConfig.assignableUsers.forEach(user => {
+            const btn = document.createElement('button');
+            btn.className = 'primary-action';
+            btn.textContent = user;
+            btn.onclick = () => selectUser(user);
+            userGrid.appendChild(btn);
+        });
+    }
+    
+    function selectUser(name) {
+        currentUser = name;
+        localStorage.setItem('dashboardUser', name);
+        document.getElementById('user-modal').classList.remove('show');
+        checkCurrentUser();
+    }
+
+    function changeUser(event) {
+        event.preventDefault();
+        localStorage.removeItem('dashboardUser');
+        currentUser = null;
+        document.getElementById('user-display').innerHTML = '';
+        document.getElementById('user-modal').classList.add('show');
+    }
+
+    function setupDashboard(config) {
+      dashboardConfig = config;
+      setupUserSelection();
+      const buttonsContainer = document.getElementById('status-buttons');
+      buttonsContainer.innerHTML = '';
+      
+      dashboardConfig.statusOrder.forEach(statusKey => {
+        const statusInfo = dashboardConfig.statusWorkflow[statusKey];
+        if (statusInfo) {
+          // NEU: Zähler-Span hinzufügen
+          buttonsContainer.innerHTML += `<button class="status-btn" id="btn-${statusKey}" onclick="loadOrders('${statusKey}')">
+              <i data-feather="${statusInfo.icon}" style="width:16px;"></i>
+              <span>${statusInfo.displayName}</span>
+              <span class="count-badge" id="count-${statusKey}">-</span>
+            </button>`;
+        }
+      });
+      feather.replace();
+      
+      const firstStatus = dashboardConfig.statusOrder[0];
+      if (firstStatus) loadOrders(firstStatus);
+      
+      // NEU: Starte das Polling für Updates
+      pollForUpdates(); // Einmal sofort ausführen
+      refreshInterval = setInterval(pollForUpdates, 90000); // Dann alle 90 Sekunden
+    }
+    
+    // --- DATEN LADEN & ANZEIGEN (LISTE) ---
+    function loadOrders(status) {
+      document.querySelectorAll('.status-btn').forEach(btn => btn.classList.remove('active'));
+      const activeButton = document.getElementById(`btn-${status}`);
+      if(activeButton) activeButton.classList.add('active');
+
+      const listContainer = document.getElementById('order-list');
+      listContainer.innerHTML = '<div class="loader">Lade Aufträge...</div>';
+      document.getElementById('list-header-text').textContent = `Aufträge: ${status}`;
+      document.getElementById('details-content').innerHTML = '<div class="info-message">Bitte einen Auftrag aus der Liste auswählen.</div>';
+      
+      google.script.run.withSuccessHandler(displayOrders).getOrders(status);
+    }
+    
+    function displayOrders(response) {
+       const listContainer = document.getElementById('order-list');
+       if (!response || !response.success) {
+         listContainer.innerHTML = `<div class="info-message">Fehler: ${response?.error || 'Unbekannter Fehler'}</div>`;
+         return;
+       }
+       if (response.orders.length === 0) {
+         listContainer.innerHTML = '<div class="info-message">Keine Aufträge in diesem Status.</div>';
+         return;
+       }
+       
+       listContainer.innerHTML = response.orders.map(order => `
+        <div class="order-list-item ${order.isExpress ? 'express' : ''}" id="order-${order.auftragsNummer}" onclick="loadDetails('${order.auftragsNummer}')">
+            <h3><span>${order.kundenName || 'N/A'}</span> <span>${order.gesamtPreis}</span></h3>
+            <div class="order-info"><span>#${order.auftragsNummer}</span> <span>${order.bearbeiter || 'unbearbeitet'}</span></div>
+        </div>
+       `).join('');
+    }
+
+    // --- DATEN LADEN & ANZEIGEN (DETAILS) ---
+    function loadDetails(auftragsNummer) {
+      selectedOrderNumber = auftragsNummer;
+      document.querySelectorAll('.order-list-item').forEach(item => item.classList.remove('selected'));
+      document.getElementById(`order-${auftragsNummer}`).classList.add('selected');
+
+      const detailsContainer = document.getElementById('details-content');
+      detailsContainer.innerHTML = '<div class="loader">Lade Details...</div>';
+      google.script.run.withSuccessHandler(displayDetails).getJobDetails(auftragsNummer);
+    }
+
+    function displayDetails(response) {
+      const detailsContainer = document.getElementById('details-content');
+      if (!response || !response.success) {
+        detailsContainer.innerHTML = `<div class="info-message">Fehler: ${response?.error || 'Unbekannte Antwort'}</div>`;
+        return;
+      }
+      
+      const details = response;
+      const nextStatusOptions = (dashboardConfig.statusWorkflow[details.aktuellerStatus]?.nextPossible || [])
+        .map(key => `<option value="${key}">${dashboardConfig.statusWorkflow[key].displayName}</option>`)
+        .join('');
+      const userOptions = dashboardConfig.assignableUsers
+        .map(user => `<option value="${user}" ${user === details.aktiverBearbeiter ? 'selected' : ''}>${user}</option>`)
+        .join('');
+
+      let variantenHtml = (details.varianten || []).map((variante, index) => {
+          let variableDetailsHtml = generateVariableDetailsHtml(variante.options, ['foil_type']);
+          variableDetailsHtml += generateVariableDetailsHtml(variante.personalizationDetails);
+          return `<div class="detail-card">
+              <h4><i data-feather="book"></i>Binde-Variante ${index + 1}</h4>
+              <div class="info-item"><label>Typ</label><span>${variante.bindingTypeId || 'N/A'}</span></div>
+              <div class="info-item"><label>Menge</label><span>${variante.quantity || 'N/A'}</span></div>
+              ${variante.options?.foil_type ? `<div class="info-item"><label>Folienart</label><span>${variante.options.foil_type}</span></div>` : ''}
+              ${variante.thumbnailDataUrl ? `<div class="thumbnail-container"><img src="${variante.thumbnailDataUrl}" class="thumbnail"></div>` : ''}
+              ${variableDetailsHtml ? `<a href="#" class="toggle-details-btn" onclick="toggleDetails(this, event)">+ Alle Details anzeigen</a><div class="variable-details" style="display: none;">${variableDetailsHtml}</div>` : ''}
+            </div>`;
+      }).join('');
+      
+      let totalQuantity = (details.varianten || []).reduce((sum, v) => sum + (v.quantity || 0), 0);
+      let bookblockHtml = '';
+      if(details.buchblock) {
+        const bookblockThumb = details.buchblock.firstPagePreviewDataURL 
+            ? `<a href="#" onclick="downloadHauptPdf(event)" title="Haupt-PDF herunterladen"><img src="${details.buchblock.firstPagePreviewDataURL}" class="thumbnail"></a>` 
+            : '';
+        bookblockHtml = `<div class="bookblock-summary">${bookblockThumb}<div class="bookblock-info-grid">
+              <div class="info-item"><label>Gesamtseiten</label><span>${details.buchblock.totalPages||'N/A'}</span></div>
+              <div class="info-item"><label>Papiersorte</label><span>${details.buchblock.paperId||'N/A'}</span></div>
+              <div class="info-item"><label>Druck</label><span>${details.buchblock.printMode==='double_sided'?'Beidseitig':'Einseitig'}</span></div>
+              <div class="info-item"><label>A3 Seiten</label><span>${details.buchblock.a3PagesCount||0}</span></div>
+              <div class="info-item"><label>Gesamtauflage</label><span>${totalQuantity}</span></div>
+            </div></div>`;
+      }
+      
+      let addressHtml = details.lieferDetails?.adresse ? generateVariableDetailsHtml(details.lieferDetails.adresse) : '';
+      
+      let takeOverButtonHtml = '';
+      if (details.aktuellerStatus === 'Eingegangen' && currentUser) {
+        takeOverButtonHtml = `<button class="primary-action" onclick="takeOverJob()"><i data-feather="user-check" style="vertical-align: middle; margin-right: 5px;"></i> Auftrag übernehmen</button>`;
+      }
+      
+      let manualActionsHtml = '';
+      if (dashboardConfig.manualActions && dashboardConfig.manualActions.length > 0) {
+        const buttons = dashboardConfig.manualActions.map(action => 
+          `<button class="secondary-action" onclick="triggerManualAction('${action.key}')"><i data-feather="${action.icon}" style="vertical-align: middle; margin-right: 5px;"></i>${action.label}</button>`
+        ).join('');
+        manualActionsHtml = `<div class="manual-actions-grid">${buttons}</div>`;
+      }
+
+
+      detailsContainer.innerHTML = `<div class="detail-header"><h2>#${details.auftragsNummer}</h2><span class="badge">${details.aktuellerStatus}</span></div>
+        <div class="detail-grid">
+          <div class="detail-card">
+             <h4><i data-feather="user"></i>Kunde & Termine</h4>
+             <div class="info-item"><label>Kunde</label><span>${details.kundenName}</span></div>
+             <div class="info-item"><label>E-Mail</label><a href="mailto:${details.kundenEmail}">${details.kundenEmail}</a></div>
+             <div class="info-item"><label>Telefon</label><span>${details.kundenTelefon||'N/A'}</span></div>
+             <hr style="border-color: var(--border-color); margin: 16px 0;">
+             <div class="info-item"><label>Eingang</label><span>${formatDate(details.eingangsDatum)}</span></div>
+             <div class="info-item"><label>Liefertermin</label><span>${formatDate(details.lieferTermin)}</span></div>
+          </div>
+          <div class="detail-card action-row">
+            <h4><i data-feather="activity"></i>Workflow</h4>
+            ${takeOverButtonHtml}
+            <label>Status ändern</label>
+            <select id="status-select"><option value="">-- Neuen Status wählen --</option>${nextStatusOptions}</select>
+            <button class="primary-action" onclick="updateStatus()">Status speichern</button>
+            <hr style="border-color: var(--border-color); margin: 16px 0;">
+            <label>Bearbeiter zuweisen</label>
+            <select id="assignee-select"><option value="">-- Keiner --</option>${userOptions}</select>
+            <button class="primary-action" onclick="updateAssignee()">Bearbeiter speichern</button>
+            
+            ${manualActionsHtml ? `<div class="manual-actions-container">
+                <a href="#" class="toggle-details-btn" onclick="toggleDetails(this, event)">+ Manuelle Aktionen</a>
+                <div class="variable-details" style="display:none; padding-top:10px;">${manualActionsHtml}</div>
+            </div>` : ''}
+
+          </div>
+          <div class="detail-card action-row">
+             <h4><i data-feather="file-text"></i>Details & Hinweise</h4>
+             <div class="info-item"><label>Preis</label><span>${details.gesamtPreis}</span></div>
+             <div class="info-item"><label>Produktion</label><span>${details.produktionszeitDisplay}</span></div>
+             <div class="info-item"><label>Versandart</label><span>${details.lieferDetails?.methodeName||'N/A'}</span></div>
+             ${addressHtml?`<a href="#" class="toggle-details-btn" onclick="toggleDetails(this, event)">+ Lieferadresse anzeigen</a><div class="variable-details" style="display: none;">${addressHtml}</div>`:''}
+             <div class="info-item" style="margin-top:16px;"><label>Drive Ordner</label><a href="${details.driveLink}" target="_blank">Ordner öffnen <i data-feather="external-link" style="width:12px"></i></a></div>
+             <hr style="border-color: var(--border-color); margin: 16px 0;">
+             <label>Hinweise</label><textarea id="notes-textarea">${details.hinweise||''}</textarea>
+             <button class="primary-action" onclick="updateNotes()">Hinweise speichern</button>
+          </div>
+          ${variantenHtml}
+        </div>
+        ${bookblockHtml}`;
+      feather.replace();
+    }
+    
+    // --- WORKFLOW-AKTIONEN ---
+    function takeOverJob() {
+        if (!selectedOrderNumber || !currentUser) { showToast('Kann Auftrag nicht übernehmen. Kein Nutzer ausgewählt.', 'error'); return; }
+        showToast(`Übernehme Auftrag #${selectedOrderNumber}...`, 'info');
+        google.script.run.withSuccessHandler(response => handleUpdateResponse(response, true)).assignAndStartProcessing(selectedOrderNumber, currentUser);
+    }
+    
+    function updateStatus() {
+      const newStatus = document.getElementById('status-select').value;
+      if (!newStatus || !selectedOrderNumber) return;
+      showToast('Speichere Status...', 'info');
+      google.script.run.withSuccessHandler(response => handleStatusUpdateResponse(response)).updateOrderStatus(selectedOrderNumber, newStatus);
+    }
+
+    function handleStatusUpdateResponse(response) {
+        if (response.success) {
+            showToast(response.message, 'success');
+            if (response.postActions && response.postActions.length > 0) {
+                const action = response.postActions[0];
+                const modal = document.getElementById('action-modal');
+                document.getElementById('action-modal-label').textContent = action.label;
+                modal.classList.add('show');
+                
+                document.getElementById('action-confirm-btn').onclick = () => {
+                    modal.classList.remove('show');
+                    showToast(`Führe Aktion aus...`, 'info');
+                    google.script.run.withSuccessHandler(actionResponse => showToast(actionResponse.message, actionResponse.success ? 'success' : 'error'))
+                        .executeAction(selectedOrderNumber, action.key);
+                    reloadCurrentList();
+                };
+                document.getElementById('action-skip-btn').onclick = () => {
+                    modal.classList.remove('show');
+                    reloadCurrentList();
+                };
+            } else {
+                reloadCurrentList();
+            }
+        } else {
+            showToast(`Fehler: ${response.message}`, 'error');
+        }
+    }
+    
+    function triggerManualAction(actionKey) {
+        if (!selectedOrderNumber) return;
+        showToast(`Führe manuelle Aktion '${actionKey}' aus...`, 'info');
+        google.script.run.withSuccessHandler(response => showToast(response.message, response.success ? 'success' : 'error'))
+            .executeAction(selectedOrderNumber, actionKey);
+    }
+
+    function downloadHauptPdf(event) {
+        event.preventDefault();
+        if (!selectedOrderNumber) return;
+        showToast('Bereite PDF-Download vor...', 'info');
+        google.script.run.withSuccessHandler(response => {
+            if (response.success && response.url) {
+                window.open(response.url, '_blank');
+            } else {
+                showToast(response.error || 'Download-URL konnte nicht abgerufen werden.', 'error');
+            }
+        }).getHauptPdfDownloadUrl(selectedOrderNumber);
+    }
+
+    function updateAssignee() {
+      const newAssignee = document.getElementById('assignee-select').value;
+      if (!selectedOrderNumber) return;
+      showToast('Speichere Bearbeiter...', 'info');
+      google.script.run.withSuccessHandler(response => handleUpdateResponse(response, false)).updateJobAssignee(selectedOrderNumber, newAssignee);
+    }
+
+    function updateNotes() {
+       const newNotes = document.getElementById('notes-textarea').value;
+       if (!selectedOrderNumber) return;
+       showToast('Speichere Hinweise...', 'info');
+       google.script.run.withSuccessHandler(response => handleUpdateResponse(response, false)).updateJobNotes(selectedOrderNumber, newNotes);
+    }
+    
+    function handleUpdateResponse(response, shouldReloadList) {
+      if (response.success) {
+        showToast(response.message, 'success');
+        if (shouldReloadList) reloadCurrentList();
+      } else {
+        showToast(`Fehler: ${response.message}`, 'error');
+      }
+    }
+    
+    function reloadCurrentList() {
+        const activeBtn = document.querySelector('.status-btn.active');
+        if (activeBtn) {
+            const currentStatus = activeBtn.id.replace('btn-', '');
+            loadOrders(currentStatus);
+        }
+    }
+
+    // --- HILFSFUNKTIONEN ---
+    function formatDate(dateString) {
+      if (!dateString) return 'N/A';
+      const date = new Date(dateString);
+      return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+    
+    function generateVariableDetailsHtml(detailsObject, excludeKeys = []) {
+      if (!detailsObject) return '';
+      let html = '';
+      for (const key in detailsObject) {
+        if (!excludeKeys.includes(key) && detailsObject[key]) {
+          html += `<div class="info-item"><label>${key.replace(/_/g, ' ')}</label><span>${detailsObject[key]}</span></div>`;
+        }
+      }
+      return html;
+    }
+
+    function toggleDetails(element, event) {
+      event.preventDefault();
+      const detailsDiv = element.nextElementSibling;
+      if (detailsDiv.style.display === 'none') {
+        detailsDiv.style.display = 'block';
+        element.textContent = '- Weniger Details';
+      } else {
+        detailsDiv.style.display = 'none';
+        element.innerHTML = `+ ${element.textContent.includes('Liefer') ? 'Lieferadresse' : 'Manuelle Aktionen'} anzeigen`;
+      }
+    }
+    
+    let toastTimeout;
+    function showToast(message, type = 'info') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = `show ${type}`;
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => { toast.className = ''; }, 3000);
+    }
+
+    // --- NEU: AUTO-REFRESH LOGIK ---
+    function pollForUpdates() {
+      google.script.run.withSuccessHandler(response => {
+        if (response.success) {
+          const newCounts = response.counts;
+          // Zähler auf den Buttons aktualisieren
+          updateButtonCounts(newCounts);
+
+          // Prüfen, ob die aktuell angezeigte Liste aktualisiert werden muss
+          const activeBtn = document.querySelector('.status-btn.active');
+          if (activeBtn) {
+            const activeStatus = activeBtn.id.replace('btn-', '');
+            if (currentStatusCounts[activeStatus] !== newCounts[activeStatus]) {
+              console.log(`Änderungen im Status '${activeStatus}' erkannt. Lade Liste neu.`);
+              loadOrders(activeStatus);
+            }
+          }
+          // Die neuen Zähler für den nächsten Vergleich speichern
+          currentStatusCounts = newCounts;
+        }
+      }).getStatusCounts();
+    }
+
+    function updateButtonCounts(counts) {
+        dashboardConfig.statusOrder.forEach(statusKey => {
+            const count = counts[statusKey] || 0;
+            const badge = document.getElementById(`count-${statusKey}`);
+            const button = document.getElementById(`btn-${statusKey}`);
+            if (badge) {
+                badge.textContent = count;
+                badge.style.display = count > 0 ? 'inline-block' : 'none';
+            }
+            if (button && statusKey === 'Eingegangen') {
+                if (count > 0) {
+                    button.classList.add('pulsing');
+                } else {
+                    button.classList.remove('pulsing');
+                }
+            }
+        });
+    }
+
+  </script>
+</body>
+</html>

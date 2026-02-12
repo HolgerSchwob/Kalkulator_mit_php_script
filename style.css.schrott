@@ -1,0 +1,284 @@
+/* Google Font Import für Roboto */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+/* Bestehende Stile von V1.7 ... */
+body {
+    font-family: 'Roboto', sans-serif; /* NEU: Roboto als Standardschrift */
+    line-height: 1.5;
+    margin: 0;
+    padding: 15px 15px 70px 15px; /* Etwas mehr Padding unten für den Mobile Footer */
+    background-color: #f4f4f4;
+    color: #333;
+    font-size: 0.95rem; /* Basisschriftgröße, ggf. anpassen */
+}
+
+.page-container { 
+    display: flex; 
+    flex-wrap: wrap; 
+    gap: 20px; 
+    max-width: 1200px; /* Optional: Maximale Breite für sehr große Bildschirme */
+    margin: 0 auto; /* Zentriert den Container, wenn max-width aktiv ist */
+}
+.configurator-column { 
+    flex: 2; 
+    min-width: 320px; /* Etwas kleiner für bessere Flexibilität auf Tablets */
+}
+.cart-column { 
+    flex: 1; 
+    min-width: 280px; 
+}
+
+.config-section {
+    background: #fff; 
+    padding: 15px; 
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); /* Sanfterer Schatten */
+    margin-bottom: 20px; /* Etwas mehr Abstand */
+    border: 1px solid transparent; /* Basis für Invalid-Border, statt 2px */
+    transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+/* NEUER STIL für ungültige Sektionen */
+.config-section.section-invalid {
+    border-color: #d9534f !important; 
+    box-shadow: 0 0 8px rgba(217, 83, 79, 0.4) !important; /* Leichterer Schatten bei Invalid */
+}
+
+
+.config-section h1 { /* Wird selten in .config-section sein, eher außerhalb */
+    margin-top: 0; 
+    color: #337ab7; 
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px; 
+    margin-bottom: 20px; 
+    font-size: 1.8em; /* Etwas größer für Hauptüberschrift */
+}
+.config-section h2 {
+    margin-top: 0; 
+    color: #337ab7; 
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px; /* Einheitlicher Padding-Bottom */
+    margin-bottom: 18px; /* Etwas mehr Abstand */
+    font-size: 1.3em; /* Etwas größer */
+}
+
+/* Optimierung: Fieldset-Styling zusammenfassen */
+.config-section fieldset,
+#productionTimeOptionsContainer, /* ID-Selektoren sind sehr spezifisch, ggf. Klassen verwenden */
+#deliveryMethodOptionsContainer {
+    margin-bottom: 15px; /* Einheitlicher Abstand */
+    padding: 10px 15px; 
+    border: 1px solid #ddd; 
+    border-radius: 4px;
+}
+.config-section fieldset legend,
+#productionTimeOptionsContainer legend,
+#deliveryMethodOptionsContainer legend {
+    font-weight: bold; 
+    padding: 0 8px; /* Mehr Padding */
+    font-size: 0.95em; /* Etwas größer */
+    color: #337ab7; /* Passend zu h2 */
+}
+.config-section fieldset div,
+#productionTimeOptionsContainer div,
+#deliveryMethodOptionsContainer div { 
+    margin-bottom: 8px; /* Mehr Abstand zwischen Radio/Checkbox-Optionen */
+}
+.config-section fieldset div:last-child,
+#productionTimeOptionsContainer div:last-child,
+#deliveryMethodOptionsContainer div:last-child {
+    margin-bottom: 0; /* Kein Abstand nach dem letzten Element im Fieldset */
+}
+
+
+.config-section fieldset label, /* Genereller Label-Stil in Fieldsets */
+#productionTimeOptionsContainer label,
+#deliveryMethodOptionsContainer label {
+    font-weight: normal; 
+    display: flex; 
+    align-items: center; 
+    cursor: pointer; 
+    font-size: 0.95em; /* Einheitliche Größe */
+}
+.config-section fieldset input[type="radio"],
+.config-section fieldset input[type="checkbox"], /* Checkbox hier auch gestyled */
+#productionTimeOptionsContainer input[type="radio"],
+#deliveryMethodOptionsContainer input[type="radio"] { 
+    width: auto; 
+    margin-right: 8px; /* Mehr Abstand */
+    flex-shrink: 0; /* Verhindert Schrumpfen bei langem Label-Text */
+}
+
+#a3PagesCountContainer label { 
+    font-weight: normal; 
+    margin-left: 25px; /* Etwas mehr Einzug */
+    display: block; 
+    margin-bottom: 5px;
+}
+#a3PagesCountContainer input[type="number"] {
+    margin-left: 25px;
+    width: 80px; /* Feste Breite für bessere Kontrolle */
+}
+
+/* Allgemeine Divs in .config-section, die nicht speziell behandelt werden */
+.config-section > div:not(.accordion-header):not(.accordion-body):not(.production-delivery-grid) { /* Präziserer Selektor */
+    margin-bottom: 15px;
+}
+.config-section > label { /* Nur direkte Label-Kinder von .config-section */
+    display: block; 
+    margin-bottom: 5px; 
+    font-weight: bold; 
+    font-size: 0.95em;
+}
+.config-section input[type="number"], 
+.config-section input[type="file"], /* File-Input Styling hinzugefügt */
+.config-section select {
+    width: 100%; 
+    padding: 8px 10px; /* Etwas mehr Padding */
+    border: 1px solid #ccc; /* Etwas dunklerer Rand für besseren Kontrast */
+    border-radius: 4px; 
+    box-sizing: border-box; 
+    font-size: 0.95em;
+    background-color: #fff; /* Sicherstellen, dass Hintergrund weiß ist */
+}
+.config-section input[type="file"] {
+    padding: 5px; /* Weniger Padding für File-Inputs */
+}
+
+
+.info-text { 
+    font-style: italic; 
+    color: #555; /* Etwas dunkler für bessere Lesbarkeit */
+    font-size: 0.9em; /* Etwas größer */
+    margin-top: 8px; 
+    line-height: 1.4;
+}
+.error-text { /* Für Warnhinweise wie PDF-Upload-Pflicht */
+    color: #d9534f !important; /* Wichtig, um andere Farben zu überschreiben */
+    font-weight: bold;
+    font-size: 0.9em;
+    margin-bottom: 10px !important; 
+    padding: 8px;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+}
+
+
+.accordion-item { 
+    border: 1px solid #ddd; 
+    border-radius: 4px; 
+    margin-bottom: 10px; 
+    background-color: #fff; /* Weißer Hintergrund für Akkordeon-Items */
+    transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+.accordion-item.section-invalid {
+    border: 1px solid #d9534f !important; 
+    box-shadow: 0 0 5px rgba(217, 83, 79, 0.3) !important;
+}
+.accordion-item.section-invalid > .accordion-header {
+    background-color: #f8d7da !important; 
+    color: #721c24; /* Dunklere Schrift für besseren Kontrast */
+}
+
+
+.accordion-header {
+    padding: 12px 15px; /* Mehr Padding */
+    background-color: #f7f7f7; /* Hellerer Hintergrund für Header */
+    cursor: pointer; 
+    display: flex;
+    justify-content: space-between; 
+    align-items: center; 
+    border-bottom: 1px solid #eee; /* Sanftere Trennlinie */
+}
+.accordion-header.expanded { 
+    background-color: #e9e9e9; /* Etwas dunkler bei expanded */
+}
+.accordion-header h3, .accordion-header h4 { 
+    margin: 0; 
+    font-size: 1.1em; /* Etwas größer */
+    color: #337ab7; /* Passend zu Sektionsüberschriften */
+}
+.accordion-header-summary { 
+    font-size: 0.88em; /* Etwas größer */
+    color: #444; 
+    margin-top: 3px;
+}
+.accordion-controls button { 
+    margin-left: 10px; /* Mehr Abstand */
+}
+.accordion-body { 
+    padding: 15px; 
+    border-top: 1px solid #eee; /* Linie auch oben für klare Trennung */
+}
+
+.variant-body .binding-description { 
+    font-style: italic; 
+    font-size: 0.9em; 
+    color: #555; 
+    margin-bottom: 12px; 
+    padding: 8px 10px; /* Etwas Padding */
+    border-left: 3px solid #337ab7; /* Farbe passend zu Überschriften */
+    background-color: #f9f9f9; /* Leichter Hintergrund */
+}
+.variant-body .options-section { 
+    padding-left: 0; 
+    border-left: none; 
+    margin-top: 10px; 
+    margin-bottom: 10px; 
+}
+.variant-body .variant-option-group { 
+    border: 1px solid #e9e9e9; /* Sanfterer Rand */
+    border-radius: 4px; 
+    padding: 10px 15px; 
+    margin-bottom: 12px; 
+    background-color: #fdfdfd; 
+}
+.variant-body .variant-option-group legend { 
+    font-weight: bold; 
+    font-size: 1em; /* Größer */
+    padding: 0 5px; 
+    color: #337ab7; 
+}
+.variant-body .variant-option-group label { 
+    font-weight: normal; 
+    display: flex; 
+    align-items: center; 
+    margin-bottom: 5px; 
+    cursor: pointer; 
+    font-size: 0.95em; 
+}
+.variant-body .variant-option-group input[type="radio"], 
+.variant-body .variant-option-group input[type="checkbox"] { 
+    width: auto; 
+    margin-right: 8px; 
+}
+.variant-body .gallery-select-control { 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; /* Mehr Abstand */
+    margin-top: 8px; 
+    margin-bottom: 8px; 
+}
+.variant-body .gallery-current-preview-thumb { 
+    width: 40px; /* Etwas größer */
+    height: 60px; 
+    border: 1px solid #ccc; 
+    object-fit: cover; 
+    border-radius: 3px; 
+    background-color: #f0f0f0; /* Placeholder-Farbe */
+}
+.variant-body .gallery-current-preview-thumb.placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7em;
+    color: #888;
+}
+
+.variant-body .gallery-select-control button.open-gallery-btn { 
+    padding: 6px 10px; 
+    font-size: 0.9em; 
+}
+
+/* ... and so on for the rest of your original style.css file ... */
+

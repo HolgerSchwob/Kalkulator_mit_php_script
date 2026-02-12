@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auftragsstatus – Ihre Bestellung</title>
+    <style>
+        :root { --border: #ddd; --bg: #f9f9f9; --text: #333; --status-bg: #e8f4fd; --accent: #337ab7; }
+        * { box-sizing: border-box; }
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 20px; color: var(--text); background: var(--bg); max-width: 720px; margin-left: auto; margin-right: auto; }
+        h1 { font-size: 1.5rem; margin-bottom: 1rem; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; font-weight: 600; margin-bottom: 0.35rem; }
+        .form-group input { width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 6px; font-size: 1rem; }
+        button { padding: 0.6rem 1.2rem; background: var(--accent); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        .error { color: #c00; margin-top: 0.5rem; }
+        .status-badge { display: inline-block; padding: 0.35rem 0.75rem; background: var(--status-bg); color: var(--accent); border-radius: 20px; font-weight: 600; margin-bottom: 1.5rem; }
+        .section { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+        .section h2 { font-size: 1.1rem; margin: 0 0 0.75rem 0; color: var(--accent); }
+        .cart-item { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 1rem; }
+        .cart-item .thumb { width: 64px; height: 84px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); flex-shrink: 0; }
+        .cart-item .thumb.placeholder { background: #eee; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #999; text-align: center; padding: 4px; }
+        .cart-total { border-top: 1px solid var(--border); padding-top: 0.75rem; margin-top: 0.75rem; font-size: 1.15rem; font-weight: 700; }
+        .info-row { margin-bottom: 0.5rem; }
+        .info-row strong { display: inline-block; min-width: 6rem; }
+        #loading { margin-top: 1rem; }
+        #result { margin-top: 1.5rem; }
+        #orderForm { margin-bottom: 1.5rem; }
+    </style>
+</head>
+<body>
+    <h1>Auftragsstatus</h1>
+    <p>Geben Sie Ihre Auftragsnummer und E-Mail-Adresse ein, um Ihren Auftrag einzusehen. Keine Downloads – nur Übersicht.</p>
+
+    <form id="orderForm">
+        <div class="form-group">
+            <label for="order_number">Auftragsnummer</label>
+            <input type="text" id="order_number" name="order_number" placeholder="z. B. A-20250211-X7K9M2" required>
+        </div>
+        <div class="form-group">
+            <label for="email">E-Mail-Adresse</label>
+            <input type="email" id="email" name="email" placeholder="ihre@email.de" required>
+        </div>
+        <button type="submit" id="submitBtn">Auftrag anzeigen</button>
+        <div id="formError" class="error" aria-live="polite"></div>
+    </form>
+
+    <div id="loading" style="display: none;">Lade Auftrag …</div>
+    <div id="result" style="display: none;"></div>
+
+    <script type="module">
+        const form = document.getElementById('orderForm');
+        const loading = document.getElementById('loading');
+        const resultEl = document.getElementById('result');
+        const formError = document.getElementById('formError');
+        const submitBtn = document.getElementById('submitBtn');
+
+        let supabaseUrl = '';
+        let anonKey = '';
+
+        async function loadConfig() {
+            if (supabaseUrl && anonKey) return;
+            const r = await fetch('./supabase.config.json?t=' + Date.now());
+            if (!r.ok) throw new Error('Konfiguration nicht geladen.');
+            const c = await r.json();
+            supabaseUrl = c.url?.replace(/\/$/, '') || '';
+            anonKey = c.anonKey || '';
+            if (!supabaseUrl || !anonKey) throw new Error('Supabase-Konfiguration unvollständig.');
+        }
+
+        async function getOrder(orderNumber, email) {
+            await loadConfig();
+            const res = await fetch(supabaseUrl + '/functions/v1/get-order', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + anonKey,
+                },
+                body: JSON.stringify({ order_number: orderNumber.trim(), email: email.trim() }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || 'Auftrag konnte nicht geladen werden.');
+            return data;
+        }
+
+        function escapeHtml(s) {
+            if (s == null || s === undefined) return '';
+            const t = document.createElement('span');
+            t.textContent = s;
+            return t.innerHTML;
+        }
+
+        function renderOrder(order) {
+            const p = order.payload || {};
+            const inquiry = p.inquiryDetails || {};
+            const priceDetails = p.priceDetails || {};
+            const variants = priceDetails.variantsWithPrices || [];
+            const extras = priceDetails.extrasWithPrices || [];
+            const total = order.total_price != null ? Number(order.total_price) : (priceDetails.totalOrderPrice != null ? Number(priceDetails.totalOrderPrice) : 0);
+            const customerData = p.customerData || {};
+            const shippingData = p.shippingData || order.shipping_data || {};
+            const personalizations = inquiry.personalizations || {};
+            const production = inquiry.production || {};
+            const currency = '€';
+
+            const deliveryMethodId = production.deliveryMethodId;
+            const deliveryMethods = inquiry.productionAndDelivery?.deliveryMethods || [
+                { id: 'pickup', name: 'Selbstabholung', requiresAddress: false },
+                { id: 'standard_shipping', name: 'Standardversand (DE)', requiresAddress: true },
+            ];
+            const delivery = deliveryMethods.find(d => d.id === deliveryMethodId) || { name: '–', requiresAddress: false };
+
+            let html = '<div class="status-badge">Status: ' + escapeHtml(order.status || 'Eingegangen') + '</div>';
+
+            html += '<div class="section"><h2>Ihre Bestellung</h2>';
+            variants.forEach(v => {
+                const thumb = personalizations[v.id]?.editorData?.thumbnailDataUrl;
+                const thumbHtml = thumb
+                    ? '<img class="thumb" src="' + escapeHtml(thumb) + '" alt="">'
+                    : '<div class="thumb placeholder">Vorschau</div>';
+                const name = (v.name != null ? v.name : 'Variante');
+                const qty = v.quantity != null ? v.quantity : 1;
+                const unitPrice = v.unitPrice != null ? Number(v.unitPrice).toFixed(2) : '0.00';
+                const totalPrice = v.totalPrice != null ? Number(v.totalPrice).toFixed(2) : '0.00';
+                html += '<div class="cart-item">' + thumbHtml + '<div><p><strong>' + qty + ' × ' + escapeHtml(name) + '</strong></p><p style="font-size:0.9em;color:#555;">Stückpreis: ' + unitPrice + ' ' + currency + '</p><p>Gesamt: ' + totalPrice + ' ' + currency + '</p></div></div>';
+            });
+            if (extras.length > 0) {
+                html += '<h4 style="margin-top:1rem;">Extras</h4>';
+                extras.forEach(e => {
+                    const name = e.name != null ? e.name : 'Extra';
+                    const qty = e.quantity != null ? e.quantity : 1;
+                    const totalPrice = e.totalPrice != null ? Number(e.totalPrice).toFixed(2) : '0.00';
+                    html += '<div class="cart-item"><div class="thumb placeholder">–</div><div><p><strong>' + qty + '× ' + escapeHtml(name) + '</strong></p><p>Gesamt: ' + totalPrice + ' ' + currency + '</p></div></div>';
+                });
+            }
+            html += '<p class="cart-total">Gesamtkosten: ' + total.toFixed(2) + ' ' + currency + '</p></div>';
+
+            html += '<div class="section"><h2>Ihre Angaben</h2>';
+            html += '<div class="info-row"><strong>Name:</strong> ' + escapeHtml(customerData.customerName || customerData.name || order.customer_name || '–') + '</div>';
+            html += '<div class="info-row"><strong>E-Mail:</strong> ' + escapeHtml(customerData.customerEmail || customerData.email || order.customer_email || '–') + '</div>';
+            html += '<div class="info-row"><strong>Telefon:</strong> ' + escapeHtml(customerData.customerPhone || customerData.phone || order.customer_phone || '–') + '</div>';
+            if (customerData.customerNotes) html += '<div class="info-row"><strong>Anmerkungen:</strong> ' + escapeHtml(customerData.customerNotes) + '</div>';
+            html += '</div>';
+
+            html += '<div class="section"><h2>Lieferung</h2>';
+            html += '<div class="info-row"><strong>Lieferart:</strong> ' + escapeHtml(delivery.name) + '</div>';
+            if (delivery.requiresAddress && (shippingData.shippingStreet || shippingData.shippingZip || shippingData.shippingCity)) {
+                html += '<div class="info-row"><strong>Adresse:</strong> ' + escapeHtml([shippingData.shippingStreet, shippingData.shippingZip, shippingData.shippingCity].filter(Boolean).join(', ')) + '</div>';
+            }
+            html += '</div>';
+
+            return html;
+        }
+
+        function showError(msg) {
+            formError.textContent = msg;
+            resultEl.style.display = 'none';
+        }
+
+        function showResult(order) {
+            formError.textContent = '';
+            resultEl.innerHTML = renderOrder(order);
+            resultEl.style.display = 'block';
+        }
+
+        async function handleSubmit(e) {
+            e.preventDefault();
+            const orderNumber = document.getElementById('order_number').value.trim();
+            const email = document.getElementById('email').value.trim();
+            if (!orderNumber || !email) {
+                showError('Bitte Auftragsnummer und E-Mail eingeben.');
+                return;
+            }
+            submitBtn.disabled = true;
+            loading.style.display = 'block';
+            resultEl.style.display = 'none';
+            formError.textContent = '';
+            try {
+                const order = await getOrder(orderNumber, email);
+                showResult(order);
+            } catch (err) {
+                showError(err.message || 'Auftrag nicht gefunden oder E-Mail stimmt nicht überein.');
+            } finally {
+                submitBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        }
+
+        form.addEventListener('submit', handleSubmit);
+
+        const params = new URLSearchParams(window.location.search);
+        const orderParam = params.get('order');
+        const emailParam = params.get('email');
+        if (orderParam && emailParam) {
+            document.getElementById('order_number').value = orderParam;
+            document.getElementById('email').value = emailParam;
+            handleSubmit(new Event('submit'));
+        }
+    </script>
+</body>
+</html>

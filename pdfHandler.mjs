@@ -1,36 +1,19 @@
 // pdfHandler.mjs
 // Manages the PDF analysis modal and its logic. By Lucy.
+// V2: Receives DOM elements as dependencies to prevent timing issues.
 
 import { analyzePdfFile } from './pdfAnalyzer.mjs';
 
 // --- MODULE SCOPE VARIABLES ---
-let onApplyDataCallback; // Callback to send data back to script.js
-
-// --- DOM ELEMENT REFERENCES ---
-const DOM = {
-    // Modal elements
-    overlay: document.getElementById('pdfAnalysisModalOverlay'),
-    closeButton: document.getElementById('closePdfAnalysisModalButton'),
-    modalFileInput: document.getElementById('modalPdfFile'),
-    loadingMessage: document.getElementById('modalLoadingMessage'),
-    resultArea: document.getElementById('modalAnalysisResultArea'),
-    resultText: document.getElementById('modalAnalysisResultText'),
-    previewContainer: document.getElementById('modalPreviewContainer'),
-    previewCanvas: document.getElementById('modalPreviewCanvas'),
-    applyButton: document.getElementById('applyPdfDataButton'),
-    cancelButton: document.getElementById('cancelPdfAnalysisButton'),
-    
-    // Main button in the calculator UI
-    openModalButton: document.getElementById('uploadAndAnalyzePdfBtn'),
-    mainPdfStatus: document.getElementById('mainPdfStatusInBookBlock'),
-};
-
-let analysisResultCache = null; // Caches the result of the last analysis
+let onApplyDataCallback;
+let DOM = {}; // Wird von initPdfHandler befüllt
+let analysisResultCache = null;
 
 /**
  * Opens the PDF analysis modal.
  */
 function openModal() {
+    if (!DOM.overlay) return;
     resetModalUI();
     DOM.overlay.classList.add('active');
 }
@@ -39,27 +22,28 @@ function openModal() {
  * Closes the PDF analysis modal.
  */
 function closeModal() {
-    DOM.overlay.classList.remove('active');
+    if (DOM.overlay) DOM.overlay.classList.remove('active');
 }
 
 /**
  * Resets the modal UI to its initial state.
  */
 function resetModalUI() {
-    DOM.modalFileInput.value = ''; // Clear file input
-    DOM.loadingMessage.classList.add('hidden');
-    DOM.resultArea.classList.add('hidden');
-    DOM.previewContainer.classList.add('hidden');
-    DOM.resultText.textContent = '';
-    const ctx = DOM.previewCanvas.getContext('2d');
-    ctx.clearRect(0, 0, DOM.previewCanvas.width, DOM.previewCanvas.height);
-    DOM.applyButton.disabled = true;
+    if(DOM.modalFileInput) DOM.modalFileInput.value = '';
+    if(DOM.loadingMessage) DOM.loadingMessage.classList.add('hidden');
+    if(DOM.resultArea) DOM.resultArea.classList.add('hidden');
+    if(DOM.previewContainer) DOM.previewContainer.classList.add('hidden');
+    if(DOM.resultText) DOM.resultText.textContent = '';
+    if (DOM.previewCanvas) {
+        const ctx = DOM.previewCanvas.getContext('2d');
+        ctx.clearRect(0, 0, DOM.previewCanvas.width, DOM.previewCanvas.height);
+    }
+    if(DOM.applyButton) DOM.applyButton.disabled = true;
     analysisResultCache = null;
 }
 
 /**
  * Handles the file selection within the modal.
- * @param {Event} event - The file input change event.
  */
 async function handleFileSelect(event) {
     const file = event.target.files[0];
@@ -108,7 +92,6 @@ function applyData() {
     if (onApplyDataCallback && analysisResultCache) {
         onApplyDataCallback(analysisResultCache);
         
-        // Update the status message in the main UI
         if(DOM.mainPdfStatus) {
             DOM.mainPdfStatus.textContent = `Datei "${analysisResultCache.fileObject.name}" geladen. Daten wurden übernommen.`;
             DOM.mainPdfStatus.classList.remove('error-text');
@@ -117,25 +100,35 @@ function applyData() {
     closeModal();
 }
 
-
 /**
  * Initializes the PDF handler.
+ * @param {object} domElements - An object containing all required DOM elements.
  * @param {Function} applyCallback - The function to call when data is applied.
  */
-export function initPdfHandler(applyCallback) {
+export function initPdfHandler(domElements, applyCallback) {
+    // Überprüfen, ob die essentiellen Elemente vorhanden sind
+    if (!domElements || !domElements.openModalButton || !domElements.overlay) {
+        console.warn("PDF Handler wurde nicht vollständig initialisiert: Open-Button fehlt.");
+        return;
+    }
+
+    DOM = domElements; // DOM-Referenzen für das gesamte Modul setzen
     onApplyDataCallback = applyCallback;
 
     DOM.openModalButton.addEventListener('click', openModal);
-    DOM.closeButton.addEventListener('click', closeModal);
-    DOM.cancelButton.addEventListener('click', closeModal);
-    DOM.overlay.addEventListener('click', (e) => {
-        if (e.target === DOM.overlay) {
-            closeModal();
-        }
-    });
-
-    DOM.modalFileInput.addEventListener('change', handleFileSelect);
-    DOM.applyButton.addEventListener('click', applyData);
     
-    console.log("PDF Handler Initialized.");
+    // Event Listeners für Modal-Elemente nur hinzufügen, wenn sie existieren
+    if (DOM.closeButton) DOM.closeButton.addEventListener('click', closeModal);
+    if (DOM.cancelButton) DOM.cancelButton.addEventListener('click', closeModal);
+    if (DOM.overlay) {
+        DOM.overlay.addEventListener('click', (e) => {
+            if (e.target === DOM.overlay) {
+                closeModal();
+            }
+        });
+    }
+    if (DOM.modalFileInput) DOM.modalFileInput.addEventListener('change', handleFileSelect);
+    if (DOM.applyButton) DOM.applyButton.addEventListener('click', applyData);
+    
+    console.log("✅ PDF Handler Initialized.");
 }

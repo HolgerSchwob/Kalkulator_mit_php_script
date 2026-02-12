@@ -1,6 +1,6 @@
 {
     "general": {
-        "orderBaseFee": 10.00,
+        "orderBaseFee": 9.50,
         "bookBlockBaseFee": 5.00,
         "currencySymbol": "€",
         "maxVariants": 3,
@@ -54,6 +54,43 @@
             "maxBlockThicknessMm": 50.00,
             "requiresPersonalization": true,
             "personalizationInterface": "coverEditor",
+            "editorConfig": {
+                "templatePath": "templates/hardcover/",
+                "usesPdfPreviewAsCover": false,
+                "dimensions": {
+                    "u1Width": 215.0,
+                    "u4Width": 215.0,
+                    "visibleCoverHeight": 302.0,
+                    "svgTotalWidth": 500.0,
+                    "svgTotalHeight": 330.0,
+                    "svgCenterX": 250.0,
+                    "falzZoneWidth": 8.0
+                }
+            },
+            "options": []
+        },
+        {
+            "id": "paperback_perfect",
+            "name": "Paperback (Klebebindung)",
+            "bindingTypeBaseFee": 2.50,
+            "pricePerItem": 4.50,
+            "minBlockThicknessMm": 2.00,
+            "maxBlockThicknessMm": 30.00,
+            "requiresPersonalization": true,
+            "personalizationInterface": "coverEditor",
+            "editorConfig": {
+                "templatePath": "templates/paperback/",
+                "usesPdfPreviewAsCover": true,
+                "dimensions": {
+                    "u1Width": 210.0,
+                    "u4Width": 210.0,
+                    "visibleCoverHeight": 297.0,
+                    "svgTotalWidth": 450.0,
+                    "svgTotalHeight": 310.0,
+                    "svgCenterX": 225.0,
+                    "falzZoneWidth": 0.0
+                }
+            },
             "options": []
         }
     ],
@@ -75,6 +112,24 @@
             ], 
             "hasIndependentQuantity": true, 
             "defaultQuantity": 1 
+        },
+        {
+            "id": "postbox", 
+            "name": "Versandverpackung", 
+            "unitPrice": 0.0,
+            "options": [
+                { 
+                    "groupName": "Dicke wählen", 
+                    "type": "radio", 
+                    "optionKey": "box_typeg", 
+                    "choices": [
+                        { "id": "box_kleine", "name": "Füllhöhe 10 cm", "price": 3.50, "default": true },
+                        { "id": "cbox_gross", "name": "Füllhöhe 20 cm", "price": 4.50 }
+                    ]
+                }
+            ], 
+            "hasIndependentQuantity": true, 
+            "defaultQuantity": 0 
         }
     ]
 }

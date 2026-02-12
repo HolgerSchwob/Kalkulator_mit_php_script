@@ -1,0 +1,77 @@
+/* stepper.css - Minimale Stile für die Stepper-Funktionalität */
+
+/* 1. Navigationsleiste für die Schritte */
+.stepper-nav {
+    display: flex;
+    justify-content: space-between;
+    background-color: #f7f7f7;
+    border-radius: 5px;
+    padding: 5px;
+    margin-bottom: 20px;
+    border: 1px solid #ddd;
+}
+
+.stepper-nav-item {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9em;
+    color: #888;
+    transition: background-color 0.2s, color 0.2s;
+    border-radius: 4px;
+}
+
+/* Stil für abgeschlossene, klickbare Schritte */
+.stepper-nav-item.completed {
+    color: #337ab7;
+    font-weight: bold;
+}
+.stepper-nav-item.completed:hover {
+    background-color: #eef;
+}
+
+/* Stil für den aktuell aktiven Schritt */
+.stepper-nav-item.active {
+    background-color: #337ab7;
+    color: white;
+    font-weight: bold;
+    cursor: default;
+}
+
+/* 2. Sichtbarkeit der Sektions-Panels */
+.stepper-panel {
+    display: none; /* Alle Panels standardmäßig ausblenden */
+}
+
+.stepper-panel.active {
+    display: block; /* Nur das aktive Panel anzeigen */
+}
+
+
+/* 3. "Weiter" / "Zurück" Buttons am Ende jeder Sektion */
+.stepper-controls {
+    margin-top: 25px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: space-between; /* Buttons an entgegengesetzte Enden */
+}
+
+/* Styling für den Aktionen-Container unter dem Warenkorb */
+.cart-actions {
+    margin-top: 15px;
+    text-align: center;
+}
+
+.cart-actions button {
+    width: 100%; /* Button nimmt die volle Breite ein */
+}
+
+.cart-actions .info-text {
+    margin-top: 8px;
+    font-size: 0.85em;
+}
+

@@ -10,31 +10,27 @@
  * der "gequetschten" Thumbnails.
  */
 
+
 /**
  * Generiert ein PNG-Thumbnail (als Data-URL) für den U1-Bereich (Vorderseite) eines SVG-Strings.
+ * @param {string} svgString - Der rohe SVG-String der gesamten Buchdecke.
  * @param {string} svgString - Der rohe SVG-String der gesamten Buchdecke im originalen Koordinatensystem.
  * @param {number} spineWidthMM - Die aktuelle Buchrückenbreite in Millimetern.
  * @param {number} [outputWidthPx=200] - Die gewünschte Breite des PNG-Thumbnails in Pixel.
  * @returns {Promise<string>} Ein Promise, das mit der PNG-Data-URL aufgelöst wird.
  */
-export async function generateU1Thumbnail(svgString, spineWidthMM, outputWidthPx = 200) {
+export async function generateU1Thumbnail(svgString, dimensions, spineWidthMM, outputWidthPx = 200) {
     return new Promise((resolve, reject) => {
-        // --- Basis-Dimensionen ---
-        const SVG_CENTER_X = 250.0;
-        const SVG_TOTAL_HEIGHT = 330.0;
-        const VISIBLE_COVER_HEIGHT = 302.0;
-        const U1_WIDTH = 215.0;
-
         // Y-Position ist konstant, schneidet den oberen Beschnitt ab.
-        const sourceY = (SVG_TOTAL_HEIGHT - VISIBLE_COVER_HEIGHT) / 2;
+        const sourceY = (dimensions.svgTotalHeight - dimensions.visibleCoverHeight) / 2;
 
         // X-Position wird von der Mitte aus berechnet.
         // Die rechte Kante des Rückens ist `SVG_CENTER_X + halbe Rückenbreite`.
         // Dort beginnt die Vorderseite (U1).
-        const sourceX = SVG_CENTER_X + (spineWidthMM / 2);
+        const sourceX = dimensions.svgCenterX + (spineWidthMM / 2);
 
-        const sourceWidth = U1_WIDTH;
-        const sourceHeight = VISIBLE_COVER_HEIGHT;
+        const sourceWidth = dimensions.u1Width;
+        const sourceHeight = dimensions.visibleCoverHeight;
 
         const tempContainer = document.createElement('div');
         tempContainer.innerHTML = svgString;
@@ -51,7 +47,7 @@ export async function generateU1Thumbnail(svgString, spineWidthMM, outputWidthPx
         // Setzt die viewBox, um exakt den U1-Bereich auszuschneiden.
         svgNode.setAttribute('viewBox', `${sourceX} ${sourceY} ${sourceWidth} ${sourceHeight}`);
         
-        const image = new Image();
+      const image = new Image();
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
 

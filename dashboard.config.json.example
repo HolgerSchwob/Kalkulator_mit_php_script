@@ -1,0 +1,6 @@
+{
+  "supabaseUrl": "https://IHR-PROJECT-REF.supabase.co",
+  "anonKey": "IHR_ANON_KEY_VON_SUPABASE",
+  "adminSecret": "IHR_ADMIN_SECRET_VON_SUPABASE_EDGE_FUNCTIONS",
+  "dashboardPassword": ""
+}

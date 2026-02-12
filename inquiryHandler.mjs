@@ -1,219 +1,238 @@
 // inquiryHandler.mjs
-// Manages the multi-step inquiry modal. V1.1 by Lucy.
-// V1.1: Implemented dynamic content population for all steps.
+// Manages the multi-step inquiry modal.
+// V3: Receives DOM elements as dependencies and corrected export.
+// V4: Added complete submission logic.
+// V5: Added loading overlay handling.
+// V6: Order submission via Supabase (orders table + storage).
 
-// --- MODULE SCOPE VARIABLES ---
-let inquiryStateRef;
-let calculationResultsRef;
-let configRef;
+let DOM = {}; // Wird von initInquiryHandler befüllt
 let currentStep = 1;
-const totalSteps = 3;
+let inquiryStateCache, calculationResultsCache, configCache;
 
-// --- DOM ELEMENT REFERENCES ---
-const DOM = {
-    overlay: document.getElementById('inquiryModalOverlay'),
-    closeButton: document.getElementById('closeInquiryModalButton'),
-    cancelButton: document.getElementById('cancelInquiryModalButton'),
-    backButton: document.getElementById('inquiryModalBackButton'),
-    nextButton: document.getElementById('inquiryModalNextButton'),
-    submitButton: document.getElementById('submitInquiryFormButton'),
+const STORAGE_BUCKET = 'order-files';
 
-    // Step Content Divs
-    steps: {
-        1: document.getElementById('inquiryStepCustomerData'),
-        2: document.getElementById('inquiryStepDeliveryAddress'),
-        3: document.getElementById('inquiryStepFinalReview'),
-    },
-    
-    // Form Elements & Displays
-    customerName: document.getElementById('inquiryCustomerName'),
-    customerEmail: document.getElementById('inquiryCustomerEmail'),
-    customerPhone: document.getElementById('inquiryCustomerPhone'),
-    
-    displaySelectedDeliveryMethod: document.getElementById('displaySelectedDeliveryMethod'),
-    inquiryShippingAddressFields: document.getElementById('inquiryShippingAddressFields'),
-    streetInput: document.getElementById('inquiryStreet'),
-    zipInput: document.getElementById('inquiryZip'),
-    cityInput: document.getElementById('inquiryCity'),
-    noAddressNeededInfo: document.getElementById('noAddressNeededInfo'),
-
-    finalSummaryDetails: document.getElementById('inquiryFinalSummaryDetails'),
-    finalTotal: document.getElementById('inquiryFinalTotal'),
-    acceptTermsCheckbox: document.getElementById('inquiryAcceptTerms'),
-};
-
-/**
- * Populates Step 2 (Delivery Address) with current data.
- */
-function populateStep2() {
-    const deliveryMethodId = inquiryStateRef.production.deliveryMethodId;
-    const deliveryMethod = configRef.productionAndDelivery.deliveryMethods.find(dm => dm.id === deliveryMethodId);
-
-    if (deliveryMethod) {
-        DOM.displaySelectedDeliveryMethod.textContent = deliveryMethod.name;
-        const needsAddress = deliveryMethod.requiresAddress;
-
-        DOM.inquiryShippingAddressFields.classList.toggle('hidden', !needsAddress);
-        DOM.noAddressNeededInfo.classList.toggle('hidden', needsAddress);
-
-        // Make address fields required only if they are visible
-        [DOM.streetInput, DOM.zipInput, DOM.cityInput].forEach(input => {
-            input.required = needsAddress;
-        });
-    } else {
-        DOM.displaySelectedDeliveryMethod.textContent = "Fehler: Keine Lieferart gewählt.";
-    }
+/** Generiert eine lesbare Auftragsnummer (z. B. A-20250211-X7K9M2). */
+function generateOrderNumber() {
+    const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const randomPart = Math.random().toString(36).slice(2, 8).toUpperCase();
+    return `A-${datePart}-${randomPart}`;
 }
 
-/**
- * Populates Step 3 (Final Review) with a summary of the configuration.
- */
-function populateStep3() {
-    let summaryHTML = '<h4>Ihre Konfiguration:</h4>';
-    
-    // Book Block Summary
-    const paper = configRef.papers.find(p => p.id === inquiryStateRef.bookBlock.paperId)?.name || 'N/A';
-    summaryHTML += `<p><strong>Buchblock:</strong> ${inquiryStateRef.bookBlock.totalPages} Seiten, Papier: ${paper}</p>`;
-
-    // Variants Summary
-    summaryHTML += '<ul>';
-    calculationResultsRef.variantsWithPrices.forEach((variant, index) => {
-        summaryHTML += `<li>Variante ${index + 1}: ${variant.quantity}x ${variant.name}</li>`;
-    });
-    summaryHTML += '</ul>';
-
-     // Extras Summary
-    if (calculationResultsRef.extrasWithPrices.length > 0) {
-        summaryHTML += '<p><strong>Extras:</strong></p><ul>';
-        calculationResultsRef.extrasWithPrices.forEach(extra => {
-            summaryHTML += `<li>${extra.quantity}x ${extra.name}</li>`;
-        });
-        summaryHTML += '</ul>';
+/** Entfernt nicht serialisierbare Felder aus dem State für die DB. */
+function buildPayloadForDb(inquiryState, calculationResults, customerData, shippingData) {
+    const inquiryDetails = { ...inquiryState };
+    if (inquiryDetails.bookBlock) {
+        inquiryDetails.bookBlock = { ...inquiryDetails.bookBlock };
+        delete inquiryDetails.bookBlock.mainPdfFile;
     }
-
-    DOM.finalSummaryDetails.innerHTML = summaryHTML;
-    DOM.finalTotal.textContent = calculationResultsRef.totalOrderPrice.toFixed(2);
+    return {
+        inquiryDetails,
+        priceDetails: calculationResults,
+        customerData,
+        shippingData,
+    };
 }
-
-
-/**
- * Shows or hides modal steps based on the current step number.
- */
-function updateVisibleStep() {
-    Object.values(DOM.steps).forEach(stepEl => stepEl.classList.add('hidden'));
-    if (DOM.steps[currentStep]) {
-        DOM.steps[currentStep].classList.remove('hidden');
-    }
+function updateModalStep() {
+    if (!DOM.customerDataStep) return;
+    DOM.customerDataStep.classList.toggle('hidden', currentStep !== 1);
+    DOM.deliveryAddressStep.classList.toggle('hidden', currentStep !== 2);
+    DOM.finalReviewStep.classList.toggle('hidden', currentStep !== 3);
 
     DOM.backButton.classList.toggle('hidden', currentStep === 1);
-    DOM.nextButton.classList.toggle('hidden', currentStep === totalSteps);
-    DOM.submitButton.classList.toggle('hidden', currentStep !== totalSteps);
-    
-    // Enable/disable submit button based on checkbox
-    DOM.submitButton.disabled = !DOM.acceptTermsCheckbox.checked;
+    DOM.nextButton.classList.toggle('hidden', currentStep === 3);
+    DOM.submitButton.classList.toggle('hidden', currentStep !== 3);
 }
 
-/**
- * Navigates to the next step.
- */
 function nextStep() {
-    if (currentStep === 1) {
-        if (!DOM.customerName.value || !DOM.customerEmail.value) {
-            alert("Bitte füllen Sie alle Pflichtfelder aus (Name und E-Mail).");
-            return;
-        }
-        inquiryStateRef.customer.name = DOM.customerName.value;
-        inquiryStateRef.customer.email = DOM.customerEmail.value;
-        inquiryStateRef.customer.phone = DOM.customerPhone.value;
-    } else if (currentStep === 2) {
-        if(DOM.streetInput.required && (!DOM.streetInput.value || !DOM.zipInput.value || !DOM.cityInput.value)) {
-            alert("Bitte geben Sie Ihre vollständige Lieferadresse an.");
-            return;
-        }
-        inquiryStateRef.customer.street = DOM.streetInput.value;
-        inquiryStateRef.customer.zip = DOM.zipInput.value;
-        inquiryStateRef.customer.city = DOM.cityInput.value;
-    }
-
-    if (currentStep < totalSteps) {
-        currentStep++;
-        if (currentStep === 2) populateStep2();
-        if (currentStep === 3) populateStep3();
-        updateVisibleStep();
-    }
-}
-
-/**
- * Navigates to the previous step.
- */
-function previousStep() {
-    if (currentStep > 1) {
-        currentStep--;
-        updateVisibleStep();
-    }
-}
-
-/**
- * Closes the inquiry modal and resets its state.
- */
-function closeModal() {
-    currentStep = 1;
-    DOM.overlay.classList.remove('active');
-}
-
-/**
- * Handles the final submission of the inquiry.
- */
-function submitInquiry() {
-    if (!DOM.acceptTermsCheckbox.checked) {
-        alert("Bitte akzeptieren Sie die AGB und die Datenschutzerklärung.");
+    if (currentStep === 1 && !validateCustomerForm()) {
+        alert("Bitte füllen Sie alle Pflichtfelder im Kundenformular aus.");
         return;
     }
-    console.log("Submitting inquiry with final state:", inquiryStateRef);
-    alert("Anfrage wird gesendet! (Dies ist eine Simulation)");
-    closeModal();
+    if (currentStep < 3) {
+        currentStep++;
+        updateModalStep();
+    }
 }
 
-/**
- * Opens and prepares the inquiry modal.
- */
-export function openInquiryModal(state, calculations, config) {
-    inquiryStateRef = state;
-    calculationResultsRef = calculations;
-    configRef = config;
-    
-    DOM.customerName.value = inquiryStateRef.customer.name || '';
-    DOM.customerEmail.value = inquiryStateRef.customer.email || '';
-    DOM.customerPhone.value = inquiryStateRef.customer.phone || '';
-    DOM.streetInput.value = inquiryStateRef.customer.street || '';
-    DOM.zipInput.value = inquiryStateRef.customer.zip || '';
-    DOM.cityInput.value = inquiryStateRef.customer.city || '';
+function prevStep() {
+    if (currentStep > 1) {
+        currentStep--;
+        updateModalStep();
+    }
+}
+
+function openModal(inquiryState, calculationResults, config) {
+    if (!DOM.overlay) return;
+    inquiryStateCache = inquiryState;
+    calculationResultsCache = calculationResults;
+    configCache = config;
     
     currentStep = 1;
-    updateVisibleStep();
+    populateModalData();
+    updateModalStep();
     DOM.overlay.classList.add('active');
 }
 
-/**
- * Initializes the inquiry handler and its event listeners.
- */
-export function initInquiryHandler() {
-    DOM.closeButton.addEventListener('click', closeModal);
-    DOM.cancelButton.addEventListener('click', closeModal);
-    DOM.overlay.addEventListener('click', (e) => {
-        if (e.target === DOM.overlay) closeModal();
-    });
-
-    DOM.nextButton.addEventListener('click', nextStep);
-    DOM.backButton.addEventListener('click', previousStep);
-    DOM.submitButton.addEventListener('click', submitInquiry);
-    
-    // Add listener to the terms checkbox to enable/disable the submit button
-    DOM.acceptTermsCheckbox.addEventListener('change', () => {
-        if (currentStep === totalSteps) {
-            DOM.submitButton.disabled = !DOM.acceptTermsCheckbox.checked;
-        }
-    });
-
-    console.log("Inquiry Handler Initialized.");
+function closeModal() {
+    if (DOM.overlay) DOM.overlay.classList.remove('active');
 }
+
+function populateModalData() {
+    if (!configCache) return;
+    const deliveryMethod = configCache.productionAndDelivery.deliveryMethods.find(d => d.id === inquiryStateCache.production.deliveryMethodId);
+    if (deliveryMethod && DOM.selectedDeliveryMethodDisplay) {
+        DOM.selectedDeliveryMethodDisplay.textContent = deliveryMethod.name;
+        const needsAddress = deliveryMethod.requiresAddress;
+        if(DOM.shippingAddressFields) DOM.shippingAddressFields.classList.toggle('hidden', !needsAddress);
+        if(DOM.noAddressNeededInfo) DOM.noAddressNeededInfo.classList.toggle('hidden', needsAddress);
+    }
+
+    let summaryHTML = `<p><strong>Ihre Konfiguration:</strong></p><ul>`;
+    calculationResultsCache.variantsWithPrices.forEach(v => {
+        summaryHTML += `<li>${v.quantity}x ${v.name}</li>`;
+    });
+    summaryHTML += `</ul>`;
+    if(DOM.finalSummaryDetails) DOM.finalSummaryDetails.innerHTML = summaryHTML;
+    if(DOM.finalTotal) DOM.finalTotal.textContent = calculationResultsCache.totalOrderPrice.toFixed(2);
+}
+
+// --- NEU: Funktion zur Validierung des Kundenformulars ---
+function validateCustomerForm() {
+    if (!DOM.customerForm) return true; // Wenn kein Formular da ist, nicht validieren
+    const requiredFields = DOM.customerForm.querySelectorAll('[required]');
+    for (const field of requiredFields) {
+        if (!field.value.trim()) {
+            return false;
+        }
+    }
+    return true;
+}
+
+
+// --- KORRIGIERT: Die komplette Logik zum Absenden der Anfrage mit Lade-Overlay ---
+async function handleSubmit(event) {
+    event.preventDefault(); // Verhindert das Standard-Formular-Verhalten
+
+    if (!DOM.acceptTermsCheckbox || !DOM.acceptTermsCheckbox.checked) {
+        alert('Bitte akzeptieren Sie die AGB, um fortzufahren.');
+        return;
+    }
+
+    // Show loading overlay. If it exists, it handles the visual state.
+    // If not, fall back to disabling the button.
+    if (DOM.loadingOverlay) {
+        DOM.loadingOverlay.classList.add('active');
+    } else {
+        DOM.submitButton.disabled = true;
+        DOM.submitButton.textContent = 'Daten werden übermittelt...';
+    }
+
+    // 1. Kundendaten und Lieferadresse
+    const customerFormData = new FormData(DOM.customerForm);
+    const customerData = Object.fromEntries(customerFormData.entries());
+    const shippingData = {};
+    const deliveryMethod = configCache.productionAndDelivery.deliveryMethods.find(d => d.id === inquiryStateCache.production.deliveryMethodId);
+    if (deliveryMethod && deliveryMethod.requiresAddress) {
+        const shippingForm = DOM.shippingAddressFields?.querySelector('#inquiryShippingForm');
+        if (shippingForm) {
+            Object.assign(shippingData, Object.fromEntries(new FormData(shippingForm).entries()));
+        }
+    }
+
+    const orderId = crypto.randomUUID();
+    const orderNumber = generateOrderNumber();
+    const payload = buildPayloadForDb(inquiryStateCache, calculationResultsCache, customerData, shippingData);
+    const totalPrice = calculationResultsCache.totalOrderPrice;
+    const isExpress = inquiryStateCache.production?.productionTimeId === 'prod_express';
+
+    try {
+        const { getSupabaseClient } = await import('./supabaseClient.mjs');
+        const supabase = await getSupabaseClient();
+
+        const { error: insertError } = await supabase.from('orders').insert({
+            id: orderId,
+            order_number: orderNumber,
+            customer_email: customerData.customerEmail || customerData.email || '',
+            customer_name: customerData.customerName || customerData.name || '',
+            customer_phone: customerData.customerPhone || customerData.phone || null,
+            status: 'Eingegangen',
+            total_price: totalPrice,
+            is_express: isExpress,
+            payload,
+            shipping_data: Object.keys(shippingData).length ? shippingData : null,
+            main_pdf_storage_path: inquiryStateCache.bookBlock?.mainPdfFile ? `${orderId}/${orderNumber}.pdf` : null,
+        });
+
+        if (insertError) throw new Error(insertError.message || 'Auftrag konnte nicht gespeichert werden.');
+
+        const prefix = `${orderId}/`;
+
+        if (inquiryStateCache.bookBlock?.mainPdfFile) {
+            const pdfFileName = `${orderNumber}.pdf`;
+            const { error: pdfError } = await supabase.storage
+                .from(STORAGE_BUCKET)
+                .upload(prefix + pdfFileName, inquiryStateCache.bookBlock.mainPdfFile, {
+                    contentType: 'application/pdf',
+                    upsert: true,
+                });
+            if (pdfError) console.warn('PDF-Upload Warnung:', pdfError.message);
+        }
+
+        for (const variantId in inquiryStateCache.personalizations || {}) {
+            const perso = inquiryStateCache.personalizations[variantId];
+            if (!perso?.editorData?.svgString) continue;
+            const variant = inquiryStateCache.variants.find(v => v.id === variantId);
+            const safeName = (variant?.name ?? 'personalisierung').replace(/[^a-zA-Z0-9]/g, '_');
+            const fileName = `personalisierung_${safeName}_${variantId}.svg`;
+            const blob = new Blob([perso.editorData.svgString], { type: 'image/svg+xml' });
+            const { error: svgError } = await supabase.storage
+                .from(STORAGE_BUCKET)
+                .upload(prefix + fileName, blob, { contentType: 'image/svg+xml', upsert: true });
+            if (svgError) console.warn('SVG-Upload Warnung:', fileName, svgError.message);
+        }
+
+        try { localStorage.removeItem('kalkulator_inquiry_state'); } catch (_) {}
+        const customerEmail = customerData.customerEmail || customerData.email || '';
+        const statusUrl = `${window.location.origin}${window.location.pathname.replace(/index\.html?$/i, '')}auftrag.html?order=${encodeURIComponent(orderNumber)}&email=${encodeURIComponent(customerEmail)}`;
+        alert(`Vielen Dank! Ihre Bestellung wurde erfasst.\n\nIhre Auftragsnummer: ${orderNumber}\n\nÜber den folgenden Link können Sie Ihren Auftragsstatus jederzeit einsehen:\n${statusUrl}`);
+        window.location.href = statusUrl;
+    } catch (error) {
+        console.error('Fehler beim Senden der Bestellung:', error);
+        alert(`Es gab ein Problem bei der Übermittlung: ${error.message}`);
+        DOM.submitButton.disabled = false;
+        DOM.submitButton.textContent = 'Anfrage jetzt absenden';
+    } finally {
+        if (DOM.loadingOverlay) DOM.loadingOverlay.classList.remove('active');
+    }
+}
+
+
+/**
+ * Initializes the inquiry handler.
+ * @param {object} domElements - An object containing all required DOM elements.
+ */
+export function initInquiryHandler(domElements) {
+    if (!domElements || !domElements.overlay || !domElements.closeButton) {
+        console.warn("Inquiry Handler wurde nicht vollständig initialisiert: Wichtige DOM-Elemente fehlen.");
+        return;
+    }
+    DOM = domElements;
+
+    DOM.closeButton.addEventListener('click', closeModal);
+    if(DOM.cancelButton) DOM.cancelButton.addEventListener('click', closeModal);
+    if(DOM.backButton) DOM.backButton.addEventListener('click', prevStep);
+    if(DOM.nextButton) DOM.nextButton.addEventListener('click', nextStep);
+    
+    if(DOM.submitButton) {
+        DOM.submitButton.addEventListener('click', handleSubmit);
+    }
+    
+    DOM.overlay.addEventListener('click', e => {
+        if(e.target === DOM.overlay) closeModal();
+    });
+    
+    console.log("✅ Inquiry Handler Initialized.");
+}
+
+// Die `openInquiryModal` Funktion wird von script.js importiert und aufgerufen.
+export { openModal as openInquiryModal };

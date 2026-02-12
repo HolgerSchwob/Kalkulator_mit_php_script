@@ -108,22 +108,18 @@ body {
     flex-shrink: 0; /* Verhindert Schrumpfen bei langem Label-Text */
 }
 
-#a3PagesCountContainer label { 
+#a3PagesCountContainer .number-input-wrapper label { 
     font-weight: normal; 
-    margin-left: 25px; /* Etwas mehr Einzug */
+    margin-left: 0;
     display: block; 
     margin-bottom: 5px;
-}
-#a3PagesCountContainer input[type="number"] {
-    margin-left: 25px;
-    width: 80px; /* Feste Breite für bessere Kontrolle */
 }
 
 /* Allgemeine Divs in .config-section, die nicht speziell behandelt werden */
 .config-section > div:not(.accordion-header):not(.accordion-body):not(.production-delivery-grid) { /* Präziserer Selektor */
     margin-bottom: 15px;
 }
-.config-section > label { /* Nur direkte Label-Kinder von .config-section */
+.config-section > label, .number-input-wrapper > label { /* Nur direkte Label-Kinder von .config-section */
     display: block; 
     margin-bottom: 5px; 
     font-weight: bold; 
@@ -486,6 +482,10 @@ body {
 .image-gallery-modal-content { 
     max-width: 800px; 
     max-height: 90vh; 
+}
+/* NEU: Spezifische Anpassung für das Bestätigungs-Modal */
+.confirmation-modal-content {
+    max-width: 500px;
 }
 
 
@@ -1139,6 +1139,11 @@ body {
     background-color: #f8f9fa; padding: 10px; border-radius: 4px; 
     max-height: 200px; overflow-y: auto; 
 }
+
+/* ========================================= */
+/* NEUE/KORRIGIERTE STILE FÜR LADE-OVERLAY    */
+/* ========================================= */
+
 .loading-overlay {
     position: fixed; /* Bleibt an Ort und Stelle, auch beim Scrollen */
     top: 0;
@@ -1180,20 +1185,108 @@ body {
     font-weight: bold;
 }
 
-/* CSS-Keyframe-Animation für die Drehung (aus deiner Logo.html) */
-@keyframes rotateLogoCounterClockwise {
+/* --- KORREKTUR: Alte, falsche Animation entfernt --- */
+/*
+@keyframes rotateLogoCounterClockwise { ... }
+#_1485002030976 { ... }
+*/
+
+/* --- NEU: Korrekte Animation für das Logo --- */
+@keyframes rotateCenter {
     from {
         transform: rotate(0deg);
     }
     to {
-        transform: rotate(-360deg); /* Gegen den Uhrzeigersinn */
+        transform: rotate(360deg);
     }
 }
 
-/* Anwenden der Animation auf die spezifische SVG-Gruppe (aus deiner Logo.html) */
-#_1485002030976 {
-    /* Setzt den Drehpunkt der Transformation auf die Mitte der viewBox (2000, 2000) */
-    transform-origin: 2000px 2000px;
-    animation: rotateLogoCounterClockwise 2s linear infinite;
+/* Wendet die Animation auf die korrekte Gruppe im SVG an */
+#loading-logo #logo-spinner-group {
+    transform-origin: center;
+    animation: rotateCenter 2s linear infinite;
 }
 
+
+/* ========================================= */
+/* NEUE STILE FÜR UI-VERBESSERUNGEN */
+/* ========================================= */
+
+.stepper-controls {
+    position: sticky;
+    bottom: 0;
+    background-color: #ffffff; /* Hintergrund, damit der Inhalt dahinter nicht durchscheint */
+    padding: 15px;
+    border-top: 1px solid #e0e0e0;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.07);
+    z-index: 10;
+    
+    /* Wichtig, damit die Buttons korrekt ausgerichtet bleiben */
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    box-sizing: border-box; /* Stellt sicher, dass Padding die Breite nicht beeinflusst */
+    margin-top: 20px; /* Etwas Abstand zum Inhalt oben */
+    margin-left: -15px; /* Korrigiert den durch das Padding des Elternelements entstehenden Versatz */
+}
+
+/* Verhindert, dass der letzte Inhalt HINTER die sticky-Leiste rutscht */
+.stepper-panel.active {
+    padding-bottom: 100px; /* Platzhalter, sollte etwas höher als die .stepper-controls Leiste sein */
+}
+
+.add-button-top-container {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px dashed #ccc;
+}
+
+/* Wrapper für custom number inputs */
+.number-input-wrapper {
+    margin-bottom: 15px;
+}
+.number-input-wrapper .input-group {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: 200px; /* Maximale Breite für das Steuerelement */
+}
+
+.number-input-wrapper input[type="number"] {
+    text-align: center;
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+    /* Verhindert das Standard-Aussehen von Browsern */
+    -moz-appearance: textfield;
+}
+.number-input-wrapper input[type=number]::-webkit-inner-spin-button, 
+.number-input-wrapper input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
+
+.number-input-wrapper .btn-number {
+    background-color: #e9ecef;
+    border: 1px solid #ccc;
+    color: #333;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1.2em;
+    height: 38px; /* Gleiche Höhe wie das Input-Feld */
+    width: 38px;
+    padding: 0;
+    transition: background-color 0.2s ease;
+}
+.number-input-wrapper .btn-number:hover {
+    background-color: #dee2e6;
+}
+.number-input-wrapper .btn-number:active {
+    background-color: #ced4da;
+}
+.number-input-wrapper .btn-number[data-type="minus"] {
+    border-radius: 4px 0 0 4px;
+}
+.number-input-wrapper .btn-number[data-type="plus"] {
+    border-radius: 0 4px 4px 0;
+}

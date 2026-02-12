@@ -25,25 +25,22 @@ export function launchEditorForVariant(variant, bindingConfig, spineWidth, exist
         return;
     }
 
+    // NEU: Holen der spezifischen Editor-Konfiguration aus der Haupt-Konfigurationsdatei.
+    const bindingSpecificConfig = bindingConfig.editorConfig || {};
+
     const editorConfig = {
+        ...bindingSpecificConfig, // Übernimmt alle Werte wie templatePath, dimensions, etc.
+
+        // Überschreibt oder ergänzt mit dynamischen Werten zur Laufzeit
         bindingType: editorBindingType,
         spineWidth: spineWidth,
-        initialData: existingPersonalization.editorData || {}, // Pass previous editor data if available
-        
-        /**
-         * The callback function that will be executed when the user clicks "Submit" in the editor.
-         * @param {object} result - The result object returned from the editor.
-         */
+        initialData: existingPersonalization || {}, // Pass previous editor data if available
         onSubmit: (result) => {
             console.log("Editor submitted successfully. Result:", result);
             if (onSubmitCallback) {
                 onSubmitCallback(variant.id, result);
             }
         },
-
-        /**
-         * Optional callback for when the user cancels the editor.
-         */
         onCancel: () => {
             console.log("Editor was cancelled.");
         }

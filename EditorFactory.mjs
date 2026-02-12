@@ -22,7 +22,6 @@ export function openEditor(config) {
         console.error("EditorFactory: Kein 'bindingType' in der Konfiguration gefunden.");
         return;
     }
-
     // Die Factory entscheidet, welcher spezialisierte Editor geladen wird.
     switch (config.bindingType) {
         case 'hardcover':

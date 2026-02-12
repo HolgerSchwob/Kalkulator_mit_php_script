@@ -6,6 +6,7 @@
  * @param {object} bindingConfig - The configuration object for a binding type.
  * @returns {boolean} - True if personalization is required.
  */
+import { calculateBookBlockThickness } from './priceCalculator.mjs';
 function isPersonalizationRequired(bindingConfig) {
     return bindingConfig && bindingConfig.requiresPersonalization;
 }
@@ -48,6 +49,7 @@ function isPersonalizationComplete(variant, personalizationData, bindingConfig) 
  * @returns {{isValid: boolean, errors: string[]}} - An object indicating validity and a list of error messages.
  */
 export function validateConfiguration(inquiryState, config) {
+    const TOLERANCE_MM = 0.5;
     const errors = [];
 
     // 1. Check if a main PDF for the book block has been uploaded.
@@ -64,11 +66,26 @@ export function validateConfiguration(inquiryState, config) {
             errors.push(`Die Personalisierung für Variante ${index + 1} (${bindingConfig.name}) ist noch nicht abgeschlossen.`);
         }
     });
-    
-    // Add any other checks here in the future.
+    // 3. Überprüfung: Stimmt die aktuelle Buchblockdicke mit der bei der Personalisierung überein?
+    const currentSpineWidth = calculateBookBlockThickness(inquiryState.bookBlock, config);
 
-    return {
-        isValid: errors.length === 0,
-        errors: errors,
-    };
+    inquiryState.variants.forEach(variant => {
+        const personalization = inquiryState.personalizations[variant.id];
+        const bindingConfig = config.bindings.find(b => b.id === variant.bindingTypeId);
+
+        if (bindingConfig && bindingConfig.requiresPersonalization && personalization?.spineWidthAtCreation) {
+            const savedSpineWidth = personalization.spineWidthAtCreation;
+            const difference = Math.abs(currentSpineWidth - savedSpineWidth);
+
+            if (difference > TOLERANCE_MM) {
+                errors.push({
+                    type: 'SPINE_WIDTH_MISMATCH',
+                    message: `Die Buchblockdicke hat sich geändert. Bitte bearbeiten Sie die Personalisierung für "${bindingConfig.name}".`,
+                    variantId: variant.id
+                });
+            }
+        }
+    });
+
+    return { isValid: errors.length === 0, errors };
 }

@@ -1,0 +1,41 @@
+# Konfiguration mit Secrets (lokal pro Rechner anlegen aus *.example)
+dashboard.config.json
+supabase.config.json
+
+# Google Service Account Keys (niemals committen)
+gen-lang-*.json
+gen-lang-*.json.txt
+*-*-*.json
+*service*account*.json
+
+# Umgebungsvariablen
+.env
+.env.local
+.env.*.local
+
+# Abhängigkeiten
+node_modules/
+
+# Supabase CLI / lokale Cache
+.supabase/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor / IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Logs und temporäre Dateien
+*.log
+.temp/
+*.tmp
+
+# Optional: große oder lokale Kopien (auskommentiert, bei Bedarf aktivieren)
+# *.pdf
+# kalkulator_assets/

@@ -1,83 +1,67 @@
 // extrasHandler.mjs
-// Manages additional products/extras. V2.2 by Lucy.
-// V2.2: Restored full UI rendering logic to match original functionality.
-
-import { toggleAccordionItemExpansion } from './uiUtils.mjs';
+// V5.4: UI aligned with variantHandler by removing the top-level select dropdown.
 
 // --- MODULE SCOPE VARIABLES ---
-let CALC_CONFIG_REF;
+let CALC_CONFIG;
 let onUpdateCallback;
 let inquiryStateRef;
-
-// Local state for this module
-let configuredExtras = [];
-let nextExtraInstanceId = 1;
+let addExtraButton;
 
 // DOM Elements
-let extrasContainer_DOM, addExtraButton_DOM;
+const extrasContainer = document.getElementById('extrasContainer');
 
 /**
- * Initializes the extras handler. Is passive and does not trigger updates.
- * @param {object} calcConfig - The calculator's configuration.
- * @param {function} updateCb - The main updateApp function to call on changes.
- * @param {object} globalInquiryStateRef - A reference to the global state object.
+ * Creates a new extra object based on the selected ID from the config.
+ * @param {string} extraId - The ID of the extra to create (e.g., 'cd_packaging_service').
+ * @returns {object | null} The new extra object, or null if the extraId is not found.
  */
-export function initExtrasHandler(calcConfig, updateCb, globalInquiryStateRef) {
-    CALC_CONFIG_REF = calcConfig;
-    onUpdateCallback = updateCb;
-    inquiryStateRef = globalInquiryStateRef;
+function createNewExtraObject(extraId) {
+    const defaultConfig = CALC_CONFIG.extras.find(e => e.id === extraId);
+    if (!defaultConfig) return null;
 
-    extrasContainer_DOM = document.getElementById('extrasContainer');
-    addExtraButton_DOM = document.getElementById('addExtraButton');
-
-    if (addExtraButton_DOM) {
-        addExtraButton_DOM.addEventListener('click', addNewExtra);
-    }
-    
-    configuredExtras = inquiryStateRef.extras || [];
-}
-
-/**
- * Returns the current local state of extras.
- * @returns {Array} The array of configured extras.
- */
-export function getConfiguredExtras() {
-    inquiryStateRef.extras = configuredExtras;
-    return configuredExtras;
-}
-
-/**
- * Creates a new extra object with default values.
- * @returns {object} The new extra object.
- */
-function createNewExtraObject() {
-    const defaultConfig = CALC_CONFIG_REF.extras[0];
     const newExtra = {
-        instanceId: `extra_instance_${nextExtraInstanceId++}`,
+        instanceId: `extra_instance_${self.crypto.randomUUID()}`,
         extraId: defaultConfig.id,
         selectedOptions: {},
         quantity: defaultConfig.hasIndependentQuantity ? (defaultConfig.defaultQuantity || 1) : 1,
-        isExpanded: true,
+        isExpanded: true, // New extras are expanded by default.
     };
 
+    // Pre-select default options for the new extra.
     if (defaultConfig.options) {
         defaultConfig.options.forEach(optGroup => {
-            const defaultChoice = optGroup.choices.find(c => c.default) || optGroup.choices[0];
-            if (defaultChoice) newExtra.selectedOptions[optGroup.optionKey] = defaultChoice.id;
+            if (optGroup.choices && Array.isArray(optGroup.choices)) {
+                const defaultChoice = optGroup.choices.find(c => c.default) || optGroup.choices[0];
+                if (defaultChoice) {
+                    newExtra.selectedOptions[optGroup.optionKey] = defaultChoice.id;
+                }
+            }
         });
     }
     return newExtra;
 }
 
 /**
- * Adds a new extra to the configuration and triggers an update.
+ * Adds a new default extra to the configuration and triggers a global update.
  */
 function addNewExtra() {
-    const newExtra = createNewExtraObject();
-    configuredExtras.forEach(ex => ex.isExpanded = false);
-    configuredExtras.push(newExtra);
+    // Take the first extra from the config as the default one to add.
+    const defaultExtraId = CALC_CONFIG.extras[0]?.id;
+    if (!defaultExtraId) {
+        console.error("Keine Extras in der Konfiguration gefunden.");
+        return;
+    }
+
+    const newExtra = createNewExtraObject(defaultExtraId);
+    if (!newExtra) {
+        console.error("Standard-Extra konnte nicht erstellt werden.");
+        return;
+    }
+    // Collapse all other extras before adding the new one.
+    inquiryStateRef.extras.forEach(ex => ex.isExpanded = false);
+    inquiryStateRef.extras.push(newExtra);
     
-    if (onUpdateCallback) onUpdateCallback();
+    onUpdateCallback();
 }
 
 /**
@@ -85,55 +69,86 @@ function addNewExtra() {
  * @param {string} instanceIdToRemove - The unique ID of the extra instance to remove.
  */
 function removeExtra(instanceIdToRemove) {
-    configuredExtras = configuredExtras.filter(ex => ex.instanceId !== instanceIdToRemove);
-    if (!configuredExtras.some(ex => ex.isExpanded) && configuredExtras.length > 0) {
-        configuredExtras[configuredExtras.length - 1].isExpanded = true;
+    inquiryStateRef.extras = inquiryStateRef.extras.filter(ex => ex.instanceId !== instanceIdToRemove);
+    if (!inquiryStateRef.extras.some(ex => ex.isExpanded) && inquiryStateRef.extras.length > 0) {
+        inquiryStateRef.extras[inquiryStateRef.extras.length - 1].isExpanded = true;
     }
-    if (onUpdateCallback) onUpdateCallback();
+    onUpdateCallback();
+}
+
+/**
+ * Changes the type of an existing extra.
+ * @param {string} instanceId - The instanceId of the extra to change.
+ * @param {string} newExtraId - The ID of the new extra type.
+ */
+function handleExtraTypeChange(instanceId, newExtraId) {
+    const extraIndex = inquiryStateRef.extras.findIndex(ex => ex.instanceId === instanceId);
+    if (extraIndex === -1) return;
+
+    const newExtraConfig = CALC_CONFIG.extras.find(e => e.id === newExtraId);
+    if (!newExtraConfig) return;
+    
+    const wasExpanded = inquiryStateRef.extras[extraIndex].isExpanded;
+
+    const changedExtra = createNewExtraObject(newExtraId);
+    changedExtra.instanceId = instanceId;
+    changedExtra.isExpanded = wasExpanded;
+    
+    inquiryStateRef.extras[extraIndex] = changedExtra;
+
+    onUpdateCallback();
 }
 
 /**
  * Handles changes from input fields within an extra's accordion body.
  * @param {string} instanceId - The ID of the extra being changed.
- * @param {string} field - The name of the field being changed.
+ * @param {string} field - The name of the field being changed (e.g., 'quantity' or an optionKey).
  * @param {*} value - The new value of the field.
  */
 function handleExtraInputChange(instanceId, field, value) {
-    const extra = configuredExtras.find(ex => ex.instanceId === instanceId);
+    const extra = inquiryStateRef.extras.find(ex => ex.instanceId === instanceId);
     if (!extra) return;
 
     if (field === 'quantity') {
         extra.quantity = Math.max(1, parseInt(value, 10) || 1);
-    } else { // Assumes an option key
+    } else { // Assumes it's an option key
         extra.selectedOptions[field] = value;
     }
     
-    if (onUpdateCallback) onUpdateCallback();
+    onUpdateCallback();
 }
 
 /**
- * Toggles the expanded state of an extra.
+ * Toggles the expanded state of an extra and collapses others.
  * @param {string} instanceIdToToggle The extra to toggle.
  */
 function toggleExtraExpansion(instanceIdToToggle) {
-    configuredExtras.forEach(ex => {
-        ex.isExpanded = (ex.instanceId === instanceIdToToggle) ? !ex.isExpanded : false;
-    });
-    if (onUpdateCallback) onUpdateCallback();
+    const extraToToggle = inquiryStateRef.extras.find(ex => ex.instanceId === instanceIdToToggle);
+    if (!extraToToggle) return;
+
+    const wasExpanded = extraToToggle.isExpanded;
+    
+    inquiryStateRef.extras.forEach(ex => ex.isExpanded = false);
+    
+    if (!wasExpanded) {
+        extraToToggle.isExpanded = true;
+    }
+    onUpdateCallback();
 }
 
+// --- PUBLIC API ---
+
 /**
- * Renders the UI for all configured extras.
- * @param {Array} extrasWithPrices - The extra data including calculated prices.
+ * Renders the UI for all configured extras based on the current state.
+ * @param {Array} extrasWithPrices - The extra data including calculated prices from the main app.
  */
 export function updateExtrasUI(extrasWithPrices) {
-    if (!extrasContainer_DOM) return;
-    extrasContainer_DOM.innerHTML = '';
+    if (!extrasContainer) return;
+    extrasContainer.innerHTML = '';
     
-    configuredExtras = extrasWithPrices; 
-
-    extrasWithPrices.forEach((extra, index) => {
-        const extraConfig = CALC_CONFIG_REF.extras.find(e => e.id === extra.extraId);
+    inquiryStateRef.extras.forEach((extra) => {
+        const extraPriceInfo = extrasWithPrices.find(p => p.instanceId === extra.instanceId) || { totalPrice: 0 };
+        const extraConfig = CALC_CONFIG.extras.find(e => e.id === extra.extraId);
         if (!extraConfig) return;
 
         const itemEl = document.createElement('div');
@@ -141,12 +156,14 @@ export function updateExtrasUI(extrasWithPrices) {
 
         const header = document.createElement('div');
         header.className = `accordion-header extra-header ${extra.isExpanded ? 'expanded' : ''}`;
+        
         const quantityText = extraConfig.hasIndependentQuantity ? `(Menge: ${extra.quantity})` : '';
+        
         header.innerHTML = `
             <div>
                 <h4>${extraConfig.name} ${quantityText}</h4>
                 <div class="accordion-header-summary">
-                    Gesamt: ${extra.totalPrice.toFixed(2)}${CALC_CONFIG_REF.general.currencySymbol}
+                    Gesamt: ${extraPriceInfo.totalPrice.toFixed(2)}${CALC_CONFIG.general.currencySymbol}
                 </div>
             </div>
             <div class="accordion-controls">
@@ -154,49 +171,67 @@ export function updateExtrasUI(extrasWithPrices) {
                  <button class="button-danger remove-item-btn">Löschen</button>
             </div>`;
         
+        header.addEventListener('click', e => {
+            if (e.target.closest('button')) return;
+            toggleExtraExpansion(extra.instanceId);
+        });
+
         header.querySelector('.edit-item-btn').addEventListener('click', e => {
             e.stopPropagation();
             toggleExtraExpansion(extra.instanceId);
         });
+        
         header.querySelector('.remove-item-btn').addEventListener('click', e => {
             e.stopPropagation();
             removeExtra(extra.instanceId);
         });
-        header.addEventListener('click', e => {
-            if (!e.target.closest('button')) {
-                toggleExtraExpansion(extra.instanceId);
-            }
-        });
+        
         itemEl.appendChild(header);
 
         if (extra.isExpanded) {
             const body = document.createElement('div');
             body.className = 'accordion-body extra-body';
             
-            let formHTML = '';
+            let selectTypeHtml = `<div><label>Extra-Art:</label><select class="extra-type-select" data-instance-id="${extra.instanceId}">`;
+            CALC_CONFIG.extras.forEach(opt => {
+                selectTypeHtml += `<option value="${opt.id}" ${opt.id === extra.extraId ? 'selected' : ''}>${opt.name}</option>`;
+            });
+            selectTypeHtml += '</select></div>';
+
+            let optionsHTML = '';
             if (extraConfig.options && extraConfig.options.length > 0) {
                  extraConfig.options.forEach(optGroup => {
-                    formHTML += `<fieldset class="extra-options-group"><legend>${optGroup.groupName}</legend>`;
-                    optGroup.choices.forEach(choice => {
-                        const isChecked = extra.selectedOptions[optGroup.optionKey] === choice.id;
-                        formHTML += `<div><label>
-                            <input type="radio" name="extra_option_${optGroup.optionKey}_${extra.instanceId}" 
-                                   data-option-key="${optGroup.optionKey}" 
-                                   value="${choice.id}" ${isChecked ? 'checked' : ''}> 
-                            ${choice.name} (+${(choice.price || 0).toFixed(2)}${CALC_CONFIG_REF.general.currencySymbol})
-                        </label></div>`;
-                    });
-                    formHTML += `</fieldset>`;
+                    optionsHTML += `<fieldset class="extra-options-group"><legend>${optGroup.groupName}</legend>`;
+                    if (optGroup.choices && Array.isArray(optGroup.choices)) {
+                        optGroup.choices.forEach(choice => {
+                            const isChecked = extra.selectedOptions[optGroup.optionKey] === choice.id;
+                            optionsHTML += `<div><label><input type="radio" name="extra_option_${optGroup.optionKey}_${extra.instanceId}" 
+                                       data-option-key="${optGroup.optionKey}" 
+                                       value="${choice.id}" ${isChecked ? 'checked' : ''}> 
+                                ${choice.name} (+${choice.price.toFixed(2)}${CALC_CONFIG.general.currencySymbol})
+                            </label></div>`;
+                        });
+                    }
+                    optionsHTML += `</fieldset>`;
                 });
             }
 
+            let quantityInputHTML = '';
             if (extraConfig.hasIndependentQuantity) {
-                formHTML += `<div>
+                quantityInputHTML += `<div class="number-input-wrapper">
                                 <label for="extra_quantity_${extra.instanceId}">Anzahl:</label>
-                                <input type="number" id="extra_quantity_${extra.instanceId}" min="1" value="${extra.quantity}">
+                                <div class="input-group">
+                                    <button type="button" class="btn-number" data-type="minus" data-field="extra_quantity_${extra.instanceId}">-</button>
+                                    <input type="number" id="extra_quantity_${extra.instanceId}" class="extra-quantity-input" min="1" value="${extra.quantity}">
+                                    <button type="button" class="btn-number" data-type="plus" data-field="extra_quantity_${extra.instanceId}">+</button>
+                                </div>
                              </div>`;
             }
-            body.innerHTML = formHTML;
+            body.innerHTML = selectTypeHtml + optionsHTML + quantityInputHTML;
+
+            body.querySelector('.extra-type-select').addEventListener('change', e => {
+                handleExtraTypeChange(e.target.dataset.instanceId, e.target.value);
+            });
 
             body.querySelectorAll('input[type="radio"]').forEach(radio => {
                 radio.addEventListener('change', e => {
@@ -213,17 +248,31 @@ export function updateExtrasUI(extrasWithPrices) {
             }
             itemEl.appendChild(body);
         }
-        extrasContainer_DOM.appendChild(itemEl);
+        extrasContainer.appendChild(itemEl);
     });
-
-    updateAddExtraButtonState();
 }
 
 /**
- * Updates the state of the "Add Extra" button.
+ * Returns the current local state of extras.
  */
-function updateAddExtraButtonState() {
-    if (!addExtraButton_DOM) return;
-    addExtraButton_DOM.disabled = false;
-    addExtraButton_DOM.textContent = "+ Extra hinzufügen";
+export function getConfiguredExtras() {
+    return inquiryStateRef.extras;
+}
+
+/**
+ * Initializes the extras handler.
+ * @param {object} config - The main application config.
+ * @param {function} updateCb - The main update callback function.
+ * @param {object} state - The main application state object.
+ * @param {HTMLElement} addBtn - The button to add a new extra.
+ */
+export function initExtrasHandler(config, updateCb, state, addBtn) {
+    CALC_CONFIG = config;
+    onUpdateCallback = updateCb;
+    inquiryStateRef = state;
+    addExtraButton = addBtn;
+    
+    if (addExtraButton) {
+        addExtraButton.addEventListener('click', addNewExtra);
+    }
 }

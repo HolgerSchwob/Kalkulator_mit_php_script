@@ -10,16 +10,19 @@ import { BaseEditor } from './BaseEditor.mjs';
 import { generateU1Thumbnail } from './svg-thumbnail-generator.mjs';
 
 // --- CONFIGURATION ---
-const EDITOR_CONFIG = {
-    TEMPLATE_PATH: 'templates/hardcover/',
+//const EDITOR_CONFIG = {
+    //TEMPLATE_PATH: 'templates/hardcover/',
+    // --- BEHAVIOR CONFIGURATION (nicht-dimensionale Werte) ---
+    const EDITOR_BEHAVIOR_CONFIG = {
     DEFAULT_SPINE_WIDTH: 35.0,
-    VISIBLE_COVER_HEIGHT: 302.0,
-    U1_WIDTH: 215.0,
-    U4_WIDTH: 215.0,
-    SVG_TOTAL_WIDTH: 500.0,
-    SVG_TOTAL_HEIGHT: 330.0,
-    SVG_CENTER_X: 250.0,
-    FALZ_ZONE_WIDTH: 8.0,
+
+    //VISIBLE_COVER_HEIGHT: 302.0,
+    //U1_WIDTH: 215.0,
+    //U4_WIDTH: 215.0,
+    //SVG_TOTAL_WIDTH: 500.0,
+    //SVG_TOTAL_HEIGHT: 330.0,
+    //SVG_CENTER_X: 250.0,
+    // FALZ_ZONE_WIDTH: 8.0,
     ZOOM_STEP: 0.2,
     MIN_ZOOM: 0.5,
     MAX_ZOOM: 3,
@@ -27,13 +30,18 @@ const EDITOR_CONFIG = {
     TEXT_FIT_MIN_SCALE: 0.75, 
     LOGO_MANUAL_SCALE_MIN: 0.5,
     LOGO_MANUAL_SCALE_MAX: 2.0,
-    LOGO_MOVE_STEP: 1, // Pixel value for moving logos
+    LOGO_MOVE_STEP: 1,
 };
 
 export class HardcoverEditor extends BaseEditor {
     constructor(config) {
         super(config, 'Buchdecke gestalten');
-
+        // Konfiguration aus config.json übernehmen
+        this.templatePath = config.templatePath;
+        this.dimensions = config.dimensions;
+        this.usesPdfPreviewAsCover = config.usesPdfPreviewAsCover; // Für zukünftige Erweiterungen
+        this.pdfPreviewUrl = config.pdfPreviewUrl; // Für zukünftige Erweiterungen
+        // Dynamische Werte zur Laufzeit
         this.spineWidth = config.spineWidth;
         this.initialData = config.initialData || {};
         this.availableTemplates = [];
@@ -43,7 +51,6 @@ export class HardcoverEditor extends BaseEditor {
         this.colorPairs = [];
         this.initialTransforms = {};
         this.isTemplateSelectorOpen = false;
-        
         this.uiState = {
             currentTemplateIndex: this.initialData.templateIndex || 0,
             textInputs: { ...this.initialData.textInputs },
@@ -121,7 +128,7 @@ export class HardcoverEditor extends BaseEditor {
     }
 
     async _fetchTemplateList() {
-        const manifestUrl = `${EDITOR_CONFIG.TEMPLATE_PATH}templates.json?t=${new Date().getTime()}`;
+        const manifestUrl = `${this.templatePath}templates.json?t=${new Date().getTime()}`;
         const response = await fetch(manifestUrl);
         if (!response.ok) throw new Error("templates.json konnte nicht geladen werden.");
         const manifest = await response.json();
@@ -153,9 +160,9 @@ export class HardcoverEditor extends BaseEditor {
             dropdown.appendChild(item);
 
             try {
-                const response = await fetch(`${EDITOR_CONFIG.TEMPLATE_PATH}${template.file}?t=${new Date().getTime()}`);
+                const response = await fetch(`${this.templatePath}${template.file}?t=${new Date().getTime()}`);
                 const svgText = await response.text();
-                const thumbnailUrl = await generateU1Thumbnail(svgText, EDITOR_CONFIG.DEFAULT_SPINE_WIDTH, 120);
+                const thumbnailUrl = await generateU1Thumbnail(svgText, this.dimensions, this.spineWidth, 120);
                 thumbContainer.innerHTML = `<img src="${thumbnailUrl}" alt="${template.name}">`;
             } catch (e) {
                 thumbContainer.innerHTML = `<span>Vorschau<br>fehlerhaft</span>`;
@@ -185,7 +192,7 @@ export class HardcoverEditor extends BaseEditor {
         this.uiState.currentTemplateIndex = index;
 
         this.svgContainer.classList.add('is-loading');
-        await this._sleep(EDITOR_CONFIG.FADE_DURATION);
+        await this._sleep(EDITOR_BEHAVIOR_CONFIG.FADE_DURATION);
 
         const template = this.availableTemplates[index];
         await this._loadTemplate(template.file);
@@ -195,7 +202,7 @@ export class HardcoverEditor extends BaseEditor {
 
     async _loadTemplate(fileName) {
         this.svgContainer.innerHTML = '';
-        const response = await fetch(`${EDITOR_CONFIG.TEMPLATE_PATH}${fileName}?t=${new Date().getTime()}`);
+        const response = await fetch(`${this.templatePath}${fileName}?t=${new Date().getTime()}`);
         if (!response.ok) throw new Error(`Template ${fileName} konnte nicht geladen werden.`);
         const svgText = await response.text();
         const parser = new DOMParser();
@@ -401,8 +408,8 @@ export class HardcoverEditor extends BaseEditor {
             const slider = document.createElement('input');
             slider.type = 'range';
             slider.id = `hce-slider-${logoId}`;
-            slider.min = EDITOR_CONFIG.LOGO_MANUAL_SCALE_MIN;
-            slider.max = EDITOR_CONFIG.LOGO_MANUAL_SCALE_MAX;
+            slider.min = EDITOR_BEHAVIOR_CONFIG.LOGO_MANUAL_SCALE_MIN;
+            slider.max = EDITOR_BEHAVIOR_CONFIG.LOGO_MANUAL_SCALE_MAX;
             slider.step = '0.05';
             slider.value = '1';
             sliderWrapper.appendChild(sliderLabel);
@@ -479,8 +486,8 @@ export class HardcoverEditor extends BaseEditor {
     }
 
     _zoom(direction) {
-        this.zoomLevel += direction * EDITOR_CONFIG.ZOOM_STEP;
-        this.zoomLevel = Math.max(EDITOR_CONFIG.MIN_ZOOM, Math.min(EDITOR_CONFIG.MAX_ZOOM, this.zoomLevel));
+        this.zoomLevel += direction * EDITOR_BEHAVIOR_CONFIG.ZOOM_STEP;
+        this.zoomLevel = Math.max(EDITOR_BEHAVIOR_CONFIG.MIN_ZOOM, Math.min(EDITOR_BEHAVIOR_CONFIG.MAX_ZOOM, this.zoomLevel));
         this._updateSvgTransform();
     }
 
@@ -568,8 +575,7 @@ export class HardcoverEditor extends BaseEditor {
         logoData.offsetX = logoData.offsetX || 0;
         logoData.offsetY = logoData.offsetY || 0;
 
-        const moveStep = EDITOR_CONFIG.LOGO_MOVE_STEP;
-
+        const moveStep = EDITOR_BEHAVIOR_CONFIG.LOGO_MOVE_STEP;
         switch (direction) {
             case 'up':    logoData.offsetY -= moveStep; break;
             case 'down':  logoData.offsetY += moveStep; break;
@@ -794,9 +800,9 @@ export class HardcoverEditor extends BaseEditor {
     
         const scaleFactor = bboxWidth / textWidth;
     
-        if (scaleFactor < EDITOR_CONFIG.TEXT_FIT_MIN_SCALE) {
+        if (scaleFactor < EDITOR_BEHAVIOR_CONFIG.TEXT_FIT_MIN_SCALE) {
             this._createTextWarning(textElement, 'Eingabe zu lang');
-            const minScale = EDITOR_CONFIG.TEXT_FIT_MIN_SCALE;
+            const minScale = EDITOR_BEHAVIOR_CONFIG.TEXT_FIT_MIN_SCALE;
             const textBBox = textElement.getBBox();
             const centerX = textBBox.x + textBBox.width / 2;
             const centerY = textBBox.y + textBBox.height / 2;
@@ -851,17 +857,17 @@ export class HardcoverEditor extends BaseEditor {
         const initialU4Transform = this.initialTransforms['#tpl-group-u4'] || 'translate(0,0)';
 
         const spineW = this.spineWidth;
-        const delta = (spineW - EDITOR_CONFIG.DEFAULT_SPINE_WIDTH) / 2.0;
+        const delta = (spineW - EDITOR_BEHAVIOR_CONFIG.DEFAULT_SPINE_WIDTH) / 2.0;
         groupU4.setAttribute('transform', `${initialU4Transform} translate(${-delta}, 0)`);
         groupU1.setAttribute('transform', `${initialU1Transform} translate(${delta}, 0)`);
         const spineBackground = groupSpine.querySelector('rect');
         if (spineBackground) spineBackground.setAttribute('width', spineW);
 
-        const visibleWidth = EDITOR_CONFIG.U4_WIDTH + spineW + EDITOR_CONFIG.U1_WIDTH;
-        const startX = EDITOR_CONFIG.SVG_CENTER_X - (spineW / 2) - EDITOR_CONFIG.U4_WIDTH;
-        const startY = (EDITOR_CONFIG.SVG_TOTAL_HEIGHT - EDITOR_CONFIG.VISIBLE_COVER_HEIGHT) / 2;
+        const visibleWidth = this.dimensions.u4Width + spineW + this.dimensions.u1Width;
+        const startX = this.dimensions.svgCenterX - (spineW / 2) - this.dimensions.u4Width;
+        const startY = (this.dimensions.svgTotalHeight - this.dimensions.visibleCoverHeight) / 2;
 
-        this.svgNode.setAttribute('viewBox', `${startX} ${startY} ${visibleWidth} ${EDITOR_CONFIG.VISIBLE_COVER_HEIGHT}`);
+        this.svgNode.setAttribute('viewBox', `${startX} ${startY} ${visibleWidth} ${this.dimensions.visibleCoverHeight}`);
 
         this._drawHelperLines();
     }
@@ -878,10 +884,10 @@ export class HardcoverEditor extends BaseEditor {
         this._removeHelperLines();
 
         const spineW = this.spineWidth;
-        const topY = 0;
-        const bottomY = EDITOR_CONFIG.SVG_TOTAL_HEIGHT;
+        const topY = 0; // Annahme: Helper lines sollen über die ganze SVG-Höhe gehen
+        const bottomY = this.dimensions.svgTotalHeight;
         const halfSpine = spineW / 2;
-        const center = EDITOR_CONFIG.SVG_CENTER_X;
+          const center = this.dimensions.svgCenterX;
 
         const leftSpineX = center - halfSpine;
         const rightSpineX = center + halfSpine;
@@ -909,16 +915,16 @@ export class HardcoverEditor extends BaseEditor {
         lineRight.setAttribute('stroke-dasharray', '3,3');
 
         const falzLeft = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        falzLeft.setAttribute('x', leftSpineX - EDITOR_CONFIG.FALZ_ZONE_WIDTH);
-        falzLeft.setAttribute('y', topY);
-        falzLeft.setAttribute('width', EDITOR_CONFIG.FALZ_ZONE_WIDTH);
+        falzLeft.setAttribute('x', leftSpineX - this.dimensions.falzZoneWidth);
+      falzLeft.setAttribute('y', topY);
+        falzLeft.setAttribute('width', this.dimensions.falzZoneWidth);
         falzLeft.setAttribute('height', bottomY);
         falzLeft.setAttribute('fill', 'rgba(0,0,0,0.1)');
 
         const falzRight = document.createElementNS("http://www.w3.org/2000/svg", "rect");
         falzRight.setAttribute('x', rightSpineX);
         falzRight.setAttribute('y', topY);
-        falzRight.setAttribute('width', EDITOR_CONFIG.FALZ_ZONE_WIDTH);
+        falzRight.setAttribute('width', this.dimensions.falzZoneWidth);
         falzRight.setAttribute('height', bottomY);
         falzRight.setAttribute('fill', 'rgba(0,0,0,0.1)');
 
@@ -945,7 +951,7 @@ export class HardcoverEditor extends BaseEditor {
         if (!currentTemplate) throw new Error("Kein Template ausgewählt.");
 
         const originalViewBox = this.svgNode.getAttribute('viewBox');
-        this.svgNode.setAttribute('viewBox', `0 0 ${EDITOR_CONFIG.SVG_TOTAL_WIDTH} ${EDITOR_CONFIG.SVG_TOTAL_HEIGHT}`);
+        this.svgNode.setAttribute('viewBox', `0 0 ${this.dimensions.svgTotalWidth} ${this.dimensions.svgTotalHeight}`);
 
         const finalSvgString = new XMLSerializer().serializeToString(this.svgNode);
 
@@ -957,7 +963,7 @@ export class HardcoverEditor extends BaseEditor {
 
         this._drawHelperLines();
 
-        const thumbnailDataUrl = await generateU1Thumbnail(finalSvgString, this.spineWidth).catch(err => {
+        const thumbnailDataUrl = await generateU1Thumbnail(finalSvgString, this.dimensions, this.spineWidth).catch(err => {
             console.error("Fehler bei Thumbnail-Erstellung:", err);
             return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
         });
