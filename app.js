@@ -90,7 +90,11 @@
 
   document.addEventListener('click', function(e) {
     var a = e.target.closest('a');
-    if (a && a.getAttribute('href') && a.getAttribute('href').indexOf('kalkulator') !== -1) {
+    if (!a || !a.getAttribute('href')) return;
+    var href = a.getAttribute('href');
+    var isKalkulatorHref = href.indexOf('kalkulator') !== -1;
+    var isProdukteCta = (href === '#produkte' || href.endsWith('#produkte')) && (a.classList.contains('nav-cta') || a.classList.contains('btn-primary') || a.classList.contains('btn-dark'));
+    if (isKalkulatorHref || isProdukteCta) {
       console.log('[bamadi] Klick auf Kalkulator-Link, öffne Overlay');
       // #region agent log
       fetch('http://127.0.0.1:7367/ingest/6b096abe-f6e2-4304-8e37-96d1c209c901',{
@@ -274,6 +278,9 @@ console.log('[bamadi] HeroSlider-IIFE fertig');
     history.replaceState(null, '', window.location.pathname);
   }
 
+  // Global machen, damit wir ihn notfalls direkt aus dem Markup aufrufen können
+  window.closeLegalOverlay = closeLegal;
+
   tabs.forEach(function(tab){
     tab.addEventListener('click', function(){
       switchTab(tab.dataset.tab);
@@ -296,6 +303,15 @@ console.log('[bamadi] HeroSlider-IIFE fertig');
   overlay.addEventListener('click', function(e){
     if (e.target === overlay) closeLegal();
   });
+  // Fallback: delegierter Klick-Handler im Capture-Mode, falls andere Skripte (z. B. Cloudflare)
+  // das direkte Click-Event der Schließen-Schaltfläche abfangen.
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest('.legal-modal-close');
+    if (btn && overlay.classList.contains('is-open')) {
+      e.preventDefault();
+      closeLegal();
+    }
+  }, true);
   document.addEventListener('keydown', function(e){
     if (e.key === 'Escape' && overlay.classList.contains('is-open')) closeLegal();
   });

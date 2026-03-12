@@ -24,23 +24,23 @@ body{font-family:var(--sans);background:var(--white);color:var(--g800);overflow-
 a{color:inherit;text-decoration:none}
 .container{max-width:1160px;margin:0 auto;padding:0 40px}
 
-/* NAV */
-nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:20px 40px;transition:background .3s,box-shadow .3s}
-nav.scrolled{background:rgba(255,255,255,.96);backdrop-filter:blur(16px);box-shadow:0 1px 0 var(--g100)}
+/* NAV — nur #nav (Haupt-Navigation), damit nav.legal-tabs im Modal nicht fixed/z-index erbt */
+nav#nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:20px 40px;transition:background .3s,box-shadow .3s}
+nav#nav.scrolled{background:rgba(255,255,255,.96);backdrop-filter:blur(16px);box-shadow:0 1px 0 var(--g100)}
 .nav-logo{font-family:var(--serif);font-size:26px;letter-spacing:.04em;color:var(--white);transition:color .3s}
-nav.scrolled .nav-logo{color:var(--navy)}
+nav#nav.scrolled .nav-logo{color:var(--navy)}
 .nav-logo .acc{color:var(--gold)}
 .nav-links{display:flex;gap:28px;list-style:none}
 .nav-links a{font-size:13px;font-weight:500;color:rgba(255,255,255,.7);transition:color .2s}
-nav.scrolled .nav-links a{color:var(--g800)}
+nav#nav.scrolled .nav-links a{color:var(--g800)}
 .nav-links a:hover{color:var(--gold)}
 .nav-status-link{color:rgba(255,255,255,.55);font-size:.875rem;text-decoration:none;transition:color .15s}
 .nav-status-link:hover{color:#fff}
-nav.scrolled .nav-status-link{color:var(--g500)}
-nav.scrolled .nav-status-link:hover{color:var(--navy)}
+nav#nav.scrolled .nav-status-link{color:var(--g500)}
+nav#nav.scrolled .nav-status-link:hover{color:var(--navy)}
 .nav-cta{background:var(--gold)!important;color:var(--navy-deep)!important;padding:9px 20px!important;border-radius:4px;font-weight:600!important}
 .nav-toggle{display:none;align-items:center;justify-content:center;width:44px;height:44px;background:transparent;border:1px solid rgba(255,255,255,.3);border-radius:6px;color:var(--white);cursor:pointer;padding:0;position:relative;z-index:101}
-nav.scrolled .nav-toggle{border-color:var(--g300);color:var(--navy)}
+nav#nav.scrolled .nav-toggle{border-color:var(--g300);color:var(--navy)}
 .nav-toggle svg{width:22px;height:22px}
 .nav-toggle[aria-expanded="true"] .nav-toggle-open{display:none}
 .nav-toggle[aria-expanded="true"] .nav-toggle-close{display:block}
@@ -399,23 +399,23 @@ footer{background:var(--navy-deep);padding:56px 0 32px;padding-bottom:calc(32px 
 
 /* Nav: Ausklappmenü ab mittlerer Breite */
 @media(max-width:800px){
-  nav{background:rgba(15,35,56,.97);backdrop-filter:blur(12px);box-shadow:0 1px 0 rgba(255,255,255,.06)}
-  nav.scrolled{background:rgba(255,255,255,.98);box-shadow:0 1px 0 var(--g100)}
+  nav#nav{background:rgba(15,35,56,.97);backdrop-filter:blur(12px);box-shadow:0 1px 0 rgba(255,255,255,.06)}
+  nav#nav.scrolled{background:rgba(255,255,255,.98);box-shadow:0 1px 0 var(--g100)}
   .nav-toggle{display:flex;background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.25);color:#fff}
-  nav.scrolled .nav-toggle{background:rgba(0,0,0,.06);border-color:var(--g300);color:var(--navy)}
+  nav#nav.scrolled .nav-toggle{background:rgba(0,0,0,.06);border-color:var(--g300);color:var(--navy)}
   .nav-links{position:fixed;top:0;right:0;width:min(320px,100%);height:auto;max-height:calc(100vh - 24px);background-color:#0F2338;background:#0F2338;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:0;padding:80px 24px 24px;list-style:none;box-shadow:-4px 0 24px rgba(0,0,0,.35);transform:translateX(100%);opacity:0;visibility:hidden;transition:transform .25s var(--ease),opacity .2s,visibility .2s;z-index:99;overflow-y:auto;overflow-x:hidden}
   .nav-links::before{content:'';position:absolute;inset:0;background:#0F2338;z-index:-1;border-radius:0 0 0 8px}
-  nav.is-open .nav-links{transform:translateX(0);opacity:1;visibility:visible;background-color:#0F2338;background:#0F2338}
+  nav#nav.is-open .nav-links{transform:translateX(0);opacity:1;visibility:visible;background-color:#0F2338;background:#0F2338}
   .nav-backdrop{background:rgba(0,0,0,.55)}
   .nav-links a{display:block;padding:16px 0;font-size:17px;font-weight:500;color:#fff!important;border-bottom:1px solid rgba(255,255,255,.15);position:relative;z-index:1;line-height:1.3}
   .nav-links a:hover,.nav-links a:focus{color:var(--gold)!important}
   .nav-links a:visited{color:#fff!important}
-  nav.scrolled .nav-links a{color:#fff!important}
-  nav.scrolled .nav-links a:hover{color:var(--gold)!important}
+  nav#nav.scrolled .nav-links a{color:#fff!important}
+  nav#nav.scrolled .nav-links a:hover{color:var(--gold)!important}
   .nav-links .nav-cta{color:#0F2338!important;font-weight:600}
   .nav-links .nav-cta:hover{color:#0F2338!important}
   .nav-cta{margin-top:8px;text-align:center;border-radius:6px}
-  nav.is-open .nav-backdrop{opacity:1;visibility:visible}
+  nav#nav.is-open .nav-backdrop{opacity:1;visibility:visible}
 }
 .nav-backdrop{display:none;position:fixed;inset:0;z-index:98;opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}
 @media(max-width:800px){
@@ -450,7 +450,7 @@ footer{background:var(--navy-deep);padding:56px 0 32px;padding-bottom:calc(32px 
 .legal-modal{background:#fff;border-radius:12px;width:100%;max-width:800px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,0.3);transform:translateY(16px);transition:transform .2s ease}
 #legal-overlay.is-open .legal-modal{transform:translateY(0)}
 .legal-modal-header{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem 0;border-bottom:none;box-shadow:0 1px 0 var(--g100),0 4px 12px rgba(0,0,0,0.06);position:sticky;top:0;background:#fff;z-index:1;border-radius:12px 12px 0 0;gap:1rem}
-.legal-tabs{display:flex;gap:0;overflow-x:auto;scrollbar-width:none}
+.legal-tabs{display:flex;gap:0;overflow-x:auto;scrollbar-width:none;position:static;z-index:auto}
 .legal-tabs::-webkit-scrollbar{display:none}
 .legal-tab{background:none;border:none;border-bottom:2px solid transparent;padding:.75rem 1.25rem;font-size:.875rem;font-weight:500;color:var(--g500);cursor:pointer;white-space:nowrap;transition:color .15s,border-color .15s;font-family:var(--sans)}
 .legal-tab:hover{color:var(--navy)}
@@ -1119,7 +1119,7 @@ footer{background:var(--navy-deep);padding:56px 0 32px;padding-bottom:calc(32px 
         <button class="legal-tab" role="tab" data-tab="agb" aria-selected="false">AGB</button>
         <button class="legal-tab" role="tab" data-tab="widerruf" aria-selected="false">Widerruf</button>
       </nav>
-      <button type="button" class="legal-modal-close" aria-label="Schließen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      <button type="button" class="legal-modal-close" aria-label="Schließen" onclick="window.closeLegalOverlay && window.closeLegalOverlay()"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
     </div>
     <div class="legal-modal-body">
       <div id="legal-impressum" class="legal-pane active" role="tabpanel">
