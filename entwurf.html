@@ -117,23 +117,6 @@ section{padding:88px 0;scroll-snap-align:start;min-height:100vh;display:flex;fle
 .step p{font-size:14px;line-height:1.65;color:var(--g500)}
 .step:not(:last-child)::after{content:'→';position:absolute;top:50%;right:-16px;transform:translateY(-50%);width:32px;height:32px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--navy-deep);font-weight:700;z-index:2;line-height:32px;text-align:center}
 
-/* KALKULATOR */
-#kalkulator{background:var(--navy-deep);padding:88px 0;position:relative;overflow:hidden}
-#kalkulator::before{content:'';position:absolute;inset:0;background:linear-gradient(to right,rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.018) 1px,transparent 1px);background-size:52px 52px;pointer-events:none}
-.k-head{text-align:center;margin-bottom:50px;position:relative;z-index:2}
-.k-head .eyebrow{justify-content:center}
-.k-head .h-lg{color:var(--white);margin-bottom:12px}
-.k-head p{font-size:15px;color:rgba(255,255,255,.45);max-width:380px;margin:0 auto;line-height:1.65}
-.k-frame{position:relative;z-index:2;background:var(--white);border-radius:10px;overflow:hidden;box-shadow:0 36px 90px rgba(0,0,0,.5);max-width:840px;margin:0 auto}
-.k-bar{background:var(--off);border-bottom:1px solid var(--g100);padding:11px 16px;display:flex;align-items:center;gap:6px}
-.k-dot{width:10px;height:10px;border-radius:50%}
-.k-dot:nth-child(1){background:#FF5F57}.k-dot:nth-child(2){background:#FFBD2E}.k-dot:nth-child(3){background:#28CA41}
-.k-url{margin-left:12px;background:var(--g100);border-radius:4px;padding:3px 12px;font-size:11px;color:var(--g500)}
-.k-body{min-height:420px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:52px 40px;text-align:center}
-.k-body-icon{width:62px;height:62px;background:var(--off);border-radius:13px;display:flex;align-items:center;justify-content:center;color:var(--navy)}
-.k-body h3{font-family:var(--serif);font-size:22px;color:var(--navy)}
-.k-body p{font-size:14px;color:var(--g500);max-width:360px;line-height:1.65}
-
 /* PRODUKTE */
 #produkte{background:var(--off)}
 .prod-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
@@ -301,7 +284,7 @@ footer{background:var(--navy-deep);padding:56px 0 32px}
     <li><a href="#produkte">Bindungen</a></li>
     <li><a href="#usp">Warum bamadi</a></li>
     <li><a href="#faq">FAQ</a></li>
-    <li><a href="#kalkulator" class="nav-cta">Jetzt konfigurieren</a></li>
+    <li><a href="#produkte" class="nav-cta">Jetzt konfigurieren</a></li>
   </ul>
 </nav>
 
@@ -318,7 +301,7 @@ footer{background:var(--navy-deep);padding:56px 0 32px}
       <h1 class="hero-h1">Deine Abschluss&shy;arbeit.<br>Gedruckt wie sie es<br><em>verdient.</em></h1>
       <p class="hero-sub">Konfiguriere, lade hoch, fertig — in unter 5 Minuten. Preis sofort sichtbar, keine Registrierung, Express-Lieferung deutschlandweit.</p>
       <div class="hero-btns">
-        <a href="#kalkulator" class="btn-primary">
+        <a href="#produkte" class="btn-primary">
           Preis berechnen
           <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
         </a>
@@ -617,7 +600,7 @@ footer{background:var(--navy-deep);padding:56px 0 32px}
         </div>
         <div class="faq-item">
           <button class="faq-q" onclick="faq(this)">Was passiert, wenn meine Arbeit fehlerhaft ankommt?<span class="faq-icon">+</span></button>
-          <div class="faq-a">Druckfehler auf unserer Seite? Wir produzieren kostenlos nach — ohne Diskussion. Schreib uns mit Foto und Auftragsnummer.</div>
+          <div class="faq-a">Druckfehler auf unserer Seite? Wir produzieren kostenlos nach — ohne Diskussion. Schreib uns mit Foto und deiner Auftragsnummer an [email protected] — wir produzieren kostenlos nach.</div>
         </div>
         <div class="faq-item">
           <button class="faq-q" onclick="faq(this)">Wie verfolge ich meinen Auftrag?<span class="faq-icon">+</span></button>
@@ -636,7 +619,7 @@ footer{background:var(--navy-deep);padding:56px 0 32px}
         <h2>Abgabe in Sicht?<br>Lass es uns drucken.</h2>
         <p>PDF hochladen, Bindung wählen, fertig — dein Preis erscheint sofort.</p>
       </div>
-      <a href="#kalkulator" class="btn-dark">
+      <a href="#produkte" class="btn-dark">
         Jetzt konfigurieren
         <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
       </a>
@@ -657,7 +640,7 @@ footer{background:var(--navy-deep);padding:56px 0 32px}
           <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="3b535a5757547b595a565a5f52155f5e">[email&#160;protected]</a> · +49 661 480047-0
         </div>
       </div>
-      <div class="ft-col"><h4>Produkt</h4><ul class="ft-links"><li><a href="#kalkulator">Kalkulator</a></li><li><a href="#produkte">Bindungsarten</a></li><li><a href="#">Express-Lieferung</a></li><li><a href="#">Auftragsstatus</a></li></ul></div>
+      <div class="ft-col"><h4>Produkt</h4><ul class="ft-links"><li><a href="#produkte">Kalkulator</a></li><li><a href="#produkte">Bindungsarten</a></li><li><a href="#">Express-Lieferung</a></li><li><a href="#">Auftragsstatus</a></li></ul></div>
       <div class="ft-col"><h4>Service</h4><ul class="ft-links"><li><a href="#">Über bamadi</a></li><li><a href="#how">So funktionierts</a></li><li><a href="#faq">FAQ</a></li><li><a href="#">PDF vorbereiten</a></li></ul></div>
       <div class="ft-col"><h4>Rechtliches</h4><ul class="ft-links"><li><a href="#">Impressum</a></li><li><a href="#">Datenschutz</a></li><li><a href="#">AGB</a></li><li><a href="#">Widerruf</a></li></ul></div>
     </div>

@@ -15,6 +15,24 @@
 
   function openKalkulatorOverlay() {
     if (!overlay || !iframe) return;
+    // #region agent log
+    fetch('http://127.0.0.1:7367/ingest/6b096abe-f6e2-4304-8e37-96d1c209c901',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-Debug-Session-Id':'be28d0'},
+      body:JSON.stringify({
+        sessionId:'be28d0',
+        runId:'pre-fix',
+        hypothesisId:'H1',
+        location:'app.js:openKalkulatorOverlay',
+        message:'openKalkulatorOverlay called',
+        data:{
+          overlayHasClass:isOpen = overlay.classList.contains('is-open'),
+          url:window.location.href
+        },
+        timestamp:Date.now()
+      })
+    }).catch(()=>{});
+    // #endregion agent log
     modalOverlayCount = 0;
     updateCloseButtonVisibility();
     iframe.src = calcUrl;
@@ -74,6 +92,25 @@
     var a = e.target.closest('a');
     if (a && a.getAttribute('href') && a.getAttribute('href').indexOf('kalkulator') !== -1) {
       console.log('[bamadi] Klick auf Kalkulator-Link, öffne Overlay');
+      // #region agent log
+      fetch('http://127.0.0.1:7367/ingest/6b096abe-f6e2-4304-8e37-96d1c209c901',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-Debug-Session-Id':'be28d0'},
+        body:JSON.stringify({
+          sessionId:'be28d0',
+          runId:'pre-fix',
+          hypothesisId:'H2',
+          location:'app.js:kalkulator-click',
+          message:'Kalkulator link click detected',
+          data:{
+            href:a.getAttribute('href'),
+            tag:e.target.tagName,
+            overlayPresent:!!overlay
+          },
+          timestamp:Date.now()
+        })
+      }).catch(()=>{});
+      // #endregion agent log
       e.preventDefault();
       e.stopPropagation();
       openKalkulatorOverlay();
@@ -428,6 +465,24 @@ document.addEventListener('keydown', function(e){
       var idx = parseInt(card.getAttribute('data-binding'), 10);
       console.log('[bamadi] Klick auf .prod-card, data-binding=', idx, 'openModal=', typeof window.openModal);
       if (!isNaN(idx) && typeof window.openModal === 'function') {
+        // #region agent log
+        fetch('http://127.0.0.1:7367/ingest/6b096abe-f6e2-4304-8e37-96d1c209c901',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','X-Debug-Session-Id':'be28d0'},
+          body:JSON.stringify({
+            sessionId:'be28d0',
+            runId:'pre-fix',
+            hypothesisId:'H3',
+            location:'app.js:prod-card-click',
+            message:'Prod-card click detected',
+            data:{
+              bindingIndex:idx,
+              overlayOpen:document.getElementById('overlay') && document.getElementById('overlay').classList.contains('open')
+            },
+            timestamp:Date.now()
+          })
+        }).catch(()=>{});
+        // #endregion agent log
         e.preventDefault();
         e.stopPropagation();
         window.openModal(idx);
@@ -437,3 +492,58 @@ document.addEventListener('keydown', function(e){
   }, true);
   console.log('[bamadi] Prod-Card-Listener registriert, Script-Ende');
 })();
+
+// Sicherheits-Reset beim Laden:
+// Falls durch ein vorheriges Overlay (Kalkulator, Legal oder Bindungs-Modal)
+// das Scrollen blockiert wurde, stellen wir den Ausgangszustand wieder her.
+document.addEventListener('DOMContentLoaded', function(){
+  try {
+    // #region agent log
+    (function(){
+      var footer = document.querySelector('footer');
+      var kalkOv   = document.getElementById('kalkulator-overlay');
+      var legalOv  = document.getElementById('legal-overlay');
+      var bindOv   = document.getElementById('overlay');
+      fetch('http://127.0.0.1:7367/ingest/6b096abe-f6e2-4304-8e37-96d1c209c901',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-Debug-Session-Id':'be28d0'},
+        body:JSON.stringify({
+          sessionId:'be28d0',
+          runId:'pre-fix',
+          hypothesisId:'H4',
+          location:'app.js:DOMContentLoaded',
+          message:'DOM loaded, initial overlay/footer state',
+          data:{
+            url:window.location.href,
+            footerPresent:!!footer,
+            kalkulatorOpen:kalkOv && kalkOv.classList.contains('is-open'),
+            legalOpen:legalOv && legalOv.classList.contains('is-open'),
+            bindModalOpen:bindOv && bindOv.classList.contains('open')
+          },
+          timestamp:Date.now()
+        })
+      }).catch(()=>{});
+    })();
+    // #endregion agent log
+    // Body wieder scrollbar machen
+    document.body.style.overflow = '';
+    // Alle Overlays sicher schließen
+    var kalkOv   = document.getElementById('kalkulator-overlay');
+    var legalOv  = document.getElementById('legal-overlay');
+    var bindOv   = document.getElementById('overlay');
+    if (kalkOv) {
+      kalkOv.classList.remove('is-open');
+      kalkOv.setAttribute('aria-hidden', 'true');
+    }
+    if (legalOv) {
+      legalOv.classList.remove('is-open');
+      legalOv.setAttribute('aria-hidden', 'true');
+    }
+    if (bindOv) {
+      bindOv.classList.remove('open');
+    }
+    console.log('[bamadi] DOMContentLoaded-Reset: Overlays geschlossen, Scroll aktiviert');
+  } catch (err) {
+    console.warn('[bamadi] Fehler im DOMContentLoaded-Reset', err);
+  }
+});

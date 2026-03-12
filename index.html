@@ -19,7 +19,7 @@
   --ease:cubic-bezier(0.22,1,0.36,1);
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-html{scroll-behavior:smooth;scroll-padding-top:72px}
+html{scroll-behavior:smooth;scroll-padding-top:76px}
 body{font-family:var(--sans);background:var(--white);color:var(--g800);overflow-x:hidden;-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}
 .container{max-width:1160px;margin:0 auto;padding:0 40px}
@@ -48,21 +48,39 @@ nav.scrolled .nav-toggle{border-color:var(--g300);color:var(--navy)}
 
 /* Erste Ansicht: Hero + Trust-Bar */
 .first-view{display:flex;flex-direction:column;min-height:0}
-.first-view #hero{min-height:0;background:var(--navy-deep);display:flex;align-items:center;position:relative;overflow:clip;padding-bottom:72px}
+.first-view #hero{
+  min-height:calc(100vh - 76px);
+  background:var(--navy-deep);
+  display:flex;
+  align-items:center;
+  position:relative;
+  overflow:visible;
+  padding-bottom:40px;
+}
 .first-view #trust-bar{flex-shrink:0}
 
 /* HERO */
-#hero::after{content:'';position:absolute;right:0;top:0;width:55%;height:100%;background:linear-gradient(to right,rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.02) 1px,transparent 1px);background-size:64px 64px;pointer-events:none}
+#hero::before{content:'';position:absolute;right:0;top:0;width:55%;height:100%;background:linear-gradient(to right,rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.02) 1px,transparent 1px);background-size:64px 64px;pointer-events:none}
+.first-view #hero::after{
+  content:'';
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:-1px;
+  height:40px;
+  background:linear-gradient(to bottom,var(--navy-deep),rgba(15,35,56,0));
+  pointer-events:none;
+}
 .hero-glow{position:absolute;top:-200px;right:-100px;width:800px;height:800px;background:radial-gradient(ellipse,rgba(232,160,0,.07) 0%,transparent 65%);pointer-events:none}
-.hero-inner{position:relative;z-index:2;display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;padding:56px 40px 40px;max-width:1160px;margin:0 auto;width:100%}
+.hero-inner{position:relative;z-index:2;display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;padding:32px 40px 40px;max-width:1160px;margin:0 auto;width:100%}
 
-/* Countdown — direkt in #hero, relativ zur Section positioniert */
-.cd-wrap{position:absolute;bottom:2rem;right:2rem;max-width:calc(100% - 4rem);display:inline-flex;align-items:center;gap:12px;background:rgba(232,160,0,.1);border:1px solid rgba(232,160,0,.2);border-radius:6px;padding:8px 12px;z-index:2}
-.cd-lbl{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5);white-space:nowrap}
-.cd-time{font-family:var(--serif);font-size:22px;color:var(--gold);letter-spacing:.05em;line-height:1;min-width:68px}
-.cd-note{font-size:11px;color:rgba(255,255,255,.35);line-height:1.4}
+/* Countdown kompakt innerhalb der Hero-Content-Spalte */
+.cd-wrap{position:static;display:inline-flex;align-items:center;gap:10px;flex-wrap:wrap;background:rgba(232,160,0,.08);border:1px solid rgba(232,160,0,.25);border-radius:999px;padding:4px 10px;margin-bottom:16px}
+.cd-lbl{font-size:.7rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.6);white-space:nowrap}
+.cd-time{font-family:var(--serif);font-size:.9rem;color:var(--gold);letter-spacing:.08em;line-height:1;min-width:auto}
+.cd-note{font-size:.7rem;color:rgba(255,255,255,.5);line-height:1.4}
 
-.hero-h1{font-family:var(--serif);font-size:clamp(2.5rem,4.5vw,4rem);line-height:1.05;color:var(--white);margin-bottom:14px}
+.hero-h1{font-family:var(--serif);font-size:clamp(2rem,3.8vw,3.4rem);line-height:1.05;color:var(--white);margin-bottom:14px}
 .hero-h1 em{font-style:italic;color:var(--gold)}
 .hero-sub{font-size:15px;line-height:1.6;color:rgba(255,255,255,.55);margin-bottom:24px;max-width:420px}
 .hero-btns{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
@@ -75,11 +93,28 @@ nav.scrolled .nav-toggle{border-color:var(--g300);color:var(--navy)}
 .hero-check svg{color:var(--gold);flex-shrink:0}
 
 /* Hero Book Slider */
-.hero-visual{display:flex;flex-direction:column;align-items:center;justify-content:center}
-.slider-wrap{position:relative;width:100%;max-width:440px;height:550px}
+.hero-visual{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  max-height:calc(100vh - 120px);
+  overflow:visible;
+  align-self:center;
+}
+.slider-wrap{position:relative;width:100%;max-width:440px;height:520px;overflow:visible}
 .book-slide{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transition:opacity 1.2s cubic-bezier(0.4,0,0.2,1);pointer-events:none}
 .book-slide.active{opacity:1;pointer-events:auto}
-.book{position:relative;width:250px;height:330px;transform-style:preserve-3d;transform:perspective(1200px) rotateY(-22deg) rotateX(4deg);filter:drop-shadow(-20px 30px 50px rgba(0,0,0,.65));transition:transform .5s cubic-bezier(0.22,1,0.36,1)}
+.book{
+  position:relative;
+  width:230px;
+  height:320px;
+  max-height:420px;
+  transform-style:preserve-3d;
+  transform:perspective(1200px) rotateY(-22deg) rotateX(4deg);
+  filter:drop-shadow(-20px 30px 50px rgba(0,0,0,.65));
+  transition:transform .5s cubic-bezier(0.22,1,0.36,1);
+}
 .book:hover{transform:perspective(1200px) rotateY(-12deg) rotateX(2deg) translateY(-6px)}
 .book-cover{position:absolute;inset:0;border-radius:2px 6px 6px 2px;overflow:hidden}
 .book-spine{position:absolute;left:-28px;top:0;bottom:0;width:28px;border-radius:2px 0 0 2px;transform:rotateY(90deg);transform-origin:right center}
@@ -90,7 +125,22 @@ nav.scrolled .nav-toggle{border-color:var(--g300);color:var(--navy)}
 .cover-rule{width:28px;height:1.5px;margin-bottom:14px;opacity:.6}
 .cover-title{font-family:var(--serif);font-size:13.5px;line-height:1.45;flex:1}
 .cover-author{font-size:9px;letter-spacing:.07em;opacity:.45;margin-top:auto}
-.book-badge{position:absolute;top:-10px;right:-16px;background:var(--gold);color:var(--navy-deep);font-size:9px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;padding:5px 12px;border-radius:3px;z-index:10;box-shadow:0 4px 16px rgba(232,160,0,.4)}
+.book-badge{
+  position:absolute;
+  top:-8px;
+  right:-12px;
+  background:var(--gold);
+  color:var(--navy-deep);
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  padding:5px 12px;
+  border-radius:3px;
+  z-index:10;
+  box-shadow:0 4px 16px rgba(232,160,0,.4);
+  overflow-clip-margin:8px;
+}
 .slide-label{position:absolute;left:50%;bottom:64px;transform:translateX(-50%);text-align:center;transition:opacity .6s;background:var(--gold);color:var(--navy-deep);padding:8px 18px;border-radius:999px;max-width:260px;box-shadow:0 8px 30px rgba(0,0,0,.4);display:flex;flex-direction:column;gap:2px}
 .slide-label-name{font-family:var(--serif);font-size:14px;color:var(--navy-deep);margin-bottom:0;line-height:1.3}
 .slide-label-detail{font-size:10px;color:rgba(15,35,56,.8);letter-spacing:.08em;text-transform:uppercase}
@@ -102,17 +152,38 @@ nav.scrolled .nav-toggle{border-color:var(--g300);color:var(--navy)}
 /* Kurze Streifen — kein Snap-Punkt, kein min-height */
 #trust-bar{min-height:unset;display:block}
 /* TRUST BAR */
-#trust-bar{background:var(--off);border-bottom:1px solid var(--g100)}
+#trust-bar{
+  background:var(--navy-deep);
+  border-bottom:1px solid rgba(255,255,255,.04);
+  position:sticky;
+  top:76px;
+  z-index:10;
+  margin-top:-8px;
+}
 .tb-inner{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:1rem 0;flex-wrap:wrap}
-.tb-item{flex:1;min-width:0;display:flex;align-items:center;gap:13px;padding:12px 28px;border-right:1px solid var(--g100)}
+.tb-item{flex:1;min-width:0;display:flex;align-items:center;gap:13px;padding:12px 28px;border-right:1px solid rgba(255,255,255,.06)}
 .tb-item:last-child{border-right:none}
-.tb-icon{width:40px;height:40px;border-radius:50%;background:var(--white);border:1.5px solid var(--g100);display:flex;align-items:center;justify-content:center;color:var(--navy);flex-shrink:0}
-.tb-lbl{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--g500);margin-bottom:2px}
-.tb-val{font-family:var(--serif);font-size:16px;color:var(--navy);line-height:1.2;white-space:nowrap}
+.tb-icon{width:40px;height:40px;border-radius:50%;background:rgba(10,22,38,1);border:1.5px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;color:var(--gold);flex-shrink:0}
+.tb-lbl{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:2px}
+.tb-val{font-family:var(--serif);font-size:16px;color:#fff;line-height:1.2;white-space:nowrap}
 
 /* SECTIONS */
 section{padding:5rem 0;display:flex;flex-direction:column;justify-content:center}
-.view-section{min-height:auto;padding:5rem 0;box-sizing:border-box;display:flex;flex-direction:column;overflow:visible}
+.view-section{
+  min-height:auto;
+  padding:5rem 0;
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  overflow:visible;
+  opacity:0;
+  transform:translateY(20px);
+  transition:opacity .55s ease,transform .55s ease;
+}
+.view-section.is-visible{
+  opacity:1;
+  transform:translateY(0);
+}
 .view-section .container{display:flex;flex-direction:column;justify-content:flex-start}
 .view-section .container>*:last-child{margin-bottom:0}
 #material.view-section .container{justify-content:center}
@@ -128,7 +199,11 @@ section{padding:5rem 0;display:flex;flex-direction:column;justify-content:center
 #produkte .sec-intro{margin-bottom:1.5rem}
 
 /* HOW IT WORKS */
-#how,#produkte,#usp{padding-top:2.5rem;padding-bottom:6rem}
+#how,#produkte,#usp,
+#material,#vertrauen,#faq,#cta{
+  padding-top:72px;
+  scroll-margin-top:80px;
+}
 #how{background:var(--white)}
 .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:var(--g100);border:1px solid var(--g100);border-radius:4px;overflow:hidden}
 .step{background:var(--white);padding:48px 40px;position:relative;transition:background .3s}
@@ -140,30 +215,8 @@ section{padding:5rem 0;display:flex;flex-direction:column;justify-content:center
 .step p{font-size:0.875rem;line-height:1.65;color:var(--g500)}
 .step:not(:last-child)::after{content:'→';position:absolute;top:50%;right:-16px;transform:translateY(-50%);width:32px;height:32px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--navy-deep);font-weight:700;z-index:2;line-height:32px;text-align:center}
 
-/* KALKULATOR */
-#kalkulator{background:var(--navy-deep);position:relative;overflow:hidden}
-#kalkulator.view-section{padding:56px 0}
-#kalkulator::before{content:'';position:absolute;inset:0;background:linear-gradient(to right,rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.018) 1px,transparent 1px);background-size:52px 52px;pointer-events:none}
-.k-head{text-align:center;margin-bottom:50px;position:relative;z-index:2}
-.k-head .eyebrow{justify-content:center}
-.k-head .h-lg{color:var(--white);margin-bottom:12px}
-.k-head p{font-size:15px;color:rgba(255,255,255,.45);max-width:380px;margin:0 auto;line-height:1.65}
-.k-frame{position:relative;z-index:2;background:var(--white);border-radius:10px;overflow:hidden;box-shadow:0 36px 90px rgba(0,0,0,.5);max-width:840px;margin:0 auto}
-.k-bar{background:var(--off);border-bottom:1px solid var(--g100);padding:11px 16px;display:flex;align-items:center;gap:6px}
-.k-dot{width:10px;height:10px;border-radius:50%}
-.k-dot:nth-child(1){background:#FF5F57}.k-dot:nth-child(2){background:#FFBD2E}.k-dot:nth-child(3){background:#28CA41}
-.k-url{margin-left:12px;background:var(--g100);border-radius:4px;padding:3px 12px;font-size:11px;color:var(--g500)}
-.k-body{min-height:420px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:52px 40px;text-align:center}
-.k-body-features{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:8px}
-.k-body-feature{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--g500);background:var(--off);padding:6px 12px;border-radius:6px}
-.k-body-feature svg{color:var(--green);flex-shrink:0}
-.k-body-icon{width:62px;height:62px;background:var(--off);border-radius:13px;display:flex;align-items:center;justify-content:center;color:var(--navy)}
-.k-body h3{font-family:var(--serif);font-size:22px;color:var(--navy)}
-.k-body p{font-size:14px;color:var(--g500);max-width:360px;line-height:1.65}
-#kalkulator .k-body .btn-primary{border:2px solid rgba(255,255,255,0.4)}
-
 /* PRODUKTE */
-#produkte{background:var(--off);padding-top:2rem;padding-bottom:7rem}
+#produkte{background:var(--off);padding-bottom:7rem}
 .prod-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
 .prod-card{background:var(--white);border:1px solid var(--g100);border-radius:8px;overflow:hidden;transition:transform .3s var(--ease),box-shadow .3s,border-color .3s;cursor:pointer}
 .prod-card:hover{transform:translateY(-5px);box-shadow:0 14px 40px rgba(0,0,0,.09);border-color:var(--gold)}
@@ -239,7 +292,6 @@ section{padding:5rem 0;display:flex;flex-direction:column;justify-content:center
 .sc-track-link:hover{opacity:.85}
 
 /* VERTRAUEN */
-#vertrauen{background:var(--off)}
 .vt-grid{display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:start}
 .sig-grid{align-self:start}
 .vt-text .h-md{color:var(--navy);margin-bottom:18px}
@@ -253,9 +305,10 @@ section{padding:5rem 0;display:flex;flex-direction:column;justify-content:center
 .sig-icon{font-size:20px;margin-bottom:10px}
 .sig h4{font-family:var(--serif);font-size:16px;color:var(--navy);margin-bottom:5px;font-weight:400}
 .sig p{font-size:12px;color:var(--g500);line-height:1.55}
+.usp-divider{border:0;border-top:1px solid var(--g100);margin:3rem 0}
 
 /* FAQ */
-#faq{background:var(--white);padding:4rem 0}
+#faq{background:var(--white);padding:80px 0 4rem}
 .faq-wrap{display:grid;grid-template-columns:1fr 2fr;gap:72px;align-items:flex-start}
 .faq-side .h-md{color:var(--navy);margin-bottom:14px}
 .faq-side p{font-size:14px;color:var(--g500);line-height:1.65;margin-bottom:24px}
@@ -270,7 +323,14 @@ section{padding:5rem 0;display:flex;flex-direction:column;justify-content:center
 .faq-a.open{max-height:240px;padding-bottom:20px}
 
 /* CTA BAND */
-#cta{background:var(--gold);padding:5rem 4rem;min-height:auto;display:block}
+#cta{
+  background:var(--gold);
+  padding:5rem 4rem;
+  min-height:auto;
+  display:block;
+  position:relative;
+  overflow:hidden;
+}
 #cta .container{display:flex;align-items:center;justify-content:space-between;gap:2rem}
 .cta-inner{display:flex;align-items:center;justify-content:space-between;gap:36px;width:100%;max-width:1160px;margin:0 auto}
 .cta-inner h2{font-family:var(--serif);font-size:clamp(1.75rem,4vw,2.75rem);color:#0F2338;margin-bottom:8px;font-weight:400}
@@ -313,7 +373,7 @@ footer{background:var(--navy-deep);padding:56px 0 32px;padding-bottom:calc(32px 
   .hero-inner{grid-template-columns:1fr}
   .hero-visual{display:none}
   .tb-inner{flex-wrap:wrap}
-  .tb-item{flex:0 0 50%;border-bottom:1px solid var(--g100)}
+  .tb-item{flex:0 0 50%;border-bottom:1px solid rgba(255,255,255,.06)}
   .tb-item:nth-child(2n){border-right:none}
   .tb-item:nth-last-child(-n+2){border-bottom:none}
   .steps{grid-template-columns:1fr}
@@ -331,6 +391,10 @@ footer{background:var(--navy-deep);padding:56px 0 32px;padding-bottom:calc(32px 
   .container{padding:0 24px}
   section{padding:4rem 0}
   .hero-inner{padding:110px 24px 72px}
+}
+@media(max-height:680px){
+  .hero-inner{grid-template-columns:1fr}
+  .hero-visual{display:none}
 }
 
 /* Nav: Ausklappmenü ab mittlerer Breite */
@@ -358,6 +422,7 @@ footer{background:var(--navy-deep);padding:56px 0 32px;padding-bottom:calc(32px 
   .nav-backdrop{display:block}
 }
 @media(max-width:768px){
+  .first-view #hero{min-height:100vh;min-height:100svh}
   #cta .cta-inner{flex-direction:column;text-align:center}
   #cta .btn-dark{width:100%;justify-content:center}
 }
@@ -572,7 +637,7 @@ footer{background:var(--navy-deep);padding:56px 0 32px;padding-bottom:calc(32px 
     <li><a href="#usp">Warum bamadi</a></li>
     <li><a href="#faq">FAQ</a></li>
     <li><a href="auftrag.html" class="nav-status-link">Auftragsstatus</a></li>
-    <li><a href="#kalkulator" class="nav-cta">Jetzt konfigurieren</a></li>
+    <li><a href="#produkte" class="nav-cta">Jetzt konfigurieren</a></li>
   </ul>
 </nav>
 
@@ -612,17 +677,17 @@ footer{background:var(--navy-deep);padding:56px 0 32px;padding-bottom:calc(32px 
 <!-- HERO -->
 <section id="hero">
   <div class="hero-glow"></div>
-  <div class="cd-wrap">
-    <div class="cd-lbl">Heute bestellen, morgen bei dir —</div>
-    <div class="cd-time" id="cdTimer">––:––</div>
-    <div class="cd-note">noch bis 14:00 Uhr</div>
-  </div>
   <div class="hero-inner">
     <div>
+      <div class="cd-wrap">
+        <div class="cd-lbl">Heute bestellen, morgen bei dir —</div>
+        <div class="cd-time" id="cdTimer">––:––</div>
+        <div class="cd-note">noch bis 14:00 Uhr</div>
+      </div>
       <h1 class="hero-h1">Deine Abschlussarbeit.<br>Gedruckt wie sie es<br><em>verdient.</em></h1>
       <p class="hero-sub">Konfiguriere, lade hoch, fertig — in unter 5 Minuten. Preis sofort sichtbar, keine Registrierung, Express-Lieferung deutschlandweit.</p>
       <div class="hero-btns">
-        <a href="#kalkulator" class="btn-primary">
+        <a href="#produkte" class="btn-primary">
           Preis berechnen
           <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
         </a>
@@ -790,68 +855,6 @@ footer{background:var(--navy-deep);padding:56px 0 32px;padding-bottom:calc(32px 
 </div>
 </div>
 
-<!-- HOW IT WORKS -->
-<section id="how" class="view-section">
-  <div class="container">
-    <div class="sec-intro">
-    <div class="eyebrow"><span>So funktioniert's</span></div>
-      <h2 class="h-lg" style="color:var(--navy)">Vom PDF zum Paket — in Minuten.</h2>
-      <p>Einfach konfigurieren, hochladen, bestellen. Ohne Telefonat, ohne Wartezeit.</p>
-    </div>
-    <div class="steps">
-      <div class="step">
-        <span class="step-n">01</span>
-        <div class="step-icon"><svg width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg></div>
-        <h3>Konfigurieren</h3>
-        <p>Seitenanzahl, Papier, Bindung, Extras — der Endpreis inkl. MwSt. aktualisiert sich mit jedem Klick. Was du siehst, zahlst du.</p>
-      </div>
-      <div class="step">
-        <span class="step-n">02</span>
-        <div class="step-icon"><svg width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg></div>
-        <h3>Hochladen & Bezahlen</h3>
-        <p>PDF sicher hochladen, per Karte oder PayPal bezahlen — sofort bestätigt, Rechnung automatisch per E-Mail.</p>
-      </div>
-      <div class="step">
-        <span class="step-n">03</span>
-        <div class="step-icon"><svg width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div>
-        <h3>Wir drucken. Du lehnst dich zurück.</h3>
-        <p>Dein Auftrag läuft live bei uns auf dem Schirm. Du siehst zu, wir binden — bis das Paket bei DHL aufgegeben ist.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- KALKULATOR -->
-<section id="kalkulator" class="view-section">
-  <div class="container">
-    <div class="k-head">
-      <div class="eyebrow" style="justify-content:center"><span>Livekalkulator</span></div>
-      <h2 class="h-lg">Dein Preis. Sofort.</h2>
-      <p>Seitenanzahl, Papier, Bindung — der Endpreis inkl. 7 % MwSt. erscheint sofort.</p>
-    </div>
-    <div class="k-frame">
-      <div class="k-bar">
-        <div class="k-dot"></div><div class="k-dot"></div><div class="k-dot"></div>
-        <div class="k-url">bamadi.de</div>
-      </div>
-      <div class="k-body">
-        <div class="k-body-icon"><svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 19h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></div>
-        <h3>Hier startet deine Konfiguration</h3>
-        <p>Wähle Bindungsart, Seitenzahl und Papier — der Preis erscheint sofort. Anschließend direkt zur Bestellung.</p>
-        <div class="k-body-features">
-          <span class="k-body-feature"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Endpreis inkl. MwSt.</span>
-          <span class="k-body-feature"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Kein Konto nötig</span>
-          <span class="k-body-feature"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> PDF-Upload in 1 Klick</span>
-        </div>
-        <a href="#kalkulator" class="btn-primary" style="margin-top:6px">
-          Jetzt konfigurieren
-          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-        </a>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- PRODUKTE -->
 <section id="produkte">
   <div class="container">
@@ -932,6 +935,37 @@ footer{background:var(--navy-deep);padding:56px 0 32px;padding-bottom:calc(32px 
   </div>
 </div>
 
+<!-- HOW IT WORKS -->
+<section id="how" class="view-section">
+  <div class="container">
+    <div class="sec-intro">
+    <div class="eyebrow"><span>So funktioniert's</span></div>
+      <h2 class="h-lg" style="color:var(--navy)">Vom PDF zum Paket — in Minuten.</h2>
+      <p>Einfach konfigurieren, hochladen, bestellen. Ohne Telefonat, ohne Wartezeit.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <span class="step-n">01</span>
+        <div class="step-icon"><svg width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg></div>
+        <h3>Konfigurieren</h3>
+        <p>Seitenanzahl, Papier, Bindung, Extras — der Endpreis inkl. MwSt. aktualisiert sich mit jedem Klick. Was du siehst, zahlst du.</p>
+      </div>
+      <div class="step">
+        <span class="step-n">02</span>
+        <div class="step-icon"><svg width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg></div>
+        <h3>Hochladen & Bezahlen</h3>
+        <p>PDF sicher hochladen, per Karte oder PayPal bezahlen — sofort bestätigt, Rechnung automatisch per E-Mail.</p>
+      </div>
+      <div class="step">
+        <span class="step-n">03</span>
+        <div class="step-icon"><svg width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div>
+        <h3>Wir drucken. Du lehnst dich zurück.</h3>
+        <p>Dein Auftrag läuft live bei uns auf dem Schirm. Du siehst zu, wir binden — bis das Paket bei DHL aufgegeben ist.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- USP -->
 <section id="usp" class="view-section">
   <div class="container">
@@ -967,12 +1001,7 @@ footer{background:var(--navy-deep);padding:56px 0 32px;padding-bottom:calc(32px 
         <a href="auftrag.html" class="sc-track-link">→ Eigenen Auftrag verfolgen</a>
       </div>
     </div>
-  </div>
-</section>
-
-<!-- VERTRAUEN -->
-<section id="vertrauen" class="view-section">
-  <div class="container">
+    <hr class="usp-divider">
     <div class="vt-grid">
       <div class="vt-text">
         <div class="eyebrow"><span>Wer wir sind</span></div>
@@ -1022,7 +1051,7 @@ footer{background:var(--navy-deep);padding:56px 0 32px;padding-bottom:calc(32px 
         </div>
         <div class="faq-item">
           <button class="faq-q" onclick="toggleFaq(this)">Was passiert, wenn meine Arbeit fehlerhaft ankommt?<span class="faq-icon">+</span></button>
-          <div class="faq-a">Druckfehler auf unserer Seite? Wir produzieren kostenlos nach — ohne Diskussion. Schreib uns mit Foto und Auftragsnummer.</div>
+          <div class="faq-a">Druckfehler auf unserer Seite? Wir produzieren kostenlos nach — ohne Diskussion. Schreib uns mit Foto und deiner Auftragsnummer an [email protected] — wir produzieren kostenlos nach.</div>
         </div>
         <div class="faq-item">
           <button class="faq-q" onclick="toggleFaq(this)">Wie verfolge ich meinen Auftrag?<span class="faq-icon">+</span></button>
@@ -1049,7 +1078,7 @@ footer{background:var(--navy-deep);padding:56px 0 32px;padding-bottom:calc(32px 
         <h2>Abgabe in Sicht?<br>Lass es uns drucken.</h2>
         <p>PDF hochladen, Bindung wählen, fertig — dein Preis erscheint sofort.</p>
       </div>
-      <a href="#kalkulator" class="btn-dark">
+        <a href="#produkte" class="btn-dark">
         Jetzt konfigurieren
         <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
       </a>
@@ -1070,7 +1099,7 @@ footer{background:var(--navy-deep);padding:56px 0 32px;padding-bottom:calc(32px 
           <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="3b535a5757547b595a565a5f52155f5e">[email&#160;protected]</a> · +49 661 480047-0
         </div>
       </div>
-      <div class="ft-col"><h4>Produkt</h4><ul class="ft-links"><li><a href="#kalkulator">Kalkulator</a></li><li><a href="#produkte">Bindungsarten</a></li><li><a href="#">Express-Lieferung</a></li><li><a href="auftrag.html">Auftragsstatus</a></li></ul></div>
+      <div class="ft-col"><h4>Produkt</h4><ul class="ft-links"><li><a href="#produkte">Kalkulator</a></li><li><a href="#produkte">Bindungsarten</a></li><li><a href="#">Express-Lieferung</a></li><li><a href="auftrag.html">Auftragsstatus</a></li></ul></div>
       <div class="ft-col"><h4>Service</h4><ul class="ft-links"><li><a href="#">Über bamadi</a></li><li><a href="#how">So funktionierts</a></li><li><a href="#faq">FAQ</a></li><li><a href="#">PDF vorbereiten</a></li></ul></div>
       <div class="ft-col"><h4>Rechtliches</h4><ul class="ft-links"><li><a href="#impressum">Impressum</a></li><li><a href="#datenschutz">Datenschutz</a></li><li><a href="#agb">AGB</a></li><li><a href="#widerruf">Widerruf</a></li></ul></div>
     </div>
@@ -1363,3 +1392,19 @@ footer{background:var(--navy-deep);padding:56px 0 32px;padding-bottom:calc(32px 
 </div>
 
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js" defer></script>
+<script>
+if ('IntersectionObserver' in window) {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('is-visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.08 });
+
+  document.querySelectorAll('.view-section').forEach(section => {
+    observer.observe(section);
+  });
+}
+</script>
