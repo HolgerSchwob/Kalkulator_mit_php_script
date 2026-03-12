@@ -1,0 +1,10 @@
+/**
+ * Frontend Design Tokens – lädt tokens.css (bamadi.de Markensystem) und ergänzt Typo-Regeln.
+ * Vormals Petrol/Teal; jetzt Navy/Gold aus tokens.css.
+ */
+@import url('tokens.css');
+
+/* Typografie: h1, h2 mit Roboto Slab */
+h1, h2 {
+    font-family: var(--font-heading);
+}

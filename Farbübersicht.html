@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Buchdecken Farbpalette · ISOcoatedv2 · Ricoh Pro 7200</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #F5F2EC;
+    --surface: #FEFCF8;
+    --ink: #1A1714;
+    --muted: #6B6560;
+    --rule: #D4CFC8;
+    --accent: #2B3A6B;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 40px 32px 80px;
+  }
+
+  header {
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 20px;
+    margin-bottom: 36px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    font-weight: 400;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+  }
+
+  header .meta {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-align: right;
+    line-height: 1.7;
+  }
+
+  .legend {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 24px;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    flex-wrap: wrap;
+  }
+
+  .legend span { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(520px, 1fr));
+    gap: 2px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+  }
+
+  .color-block {
+    background: var(--surface);
+    display: grid;
+    grid-template-columns: 72px 72px 1fr;
+    gap: 0;
+  }
+
+  .swatch-col {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .swatch {
+    flex: 1;
+    min-height: 90px;
+    position: relative;
+  }
+
+  .swatch-label {
+    position: absolute;
+    bottom: 6px;
+    left: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.05em;
+    opacity: 0.75;
+    mix-blend-mode: multiply;
+    color: #000;
+    line-height: 1.3;
+  }
+
+  .swatch.light .swatch-label { color: #000; }
+  .swatch.dark .swatch-label { color: #fff; mix-blend-mode: screen; }
+
+  .info {
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .color-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 16px;
+    font-weight: 400;
+    letter-spacing: -0.3px;
+  }
+
+  .color-name small {
+    display: block;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-top: 1px;
+  }
+
+  .values-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 16px;
+  }
+
+  .val-group {
+    font-family: 'DM Mono', monospace;
+    font-size: 10.5px;
+    line-height: 1.6;
+  }
+
+  .val-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 1px;
+  }
+
+  .cmyk-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 2px;
+  }
+
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 9.5px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .bar-letter { width: 8px; color: var(--muted); }
+
+  .bar-track {
+    flex: 1;
+    height: 5px;
+    background: #E8E4DC;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .bar-fill { height: 100%; border-radius: 2px; }
+  .bar-c { background: #00AEEF; }
+  .bar-m { background: #EC008C; }
+  .bar-y { background: #FFF200; border: 1px solid #ccc; }
+  .bar-k { background: #2B2B2B; }
+
+  .bar-val { width: 22px; text-align: right; font-size: 9px; color: var(--muted); }
+
+  .hex-swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    vertical-align: middle;
+    margin-right: 3px;
+    border: 1px solid rgba(0,0,0,0.1);
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--rule);
+    margin: 4px 0;
+  }
+
+  .variant-label {
+    font-size: 9px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 3px;
+  }
+
+  .note {
+    font-size: 10px;
+    color: var(--muted);
+    padding-top: 4px;
+    border-top: 1px solid var(--rule);
+    line-height: 1.4;
+  }
+
+  footer {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid var(--rule);
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    line-height: 1.8;
+  }
+
+  @media print {
+    body { background: white; padding: 20px; }
+    .grid { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Buchdecken Farbpalette<br><span style="opacity:0.4;font-size:18px;">Akademische Abschlussarbeiten</span></h1>
+  <div class="meta">
+    Profil: ISOcoatedv2 (ECI)<br>
+    Gerät: Ricoh Pro 7200 / EFI RIP<br>
+    Stand: 2025 · Alle Werte in %
+  </div>
+</header>
+
+<div class="legend">
+  <span><span class="legend-dot" style="background:#444"></span>Vollton (100%)</span>
+  <span><span class="legend-dot" style="background:#aaa"></span>Hellton (60%-Tint = Vollton × 0,6)</span>
+  <span>RGB-Werte: Näherung für Webshop-Preview (sRGB)</span>
+</div>
+
+<div class="grid" id="palette"></div>
+
+<footer>
+  Hinweise zur Ricoh Pro 7200 / EFI RIP · Composite-Aufbauten bevorzugen · Einzel-Kanal-Tints unter 20% vermeiden ·
+  Grautöne immer als CMY+K-Mix (kein reines K → Banding) · Alle Werte als Ausgangsbasis für Spotfarben-Feintuning
+</footer>
+
+<script>
+const colors = [
+  {
+    name: "Weinrot",
+    sub: "Burgund / Classic Claret",
+    note: "Stabiler Dreikanal-Aufbau, gute Ricoh-Deckung",
+    full: { c: 0, m: 90, y: 55, k: 35 },
+  },
+  {
+    name: "Marine",
+    sub: "Dunkelblau / Navy",
+    note: "Klassisch akademisch, alle 4 Kanäle aktiv",
+    full: { c: 100, m: 75, y: 5, k: 35 },
+  },
+  {
+    name: "Blau",
+    sub: "Signalblau / Königsblau",
+    note: "Leuchtkräftig, CY-Aufbau gibt Reinheit",
+    full: { c: 100, m: 52, y: 0, k: 8 },
+  },
+  {
+    name: "Dunkelgrün",
+    sub: "Tannengrün / Flaschengrün",
+    note: "Alle 4 Kanäle → gleichmäßiger Tonerintrag",
+    full: { c: 90, m: 15, y: 85, k: 40 },
+  },
+  {
+    name: "Petrol",
+    sub: "Blaugrün / Teal",
+    note: "Beliebt bei MINT-Fächern, sehr druckstabil",
+    full: { c: 80, m: 28, y: 44, k: 18 },
+  },
+  {
+    name: "Graublau",
+    sub: "Slate / Stahlblau",
+    note: "Neutraler Akademiker-Ton, 3 Kanäle stabil",
+    full: { c: 42, m: 25, y: 14, k: 52 },
+  },
+  {
+    name: "Mittelgrau",
+    sub: "Neutralgrau · Composite",
+    note: "Niemals reines K! Composite verhindert Banding",
+    full: { c: 22, m: 16, y: 16, k: 52 },
+  },
+  {
+    name: "Dunkelgrau",
+    sub: "Anthrazit · Composite",
+    note: "Warm-neutraler Vierkanal-Mix",
+    full: { c: 28, m: 20, y: 20, k: 76 },
+  },
+  {
+    name: "Aubergine",
+    sub: "Violett / Pflaume",
+    note: "Beliebt Geistes-/Kulturwiss., M+C balanciert",
+    full: { c: 48, m: 82, y: 12, k: 32 },
+  },
+  {
+    name: "Schokobraun",
+    sub: "Tabak / Kastanie",
+    note: "Warm, 3 Kanäle, gute Ricoh-Sättigung",
+    full: { c: 14, m: 62, y: 78, k: 38 },
+  },
+  {
+    name: "Olive",
+    sub: "Dunkeloliv / Khaki",
+    note: "Beliebt Rechtswiss./Geografie, Y-dominant aber K stützt",
+    full: { c: 28, m: 18, y: 72, k: 38 },
+  },
+  {
+    name: "Terracotta",
+    sub: "Rotbraun / Burnt Sienna",
+    note: "Warm, historisch, M+Y+K balanciert",
+    full: { c: 8, m: 65, y: 80, k: 22 },
+  },
+];
+
+function cmykToRgb(c, m, y, k) {
+  const r = Math.round(255 * (1 - c / 100) * (1 - k / 100));
+  const g = Math.round(255 * (1 - m / 100) * (1 - k / 100));
+  const b = Math.round(255 * (1 - y / 100) * (1 - k / 100));
+  return { r, g, b };
+}
+
+function toHex(r, g, b) {
+  return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0').toUpperCase()).join('');
+}
+
+function luminance(r, g, b) {
+  return 0.299 * r + 0.587 * g + 0.114 * b;
+}
+
+function tint(cmyk, pct) {
+  return {
+    c: Math.round(cmyk.c * pct / 100),
+    m: Math.round(cmyk.m * pct / 100),
+    y: Math.round(cmyk.y * pct / 100),
+    k: Math.round(cmyk.k * pct / 100),
+  };
+}
+
+function renderBars(cmyk) {
+  const channels = [
+    { l: 'C', v: cmyk.c, cls: 'bar-c' },
+    { l: 'M', v: cmyk.m, cls: 'bar-m' },
+    { l: 'Y', v: cmyk.y, cls: 'bar-y' },
+    { l: 'K', v: cmyk.k, cls: 'bar-k' },
+  ];
+  return `<div class="cmyk-bars">${channels.map(ch => `
+    <div class="bar-row">
+      <span class="bar-letter">${ch.l}</span>
+      <div class="bar-track"><div class="bar-fill ${ch.cls}" style="width:${ch.v}%"></div></div>
+      <span class="bar-val">${ch.v}</span>
+    </div>`).join('')}</div>`;
+}
+
+function renderVariant(cmyk, label) {
+  const rgb = cmykToRgb(cmyk.c, cmyk.m, cmyk.y, cmyk.k);
+  const hex = toHex(rgb.r, rgb.g, rgb.b);
+  const dark = luminance(rgb.r, rgb.g, rgb.b) < 128;
+  return { rgb, hex, dark, label, cmyk };
+}
+
+const palette = document.getElementById('palette');
+
+colors.forEach(color => {
+  const full = renderVariant(color.full, 'Vollton');
+  const light = renderVariant(tint(color.full, 60), '60 % Tint');
+
+  const block = document.createElement('div');
+  block.className = 'color-block';
+
+  block.innerHTML = `
+    <div class="swatch-col">
+      <div class="swatch ${full.dark ? 'dark' : 'light'}" style="background:rgb(${full.rgb.r},${full.rgb.g},${full.rgb.b})">
+        <div class="swatch-label">Vollton<br>${full.hex}</div>
+      </div>
+      <div class="swatch ${light.dark ? 'dark' : 'light'}" style="background:rgb(${light.rgb.r},${light.rgb.g},${light.rgb.b})">
+        <div class="swatch-label">60 %<br>${light.hex}</div>
+      </div>
+    </div>
+    <div class="swatch-col" style="border-left:2px solid #F5F2EC">
+      <div style="padding:8px; font-size:9px; font-family:'DM Mono',monospace; color:#888; line-height:1.5; height:50%">
+        <div class="variant-label">Vollton CMYK</div>
+        C ${full.cmyk.c} · M ${full.cmyk.m}<br>Y ${full.cmyk.y} · K ${full.cmyk.k}<br>
+        <span class="hex-swatch" style="background:${full.hex};border:1px solid rgba(0,0,0,0.15)"></span>${full.hex}<br>
+        RGB ${full.rgb.r} ${full.rgb.g} ${full.rgb.b}
+      </div>
+      <div style="padding:8px; font-size:9px; font-family:'DM Mono',monospace; color:#888; line-height:1.5; height:50%; border-top:2px solid #F5F2EC">
+        <div class="variant-label">60 % Tint CMYK</div>
+        C ${light.cmyk.c} · M ${light.cmyk.m}<br>Y ${light.cmyk.y} · K ${light.cmyk.k}<br>
+        <span class="hex-swatch" style="background:${light.hex};border:1px solid rgba(0,0,0,0.15)"></span>${light.hex}<br>
+        RGB ${light.rgb.r} ${light.rgb.g} ${light.rgb.b}
+      </div>
+    </div>
+    <div class="info">
+      <div>
+        <div class="color-name">${color.name}<small>${color.sub}</small></div>
+      </div>
+      <div>
+        <div class="variant-label" style="margin-bottom:4px">CMYK Kanäle · Vollton</div>
+        ${renderBars(color.full)}
+      </div>
+      <div class="note">⚑ ${color.note}</div>
+    </div>
+  `;
+
+  palette.appendChild(block);
+});
+</script>
+</body>
+</html>

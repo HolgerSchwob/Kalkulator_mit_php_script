@@ -1,0 +1,91 @@
+/**
+ * tokens.css – Single Source of Truth für das bamadi.de Markensystem
+ * Ersetzt das bisherige Teal/Petrol (#006b7c etc.) durch Navy (#1A3A5C) + Gold (#E8A000).
+ * Schrift Logo: DM Serif Display | Schrift UI: Roboto / System-Sans
+ * Alle Farben und Design-Tokens zentral; andere CSS-Dateien nutzen ausschließlich var(--color-*).
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Slab:wght@400;700&family=DM+Serif+Display&display=swap');
+
+:root {
+    /* ─── Primärfarben (Navy) ─── */
+    --color-primary:        #1A3A5C;
+    --color-primary-dark:   #122843;
+    --color-primary-light:  #EBF2FA;
+
+    /* ─── Akzentfarbe (Gold) ─── */
+    --color-accent:         #E8A000;
+    --color-accent-dark:    #C98800;
+    --color-accent-light:   #FFF8EC;
+
+    /* ─── Neutrale ─── */
+    --color-white:          #FFFFFF;
+    --color-bg:             #F5F7FA;
+    --color-surface:        #FFFFFF;
+    --color-border:         #DDE3EB;
+    --color-text:           #1A1A1A;
+    --color-text-muted:     #6B7280;
+    --color-text-light:     #9CA3AF;
+
+    /* ─── Feedback ─── */
+    --color-success:        #1A6B3C;
+    --color-warning:        #E8A000;
+    --color-error:          #C0392B;
+    --color-error-bg:       #FEF2F2;
+    --color-error-border:   #FECACA;
+
+    /* ─── Abgeleitete / Kompatibilität (optional) ─── */
+    --color-border-light:   #EBEFF4;
+    --color-border-input:   #DDE3EB;
+    --color-focus-ring:     rgba(26, 58, 92, 0.35);
+    --color-secondary:      #6B7280;
+    --color-secondary-hover:#4B5563;
+
+    /* ─── Typografie ─── */
+    --font-sans:            'Roboto', system-ui, -apple-system, sans-serif;
+    --font-heading:         'Roboto Slab', serif;
+    --font-logo:            'DM Serif Display', Georgia, serif;
+    --text-xs:              0.75rem;
+    --text-sm:              0.8125rem;
+    --text-base:            0.875rem;
+    --text-lg:              1rem;
+    --heading-1:            1.5rem;
+    --heading-2:            1.125rem;
+    --heading-3:            1rem;
+    --line-height:          1.5;
+    --line-height-tight:    1.4;
+
+    /* ─── Abstände ─── */
+    --space-1:              5px;
+    --space-2:              8px;
+    --space-3:              10px;
+    --space-4:              12px;
+    --space-5:              15px;
+    --space-6:              18px;
+    --space-7:              20px;
+    --space-8:              25px;
+    --space-9:              32px;
+    --page-padding:         16px;
+    --page-padding-bottom:  80px;
+    --page-padding-mobile:  12px;
+
+    /* ─── Radien ─── */
+    --radius-sm:            6px;
+    --radius:               8px;
+    --radius-md:            10px;
+    --radius-lg:            12px;
+
+    /* ─── Schatten ─── */
+    --shadow-sm:            0 1px 3px rgba(0, 0, 0, 0.08);
+    --shadow-md:            0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-focus:         0 0 0 3px var(--color-focus-ring);
+    --shadow-invalid:       0 0 0 2px rgba(192, 57, 43, 0.3);
+    --shadow-invalid-strong: 0 0 0 2px var(--color-error);
+
+    /* ─── Layout ─── */
+    --max-width:            1200px;
+    --configurator-min:     320px;
+    --cart-min:             280px;
+    --gap:                  20px;
+    --touch-target-min:     44px;
+}

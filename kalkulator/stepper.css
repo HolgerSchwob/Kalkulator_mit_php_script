@@ -1,0 +1,130 @@
+/* stepper.css – Stepper-Navigation und -Panels. Voraussetzung: frontend-tokens.css zuerst laden. */
+
+.stepper-nav {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    background-color: var(--color-bg);
+    border-radius: var(--radius-md);
+    padding: var(--space-1);
+    margin-bottom: var(--space-5);
+    border: 1px solid var(--color-border);
+}
+
+/* Auf PC: Stepper-Nav beim Scrollen oben fixieren, weniger scrollen */
+@media (min-width: 769px) {
+    .stepper-nav {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+}
+
+.stepper-nav-item {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    padding: var(--space-2) var(--space-3);
+    min-height: var(--touch-target-min);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--color-text-muted);
+    transition: background-color 0.2s, color 0.2s;
+    border-radius: var(--radius);
+}
+/* Schritt-Nummer als Badge (Kreis) – inaktiv */
+.stepper-nav-item::before {
+    content: attr(data-step);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    margin-right: 6px;
+    border-radius: 50%;
+    background: var(--color-border);
+    border: 1.5px solid var(--color-border);
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.stepper-nav-item.completed {
+    color: var(--color-primary);
+    font-weight: 600;
+}
+.stepper-nav-item.completed::before {
+    content: '✓';
+    background: var(--color-success);
+    color: var(--color-white);
+    border-color: var(--color-success);
+}
+.stepper-nav-item.completed:hover {
+    background-color: var(--color-primary-light);
+}
+
+/* Aktiver Schritt: Navy, Weiß – bamadi Stepper-Regel */
+.stepper-nav-item.active {
+    background-color: var(--color-primary);
+    color: var(--color-white);
+    font-weight: 600;
+    cursor: default;
+}
+.stepper-nav-item.active::before {
+    background: var(--color-primary);
+    color: var(--color-white);
+    border-color: var(--color-primary);
+    font-weight: 700;
+    content: attr(data-step);
+}
+
+.stepper-panel {
+    display: none;
+}
+.stepper-panel.active {
+    display: block;
+}
+
+.stepper-controls {
+    margin-top: var(--space-6);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-border-light);
+    display: flex;
+    justify-content: space-between;
+}
+
+.cart-actions {
+    margin-top: var(--space-5);
+    text-align: center;
+}
+.cart-actions button {
+    width: 100%;
+}
+.cart-actions .info-text {
+    margin-top: var(--space-2);
+    font-size: var(--text-xs);
+}
+
+@media (max-width: 768px) {
+    .stepper-nav {
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x mandatory;
+        padding: var(--space-2);
+    }
+    .stepper-nav-item {
+        flex: 0 0 auto;
+        min-width: 100px;
+        scroll-snap-align: start;
+    }
+}

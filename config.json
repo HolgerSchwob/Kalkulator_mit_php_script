@@ -12,12 +12,12 @@
     },
     "productionAndDelivery": {
         "productionTimes": [
-            { "id": "prod_standard", "name": "Standard (ca. 3-5 WT)", "price": 0.00, "default": true },
-            { "id": "prod_express", "name": "Express Produktion (ca. 1-2 WT)", "price": 35.00 }
+            { "id": "prod_standard", "name": "Standard (ca. 3-5 WT)", "productionDays": 4, "price": 0.00, "default": true },
+            { "id": "prod_express", "name": "Express Produktion (ca. 1-2 WT)", "productionDays": 1, "price": 35.00 }
         ],
         "deliveryMethods": [
-            { "id": "pickup", "name": "Selbstabholung", "price": 0.00, "requiresAddress": false, "default": true },
-            { "id": "standard_shipping", "name": "Standardversand (DE)", "price": 5.90, "requiresAddress": true }
+            { "id": "pickup", "name": "Selbstabholung", "shippingDays": 0, "cutoffHour": 14, "price": 0.00, "requiresAddress": false, "default": true },
+            { "id": "standard_shipping", "name": "Standardversand (DE)", "shippingDays": 2, "cutoffHour": 14, "price": 5.90, "requiresAddress": true }
         ]
     },
     "papers": [
@@ -55,6 +55,34 @@
             "requiresPersonalization": true,
             "personalizationInterface": "coverEditor",
             "editorConfig": {
+                "templateSource": "supabase",
+                "templateGroup": "hardcover_modern",
+                "templatePath": "templates/hardcover/",
+                "usesPdfPreviewAsCover": false,
+                "dimensions": {
+                    "u1Width": 215.0,
+                    "u4Width": 215.0,
+                    "visibleCoverHeight": 302.0,
+                    "svgTotalWidth": 500.0,
+                    "svgTotalHeight": 330.0,
+                    "svgCenterX": 250.0,
+                    "falzZoneWidth": 8.0
+                }
+            },
+            "options": []
+        },
+        {
+            "id": "hardcover_efalin_fullcolor",
+            "name": "Hardcover Klassik (Efalin)",
+            "bindingTypeBaseFee": 18.00,
+            "pricePerItem": 25.00,
+            "minBlockThicknessMm": 8.00,
+            "maxBlockThicknessMm": 50.00,
+            "requiresPersonalization": true,
+            "personalizationInterface": "coverEditor",
+            "editorConfig": {
+                "templateSource": "supabase",
+                "templateGroup": "hardcover_efalin",
                 "templatePath": "templates/hardcover/",
                 "usesPdfPreviewAsCover": false,
                 "dimensions": {
@@ -79,6 +107,8 @@
             "requiresPersonalization": true,
             "personalizationInterface": "coverEditor",
             "editorConfig": {
+                "templateSource": "supabase",
+                "templateGroup": "paperback_modern",
                 "templatePath": "templates/paperback/",
                 "usesPdfPreviewAsCover": true,
                 "dimensions": {

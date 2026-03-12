@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>bamadi.de – Abschlussarbeit drucken & binden</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:#1A3A5C; --navy-deep:#0F2338; --navy-mid:#244d78;
+  --gold:#E8A000; --gold-soft:#F5C44A; --gold-pale:rgba(232,160,0,0.1);
+  --off:#F7F6F3; --g100:#EFEFED; --g300:#CECCC8; --g500:#8C8A86; --g800:#2E2C2A;
+  --white:#fff; --green:#22c55e;
+  --serif:'DM Serif Display',Georgia,serif;
+  --sans:'Instrument Sans',system-ui,sans-serif;
+  --ease:cubic-bezier(0.22,1,0.36,1);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-snap-type:y proximity}
+body{font-family:var(--sans);background:var(--white);color:var(--g800);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+.container{max-width:1160px;margin:0 auto;padding:0 40px}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:20px 40px;transition:background .3s,box-shadow .3s}
+nav.scrolled{background:rgba(255,255,255,.96);backdrop-filter:blur(16px);box-shadow:0 1px 0 var(--g100)}
+.nav-logo{font-family:var(--serif);font-size:26px;letter-spacing:.04em;color:var(--white);transition:color .3s}
+nav.scrolled .nav-logo{color:var(--navy)}
+.nav-logo .acc{color:var(--gold)}
+.nav-links{display:flex;gap:28px;list-style:none}
+.nav-links a{font-size:13px;font-weight:500;color:rgba(255,255,255,.7);transition:color .2s}
+nav.scrolled .nav-links a{color:var(--g800)}
+.nav-links a:hover{color:var(--gold)}
+.nav-cta{background:var(--gold)!important;color:var(--navy-deep)!important;padding:9px 20px!important;border-radius:4px;font-weight:600!important}
+
+/* HERO */
+#hero{min-height:100vh;background:var(--navy-deep);display:flex;align-items:center;position:relative;overflow:hidden;scroll-snap-align:start}
+#hero::after{content:'';position:absolute;right:0;top:0;width:55%;height:100%;background:linear-gradient(to right,rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.02) 1px,transparent 1px);background-size:64px 64px;pointer-events:none}
+.hero-glow{position:absolute;top:-200px;right:-100px;width:800px;height:800px;background:radial-gradient(ellipse,rgba(232,160,0,.07) 0%,transparent 65%);pointer-events:none}
+.hero-inner{position:relative;z-index:2;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;padding:130px 40px 90px;max-width:1160px;margin:0 auto;width:100%}
+
+/* Countdown */
+.cd-wrap{display:inline-flex;align-items:center;gap:14px;background:rgba(232,160,0,.1);border:1px solid rgba(232,160,0,.2);border-radius:6px;padding:11px 17px;margin-bottom:32px}
+.cd-lbl{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5);white-space:nowrap}
+.cd-time{font-family:var(--serif);font-size:22px;color:var(--gold);letter-spacing:.05em;line-height:1;min-width:68px}
+.cd-note{font-size:11px;color:rgba(255,255,255,.35);line-height:1.4}
+
+.hero-h1{font-family:var(--serif);font-size:clamp(42px,5vw,72px);line-height:1.04;color:var(--white);margin-bottom:22px}
+.hero-h1 em{font-style:italic;color:var(--gold)}
+.hero-sub{font-size:16px;line-height:1.65;color:rgba(255,255,255,.55);margin-bottom:40px;max-width:420px}
+.hero-btns{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.btn-primary{display:inline-flex;align-items:center;gap:8px;background:var(--gold);color:var(--navy-deep);font-size:14px;font-weight:600;padding:15px 28px;border-radius:4px;transition:background .2s,transform .15s;border:none;cursor:pointer}
+.btn-primary:hover{background:var(--gold-soft);transform:translateY(-2px)}
+.btn-ghost{display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.6);font-size:13px;font-weight:500;border-bottom:1px solid rgba(255,255,255,.2);padding-bottom:2px;transition:color .2s}
+.btn-ghost:hover{color:var(--white)}
+.hero-checks{display:flex;flex-direction:column;gap:8px;margin-top:38px}
+.hero-check{display:flex;align-items:center;gap:9px;font-size:12px;color:rgba(255,255,255,.4);font-weight:500}
+.hero-check svg{color:var(--gold);flex-shrink:0}
+
+/* Book stack */
+.book-stack{position:relative;width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center}
+.book{position:absolute;border-radius:3px 8px 8px 3px;box-shadow:-4px 0 8px rgba(0,0,0,.4),4px 4px 20px rgba(0,0,0,.5)}
+.book::before{content:'';position:absolute;left:0;top:0;bottom:0;background:linear-gradient(to right,rgba(0,0,0,.35),rgba(0,0,0,.08));border-radius:3px 0 0 3px}
+.b-main{width:190px;height:275px;background:linear-gradient(140deg,var(--navy),var(--navy-mid));z-index:3;transform:rotate(-3deg) translateX(14px)}
+.b-main::before{width:20px}
+.b-inner{position:absolute;inset:0;padding:26px 22px 22px 34px;display:flex;flex-direction:column}
+.b-tag{font-size:8px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:9px}
+.b-rule{width:28px;height:1.5px;background:var(--gold);margin-bottom:12px;opacity:.7}
+.b-title{font-family:var(--serif);font-size:13px;color:rgba(255,255,255,.9);line-height:1.4;flex:1}
+.b-author{font-size:9px;color:rgba(255,255,255,.35)}
+.b-back{width:175px;height:260px;background:linear-gradient(140deg,#274a35,#1e3828);z-index:2;transform:rotate(5deg) translateX(-26px) translateY(10px)}
+.b-back::before{width:18px}
+.b-far{width:165px;height:248px;background:linear-gradient(140deg,#5a2e1e,#3d1e14);z-index:1;transform:rotate(-8deg) translateX(52px) translateY(-10px)}
+.b-far::before{width:16px}
+.b-glow{position:absolute;bottom:-28px;left:50%;transform:translateX(-50%);width:260px;height:70px;background:radial-gradient(ellipse,rgba(232,160,0,.12) 0%,transparent 70%);z-index:0}
+.b-express{position:absolute;top:-8px;right:-12px;background:var(--gold);color:var(--navy-deep);font-size:9px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;padding:5px 12px;border-radius:3px;z-index:10;animation:pulse 2.8s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 4px 14px rgba(232,160,0,.35)}50%{box-shadow:0 4px 26px rgba(232,160,0,.6)}}
+.pay-card{position:absolute;bottom:20px;right:-12px;background:rgba(255,255,255,.07);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);border-radius:9px;padding:13px 16px;z-index:10}
+.pay-lbl{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:8px}
+.pay-logos{display:flex;gap:6px;align-items:center}
+.pl{height:18px;background:rgba(255,255,255,.92);border-radius:3px;display:flex;align-items:center;justify-content:center;padding:0 6px;font-size:8px;font-weight:800}
+.pl-v{color:#1a1f71}.pl-m{color:#eb001b}.pl-p{color:#003087}
+.pl-ssl{width:18px;height:18px;background:rgba(34,197,94,.18);border-radius:3px;display:flex;align-items:center;justify-content:center;color:var(--green);font-size:9px}
+
+/* Kurze Streifen — kein Snap-Punkt, kein min-height */
+#trust-bar,#material,#cta{scroll-snap-align:none;min-height:unset;display:block}
+/* TRUST BAR */
+#trust-bar{background:var(--off);border-bottom:1px solid var(--g100)}
+.tb-inner{display:flex}
+.tb-item{flex:1;display:flex;align-items:center;gap:13px;padding:24px 28px;border-right:1px solid var(--g100)}
+.tb-item:last-child{border-right:none}
+.tb-icon{width:40px;height:40px;border-radius:50%;background:var(--white);border:1.5px solid var(--g100);display:flex;align-items:center;justify-content:center;color:var(--navy);flex-shrink:0}
+.tb-lbl{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--g500);margin-bottom:2px}
+.tb-val{font-family:var(--serif);font-size:16px;color:var(--navy);line-height:1.2}
+
+/* SECTIONS */
+section{padding:88px 0;scroll-snap-align:start;min-height:100vh;display:flex;flex-direction:column;justify-content:center}
+.eyebrow{display:inline-flex;align-items:center;gap:11px;margin-bottom:16px}
+.eyebrow::before{content:'';display:block;width:26px;height:2px;background:var(--gold)}
+.eyebrow span{font-size:10px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--gold)}
+.h-lg{font-family:var(--serif);font-size:clamp(30px,4vw,52px);line-height:1.08;font-weight:400}
+.h-md{font-family:var(--serif);font-size:clamp(24px,3vw,40px);line-height:1.15;font-weight:400}
+.sec-intro{max-width:520px;margin-bottom:60px}
+.sec-intro p{font-size:16px;color:var(--g500);line-height:1.65;margin-top:14px}
+
+/* HOW IT WORKS */
+#how{background:var(--white)}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:var(--g100);border:1px solid var(--g100);border-radius:4px;overflow:hidden}
+.step{background:var(--white);padding:48px 40px;position:relative;transition:background .3s}
+.step:hover{background:var(--off)}
+.step-n{font-family:var(--serif);font-size:64px;color:var(--g100);line-height:1;margin-bottom:16px;display:block;transition:color .3s}
+.step:hover .step-n{color:rgba(232,160,0,.1)}
+.step-icon{width:42px;height:42px;background:var(--navy);border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;color:var(--gold)}
+.step h3{font-family:var(--serif);font-size:20px;color:var(--navy);margin-bottom:9px;font-weight:400}
+.step p{font-size:14px;line-height:1.65;color:var(--g500)}
+.step:not(:last-child)::after{content:'→';position:absolute;top:50%;right:-16px;transform:translateY(-50%);width:32px;height:32px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--navy-deep);font-weight:700;z-index:2;line-height:32px;text-align:center}
+
+/* KALKULATOR */
+#kalkulator{background:var(--navy-deep);padding:88px 0;position:relative;overflow:hidden}
+#kalkulator::before{content:'';position:absolute;inset:0;background:linear-gradient(to right,rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.018) 1px,transparent 1px);background-size:52px 52px;pointer-events:none}
+.k-head{text-align:center;margin-bottom:50px;position:relative;z-index:2}
+.k-head .eyebrow{justify-content:center}
+.k-head .h-lg{color:var(--white);margin-bottom:12px}
+.k-head p{font-size:15px;color:rgba(255,255,255,.45);max-width:380px;margin:0 auto;line-height:1.65}
+.k-frame{position:relative;z-index:2;background:var(--white);border-radius:10px;overflow:hidden;box-shadow:0 36px 90px rgba(0,0,0,.5);max-width:840px;margin:0 auto}
+.k-bar{background:var(--off);border-bottom:1px solid var(--g100);padding:11px 16px;display:flex;align-items:center;gap:6px}
+.k-dot{width:10px;height:10px;border-radius:50%}
+.k-dot:nth-child(1){background:#FF5F57}.k-dot:nth-child(2){background:#FFBD2E}.k-dot:nth-child(3){background:#28CA41}
+.k-url{margin-left:12px;background:var(--g100);border-radius:4px;padding:3px 12px;font-size:11px;color:var(--g500)}
+.k-body{min-height:420px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:52px 40px;text-align:center}
+.k-body-icon{width:62px;height:62px;background:var(--off);border-radius:13px;display:flex;align-items:center;justify-content:center;color:var(--navy)}
+.k-body h3{font-family:var(--serif);font-size:22px;color:var(--navy)}
+.k-body p{font-size:14px;color:var(--g500);max-width:360px;line-height:1.65}
+
+/* PRODUKTE */
+#produkte{background:var(--off)}
+.prod-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.prod-card{background:var(--white);border:1px solid var(--g100);border-radius:8px;overflow:hidden;transition:transform .3s var(--ease),box-shadow .3s,border-color .3s;cursor:pointer}
+.prod-card:hover{transform:translateY(-5px);box-shadow:0 14px 40px rgba(0,0,0,.09);border-color:var(--gold)}
+.prod-vis{height:176px;display:flex;align-items:center;justify-content:center;position:relative}
+.pv1{background:linear-gradient(145deg,#1A3A5C,#244d78)}
+.pv2{background:linear-gradient(145deg,#274a35,#1e3828)}
+.pv3{background:linear-gradient(145deg,#5a2e1e,#3d1e14)}
+.pv4{background:linear-gradient(145deg,#2a2a3a,#1e1e2d)}
+.pb{width:64px;height:96px;border-radius:2px 5px 5px 2px;box-shadow:-3px 0 6px rgba(0,0,0,.4),3px 3px 13px rgba(0,0,0,.4);position:relative}
+.pb::before{content:'';position:absolute;left:0;top:0;bottom:0;width:8px;background:rgba(0,0,0,.28);border-radius:2px 0 0 2px}
+.pb1{background:linear-gradient(to right,#0e2440,#1A3A5C)}
+.pb2{background:linear-gradient(to right,#192d1e,#274a35)}
+.pb3{background:linear-gradient(to right,#2e1510,#5a2e1e)}
+.pb4{background:linear-gradient(to right,#14141e,#2a2a3a)}
+.p-bdg{position:absolute;top:9px;right:9px;background:var(--gold);color:var(--navy-deep);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:3px}
+.prod-body{padding:20px}
+.prod-body h3{font-family:var(--serif);font-size:18px;color:var(--navy);margin-bottom:5px;font-weight:400}
+.prod-body p{font-size:12px;color:var(--g500);line-height:1.55;margin-bottom:12px}
+.prod-price{font-size:13px;font-weight:600;color:var(--navy)}
+.prod-price span{color:var(--g500);font-weight:400}
+.prod-detail{font-size:11px;font-weight:600;letter-spacing:.08em;color:var(--gold);text-transform:uppercase;margin-bottom:10px}
+
+/* MATERIAL STRIP */
+#material{background:var(--navy);padding:0}
+.mat-inner{display:flex;align-items:stretch}
+.mat-item{flex:1;display:flex;align-items:center;gap:16px;padding:32px 36px}
+.mat-div{width:1px;background:rgba(255,255,255,.08);margin:24px 0}
+.mat-icon{font-size:24px;flex-shrink:0}
+.mat-title{font-family:var(--serif);font-size:17px;color:var(--white);margin-bottom:4px}
+.mat-sub{font-size:13px;color:rgba(255,255,255,.45);line-height:1.5}
+
+/* USP */
+#usp{background:var(--white)}
+.usp-layout{display:grid;grid-template-columns:1fr 1fr;gap:72px;align-items:center}
+.usp-list{display:flex;flex-direction:column}
+.usp-item{display:flex;gap:20px;padding:26px 0;border-bottom:1px solid var(--g100);transition:padding-left .3s var(--ease)}
+.usp-item:last-child{border-bottom:none}
+.usp-item:first-child{padding-top:0}
+.usp-item:hover{padding-left:5px}
+.usp-n{font-family:var(--serif);font-size:12px;color:var(--gold);padding-top:3px;min-width:20px}
+.usp-item h3{font-family:var(--serif);font-size:20px;color:var(--navy);margin-bottom:6px;font-weight:400}
+.usp-item p{font-size:14px;color:var(--g500);line-height:1.65}
+/* Status card */
+.usp-vis{position:relative;height:460px}
+.sc{position:absolute;inset:0;background:var(--navy-deep);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;padding:32px}
+.sc::before{content:'';position:absolute;inset:0;background:linear-gradient(to right,rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.02) 1px,transparent 1px);background-size:34px 34px;pointer-events:none}
+.sc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;position:relative;z-index:1}
+.sc-title{font-family:var(--serif);font-size:15px;color:var(--white)}
+.live{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green)}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:lp 1.5s ease-in-out infinite}
+@keyframes lp{0%,100%{opacity:1}50%{opacity:.25}}
+.sc-sub{font-size:10px;color:rgba(255,255,255,.26);margin-bottom:24px;position:relative;z-index:1}
+.sc-rows{display:flex;flex-direction:column;gap:13px;position:relative;z-index:1}
+.sc-row{display:flex;align-items:center;gap:12px}
+.scd{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px}
+.done{background:rgba(34,197,94,.14);color:var(--green)}
+.now{background:var(--gold);color:var(--navy-deep);font-weight:700}
+.later{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.22)}
+.sc-lbl{font-size:13px;font-weight:500}
+.lbl-done{color:rgba(255,255,255,.45)}
+.lbl-now{color:var(--white);font-weight:600}
+.lbl-later{color:rgba(255,255,255,.2)}
+.sc-t{margin-left:auto;font-size:10px;color:rgba(255,255,255,.2)}
+.sc-t.tnow{color:var(--gold-soft)}
+.sc-ov{position:absolute;bottom:-12px;right:-12px;background:var(--white);border-radius:9px;padding:16px 20px;box-shadow:0 14px 42px rgba(0,0,0,.14);border:1px solid var(--g100);min-width:158px}
+.ov-lbl{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--g500);margin-bottom:5px}
+.ov-big{font-family:var(--serif);font-size:26px;color:var(--navy);line-height:1}
+.ov-sub{font-size:11px;color:var(--g500);margin-top:3px}
+
+/* VERTRAUEN */
+#vertrauen{background:var(--off)}
+.vt-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
+.vt-text .h-md{color:var(--navy);margin-bottom:18px}
+.vt-text p{font-size:15px;color:var(--g500);line-height:1.7;margin-bottom:13px}
+.vt-text p strong{color:var(--navy);font-weight:600}
+.vt-link{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--navy);border-bottom:2px solid var(--gold);padding-bottom:2px;transition:color .2s;margin-top:4px}
+.vt-link:hover{color:var(--gold)}
+.sig-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.sig{background:var(--white);border:1px solid var(--g100);border-radius:8px;padding:22px;transition:box-shadow .3s}
+.sig:hover{box-shadow:0 8px 26px rgba(0,0,0,.07)}
+.sig-icon{font-size:20px;margin-bottom:10px}
+.sig h4{font-family:var(--serif);font-size:16px;color:var(--navy);margin-bottom:5px;font-weight:400}
+.sig p{font-size:12px;color:var(--g500);line-height:1.55}
+
+/* FAQ */
+#faq{background:var(--white)}
+.faq-wrap{display:grid;grid-template-columns:1fr 2fr;gap:72px}
+.faq-side .h-md{color:var(--navy);margin-bottom:14px}
+.faq-side p{font-size:14px;color:var(--g500);line-height:1.65;margin-bottom:24px}
+.faq-mail{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--navy);border-bottom:2px solid var(--gold);padding-bottom:2px;transition:color .2s}
+.faq-mail:hover{color:var(--gold)}
+.faq-item{border-bottom:1px solid var(--g100)}
+.faq-q{width:100%;background:none;border:none;display:flex;align-items:center;justify-content:space-between;padding:20px 0;cursor:pointer;text-align:left;font-family:var(--sans);font-size:14px;font-weight:500;color:var(--g800);transition:color .2s;gap:14px}
+.faq-q:hover,.faq-q.open{color:var(--navy)}
+.faq-icon{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--g300);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:17px;color:var(--g500);transition:transform .3s,border-color .3s;line-height:1}
+.faq-q.open .faq-icon{transform:rotate(45deg);border-color:var(--gold);color:var(--navy)}
+.faq-a{font-size:14px;line-height:1.7;color:var(--g500);max-height:0;overflow:hidden;transition:max-height .4s cubic-bezier(0.65,0,0.35,1),padding .3s}
+.faq-a.open{max-height:240px;padding-bottom:20px}
+
+/* CTA BAND */
+#cta{background:var(--gold);padding:72px 0;scroll-snap-align:none;min-height:unset;display:block}
+.cta-inner{display:flex;align-items:center;justify-content:space-between;gap:36px}
+.cta-inner h2{font-family:var(--serif);font-size:clamp(26px,3vw,44px);color:var(--navy-deep);margin-bottom:8px;font-weight:400}
+.cta-inner p{font-size:15px;color:rgba(15,35,56,.55)}
+.btn-dark{display:inline-flex;align-items:center;gap:9px;background:var(--navy-deep);color:var(--white);font-size:14px;font-weight:600;padding:16px 30px;border-radius:4px;white-space:nowrap;transition:background .2s,transform .15s}
+.btn-dark:hover{background:var(--navy-mid);transform:translateY(-2px)}
+
+/* FOOTER */
+footer{background:var(--navy-deep);padding:56px 0 32px}
+.ft-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:44px;margin-bottom:44px}
+.ft-logo{font-family:var(--serif);font-size:28px;color:var(--white);letter-spacing:.04em;display:block;margin-bottom:12px}
+.ft-logo .acc{color:var(--gold)}
+.ft-tag{font-size:13px;color:rgba(255,255,255,.34);line-height:1.65;max-width:230px;margin-bottom:18px}
+.ft-addr{font-size:11px;color:rgba(255,255,255,.24);line-height:1.85}
+.ft-col h4{font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:16px}
+.ft-links{list-style:none;display:flex;flex-direction:column;gap:10px}
+.ft-links a{font-size:13px;color:rgba(255,255,255,.45);transition:color .2s}
+.ft-links a:hover{color:var(--gold)}
+.ft-bottom{border-top:1px solid rgba(255,255,255,.07);padding-top:24px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.ft-copy{font-size:11px;color:rgba(255,255,255,.18)}
+.ft-socials{display:flex;gap:18px}
+.ft-socials a{font-size:11px;color:rgba(255,255,255,.18);transition:color .2s}
+.ft-socials a:hover{color:rgba(255,255,255,.4)}
+
+/* RESPONSIVE */
+@media(max-width:960px){
+  .hero-inner{grid-template-columns:1fr}
+  .hero-visual{display:none}
+  .tb-inner{flex-wrap:wrap}
+  .tb-item{flex:0 0 50%;border-bottom:1px solid var(--g100)}
+  .tb-item:nth-child(2n){border-right:none}
+  .tb-item:nth-last-child(-n+2){border-bottom:none}
+  .steps{grid-template-columns:1fr}
+  .step:not(:last-child)::after{display:none}
+  .prod-grid{grid-template-columns:repeat(2,1fr)}
+  .mat-inner{flex-direction:column}
+  .mat-div{width:100%;height:1px;margin:0}
+  .usp-layout{grid-template-columns:1fr}
+  .usp-vis{display:none}
+  .vt-grid{grid-template-columns:1fr}
+  .faq-wrap{grid-template-columns:1fr}
+  .cta-inner{flex-direction:column;text-align:center}
+  .ft-grid{grid-template-columns:1fr 1fr}
+  nav{padding:16px 24px}
+  .container{padding:0 24px}
+  section{padding:64px 0}
+  .hero-inner{padding:110px 24px 72px}
+}
+@media(max-width:520px){
+  .prod-grid{grid-template-columns:1fr}
+  .tb-item{flex:0 0 100%;border-right:none!important}
+  .sig-grid{grid-template-columns:1fr}
+  .ft-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<nav id="nav">
+  <a href="/" class="nav-logo">bamad<span class="acc">i</span></a>
+  <ul class="nav-links">
+    <li><a href="#how">So funktionierts</a></li>
+    <li><a href="#produkte">Bindungen</a></li>
+    <li><a href="#usp">Warum bamadi</a></li>
+    <li><a href="#faq">FAQ</a></li>
+    <li><a href="#kalkulator" class="nav-cta">Jetzt konfigurieren</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-inner">
+    <div>
+      <div class="cd-wrap">
+        <div class="cd-lbl">Heute bestellen, morgen bei dir —</div>
+        <div class="cd-time" id="cdTimer">––:––</div>
+        <div class="cd-note">noch bis 14:00 Uhr</div>
+      </div>
+      <h1 class="hero-h1">Deine Abschluss&shy;arbeit.<br>Gedruckt wie sie es<br><em>verdient.</em></h1>
+      <p class="hero-sub">Konfiguriere, lade hoch, fertig — in unter 5 Minuten. Preis sofort sichtbar, keine Registrierung, Express-Lieferung deutschlandweit.</p>
+      <div class="hero-btns">
+        <a href="#kalkulator" class="btn-primary">
+          Preis berechnen
+          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+        </a>
+        <a href="#how" class="btn-ghost">Wie es funktioniert</a>
+      </div>
+      <div class="hero-checks">
+        <div class="hero-check">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          Preis sofort sichtbar — einfach konfigurieren, direkt bestellen
+        </div>
+        <div class="hero-check">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          Handgebunden in Fulda — Mitte Deutschlands
+        </div>
+        <div class="hero-check">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          Auftragsstatus live — vom Druck bis zur Haustür
+        </div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="book-stack">
+        <div class="b-glow"></div>
+        <div class="book b-far"></div>
+        <div class="book b-back"></div>
+        <div class="book b-main">
+          <div class="b-inner">
+            <div class="b-tag">Masterarbeit · 2026</div>
+            <div class="b-rule"></div>
+            <div class="b-title">Nachhaltige Mobilität im urbanen Kontext</div>
+            <div class="b-author">M. Hoffmann · TU Darmstadt</div>
+          </div>
+        </div>
+        <div class="b-express">Express ✓</div>
+        <div class="pay-card">
+          <div class="pay-lbl">Sichere Zahlung</div>
+          <div class="pay-logos">
+            <div class="pl pl-v">VISA</div>
+            <div class="pl pl-m">MC</div>
+            <div class="pl pl-p">PayPal</div>
+            <div class="pl pl-ssl">🔒</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TRUST BAR -->
+<div id="trust-bar">
+  <div class="container">
+    <div class="tb-inner">
+      <div class="tb-item">
+        <div class="tb-icon"><svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></div>
+        <div><div class="tb-lbl">Lieferung</div><div class="tb-val">Express in 24h</div></div>
+      </div>
+      <div class="tb-item">
+        <div class="tb-icon"><svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+        <div><div class="tb-lbl">Preistransparenz</div><div class="tb-val">Sofort, ohne Konto</div></div>
+      </div>
+      <div class="tb-item">
+        <div class="tb-icon"><svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div>
+        <div><div class="tb-lbl">Produktion</div><div class="tb-val">Fulda, Deutschland</div></div>
+      </div>
+      <div class="tb-item">
+        <div class="tb-icon"><svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg></div>
+        <div><div class="tb-lbl">Zahlung</div><div class="tb-val">Visa · Mastercard · PayPal</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="container">
+    <div class="sec-intro">
+      <div class="eyebrow"><span>So funktionierts</span></div>
+      <h2 class="h-lg" style="color:var(--navy)">Vom PDF zum Paket — in Minuten.</h2>
+      <p>Einfach konfigurieren, hochladen, bestellen. Ohne Telefonat, ohne Wartezeit.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <span class="step-n">01</span>
+        <div class="step-icon"><svg width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg></div>
+        <h3>Konfigurieren</h3>
+        <p>Seitenanzahl, Papier, Bindung, Extras — der Endpreis inkl. MwSt. aktualisiert sich mit jedem Klick. Was du siehst, zahlst du.</p>
+      </div>
+      <div class="step">
+        <span class="step-n">02</span>
+        <div class="step-icon"><svg width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg></div>
+        <h3>Hochladen & Bezahlen</h3>
+        <p>PDF sicher hochladen, per Karte oder PayPal bezahlen — sofort bestätigt, Rechnung automatisch per E-Mail.</p>
+      </div>
+      <div class="step">
+        <span class="step-n">03</span>
+        <div class="step-icon"><svg width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div>
+        <h3>Wir drucken. Du lehnst dich zurück.</h3>
+        <p>Dein Auftrag läuft live bei uns auf dem Schirm. Du siehst zu, wir binden — bis das Paket bei DHL aufgegeben ist.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- KALKULATOR -->
+<section id="kalkulator">
+  <div class="container">
+    <div class="k-head">
+      <div class="eyebrow" style="justify-content:center"><span>Livekalkulator</span></div>
+      <h2 class="h-lg">Dein Preis. Sofort.</h2>
+      <p>Seitenanzahl, Papier, Bindung — der Endpreis inkl. 7 % MwSt. erscheint sofort.</p>
+    </div>
+    <div class="k-frame">
+      <div class="k-bar">
+        <div class="k-dot"></div><div class="k-dot"></div><div class="k-dot"></div>
+        <div class="k-url">bamadi.de</div>
+      </div>
+      <div class="k-body">
+        <div class="k-body-icon"><svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 19h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></div>
+        <h3>Hier startet deine Konfiguration</h3>
+        <p>Wähle Bindungsart, Seitenzahl und Papier — der Preis erscheint sofort. Anschließend direkt zur Bestellung.</p>
+        <a href="#" class="btn-primary" style="margin-top:6px">
+          Jetzt konfigurieren
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRODUKTE -->
+<section id="produkte">
+  <div class="container">
+    <div class="sec-intro">
+      <div class="eyebrow"><span>Bindungsarten</span></div>
+      <h2 class="h-lg" style="color:var(--navy)">Dein Buch. Richtig gebunden.</h2>
+      <p style="font-size:16px;color:var(--g500);line-height:1.65;margin-top:14px;max-width:520px">Jede Arbeit wird auf 120 g/m² säurefreiem Papier gedruckt — archivierbar nach DIN, kein Durchscheinen, kein Vergilben. Und das Buch liegt flach auf dem Tisch.</p>
+    </div>
+    <div class="prod-grid">
+      <div class="prod-card">
+        <div class="prod-vis pv1"><div class="pb pb1"></div><div class="p-bdg">Beliebt</div></div>
+        <div class="prod-body">
+          <h3>Hardcover Modern</h3>
+          <p>Dein Cover in Farbe gedruckt, fest gebunden. Durch Fächerklebebindung mit Kaltleim liegt das Buch komplett flach auf — keine Seite springt zurück.</p>
+          <div class="prod-detail">Lay-flat · Vollfarbcover · 120 g/m² Inhalt</div>
+          <div class="prod-price">ab 34,90 € <span>inkl. MwSt.</span></div>
+        </div>
+      </div>
+      <div class="prod-card">
+        <div class="prod-vis pv2"><div class="pb pb2"></div><div class="p-bdg">Klassiker</div></div>
+        <div class="prod-body">
+          <h3>Hardcover Klassik</h3>
+          <p>Efalin-Leineneinband in mehreren Farben — zeitlos, ohne Aufdrucke. Innen dieselbe Lay-flat-Bindung: das Buch hält was es verspricht.</p>
+          <div class="prod-detail">Lay-flat · Efalin-Einband · 120 g/m² Inhalt</div>
+          <div class="prod-price">ab 38,50 € <span>inkl. MwSt.</span></div>
+        </div>
+      </div>
+      <div class="prod-card">
+        <div class="prod-vis pv3"><div class="pb pb3"></div></div>
+        <div class="prod-body">
+          <h3>Paperback Folie</h3>
+          <p>Klebebindung mit laminiertem Umschlag. Leicht, robust, günstig — wenn mehrere Pflichtexemplare gefragt sind.</p>
+          <div class="prod-detail">Laminierter Umschlag · 90 g/m² Inhalt</div>
+          <div class="prod-price">ab 14,90 € <span>inkl. MwSt.</span></div>
+        </div>
+      </div>
+      <div class="prod-card">
+        <div class="prod-vis pv4"><div class="pb pb4"></div></div>
+        <div class="prod-body">
+          <h3>Ringbindung</h3>
+          <p>Spiralbindung mit transparentem Deckblatt. Liegt komplett flach — praktisch für Werkstücke und Präsentationen.</p>
+          <div class="prod-detail">Spiralbindung · Transparent-Cover</div>
+          <div class="prod-price">ab 12,90 € <span>inkl. MwSt.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MATERIAL STRIP -->
+<div id="material">
+  <div class="container">
+    <div class="mat-inner">
+      <div class="mat-item">
+        <div class="mat-icon">📄</div>
+        <div>
+          <div class="mat-title">120 g/m² säurefrei</div>
+          <div class="mat-sub">Archivierbar nach DIN — kein Vergilben, kein Durchscheinen</div>
+        </div>
+      </div>
+      <div class="mat-div"></div>
+      <div class="mat-item">
+        <div class="mat-icon">📖</div>
+        <div>
+          <div class="mat-title">Lay-flat-Bindung</div>
+          <div class="mat-sub">Fächerklebebindung mit Kaltleim — liegt komplett flach auf</div>
+        </div>
+      </div>
+      <div class="mat-div"></div>
+      <div class="mat-item">
+        <div class="mat-icon">🖨</div>
+        <div>
+          <div class="mat-title">Digitaldruck in Spitzenqualität</div>
+          <div class="mat-sub">Scharfe Texte, satte Farben — auch bei feinen Grafiken und Tabellen</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- USP -->
+<section id="usp">
+  <div class="container">
+    <div class="usp-layout">
+      <div>
+        <div class="eyebrow"><span>Warum bamadi</span></div>
+        <h2 class="h-lg" style="color:var(--navy);margin-bottom:36px">Spezialist für<br>Abschlussarbeiten.<br>Sonst nichts.</h2>
+        <div class="usp-list">
+          <div class="usp-item"><div class="usp-n">01</div><div><h3>Heute bestellt. Morgen bei dir.</h3><p>Bis 14:00 Uhr bestellt und bezahlt — dann liegt dein Buch morgen an deiner Tür. Verbindlich, nicht vage.</p></div></div>
+          <div class="usp-item"><div class="usp-n">02</div><div><h3>Was du siehst, zahlst du.</h3><p>Der Preis im Kalkulator ist der Endpreis — inkl. MwSt. und Versand. Einfach fertig konfigurieren und loslegen.</p></div></div>
+          <div class="usp-item"><div class="usp-n">03</div><div><h3>Immer wissen, wo deine Arbeit ist.</h3><p>Vom Eingang bis zur DHL-Übergabe siehst du jeden Schritt live. Eine E-Mail mit Link reicht.</p></div></div>
+          <div class="usp-item"><div class="usp-n">04</div><div><h3>Echte Buchbinderei, 30 Jahre Erfahrung.</h3><p>Schwob Digitaldruck, Fulda — inhabergeführt seit 1994. Deine Arbeit geht durch Hände, die Bücher kennen.</p></div></div>
+        </div>
+      </div>
+      <div class="usp-vis">
+        <div class="sc">
+          <div class="sc-top"><div class="sc-title">Auftragsstatus</div><div class="live"><span class="live-dot"></span>Live</div></div>
+          <div class="sc-sub">#BA-2406-047 · Hardcover Modern · 120 Seiten</div>
+          <div class="sc-rows">
+            <div class="sc-row"><div class="scd done">✓</div><span class="sc-lbl lbl-done">Bezahlung eingegangen</span><span class="sc-t">09:14</span></div>
+            <div class="sc-row"><div class="scd done">✓</div><span class="sc-lbl lbl-done">PDF geprüft</span><span class="sc-t">09:31</span></div>
+            <div class="sc-row"><div class="scd done">✓</div><span class="sc-lbl lbl-done">Bereit für Druck</span><span class="sc-t">10:02</span></div>
+            <div class="sc-row"><div class="scd now">▶</div><span class="sc-lbl lbl-now">Wird gedruckt & gebunden</span><span class="sc-t tnow">jetzt</span></div>
+            <div class="sc-row"><div class="scd later">○</div><span class="sc-lbl lbl-later">Versandbereit</span><span class="sc-t">~13:30</span></div>
+            <div class="sc-row"><div class="scd later">○</div><span class="sc-lbl lbl-later">Übergabe an DHL Express</span><span class="sc-t">~14:00</span></div>
+          </div>
+        </div>
+        <div class="sc-ov">
+          <div class="ov-lbl">Gedruckt in</div>
+          <div class="ov-big">Fulda</div>
+          <div class="ov-sub">Mitten in Deutschland</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- VERTRAUEN -->
+<section id="vertrauen">
+  <div class="container">
+    <div class="vt-grid">
+      <div class="vt-text">
+        <div class="eyebrow"><span>Wer wir sind</span></div>
+        <h2 class="h-md">Eine echte Buchbinderei.<br>Fulda, seit 1994.</h2>
+        <p>Hinter bamadi steht <strong>Schwob Digitaldruck</strong> — inhabergeführter Familienbetrieb, IHK-Ausbildungsbetrieb für Mediengestalter. Holger Schwob und sein Team arbeiten seit über 30 Jahren mit Papier, Druck und Bindung.</p>
+        <p>Druck, Bindung, Verpackung — alles unter einem Dach. Fadenheftung, Fächerklebebindung, Warmleimverarbeitung: traditionelles Handwerk, das Bücher wirklich hält.</p>
+        <a href="/cdn-cgi/l/email-protection#4e262f2222210e2c2f232f2a27602a2b" class="vt-link">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          <span class="__cf_email__" data-cfemail="553d3439393a1537343834313c7b3130">[email&#160;protected]</span>
+        </a>
+      </div>
+      <div class="sig-grid">
+        <div class="sig"><div class="sig-icon">📍</div><h4>Fulda — Mitte Deutschlands</h4><p>Kurze DHL-Wege in alle Richtungen. Express erreicht jede Hochschule am nächsten Morgen.</p></div>
+        <div class="sig"><div class="sig-icon">🏠</div><h4>Familienbetrieb seit 1994</h4><p>Inhabergeführt von Holger Schwob, IHK-Ausbildungsbetrieb. Persönliche Verantwortung für jede Bestellung.</p></div>
+        <div class="sig"><div class="sig-icon">🧵</div><h4>Echtes Buchbinderhandwerk</h4><p>Fadenheftung, Fächerklebebindung, Warmleimbindung — klassische Techniken, die halten.</p></div>
+        <div class="sig"><div class="sig-icon">✋</div><h4>Qualitätsversprechen</h4><p>Druckfehler auf unserer Seite? Wir produzieren kostenlos nach — ohne Diskussion.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq">
+  <div class="container">
+    <div class="faq-wrap">
+      <div class="faq-side">
+        <div class="eyebrow"><span>FAQ</span></div>
+        <h2 class="h-md">Häufige Fragen.</h2>
+        <p>Noch unsicher? Wir antworten in der Regel noch am selben Werktag.</p>
+        <a href="/cdn-cgi/l/email-protection#e088818c8c8fa082818d818489ce8485" class="faq-mail">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          <span class="__cf_email__" data-cfemail="3c545d5050537c5e5d515d5855125859">[email&#160;protected]</span>
+        </a>
+      </div>
+      <div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="faq(this)">Bis wann muss ich für Express bestellen?<span class="faq-icon">+</span></button>
+          <div class="faq-a">Bis 14:00 Uhr — dann ist deine Arbeit morgen bei dir. Den Live-Countdown siehst du im Kalkulator.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="faq(this)">In welchem Format muss ich mein PDF einreichen?<span class="faq-icon">+</span></button>
+          <div class="faq-a">Am besten PDF/A mit eingebetteten Schriften, mind. 300 dpi. Standard-PDFs aus Word oder LaTeX funktionieren in aller Regel problemlos. Wir prüfen jede Datei vor dem Druck manuell.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="faq(this)">Kann ich mehrere Exemplare in verschiedenen Bindungen bestellen?<span class="faq-icon">+</span></button>
+          <div class="faq-a">Ja — du kannst mehrere Bindungsvarianten und Stückzahlen in einer Bestellung kombinieren. Der Preis wird jeweils sofort angezeigt.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="faq(this)">Was passiert, wenn meine Arbeit fehlerhaft ankommt?<span class="faq-icon">+</span></button>
+          <div class="faq-a">Druckfehler auf unserer Seite? Wir produzieren kostenlos nach — ohne Diskussion. Schreib uns mit Foto und Auftragsnummer.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="faq(this)">Wie verfolge ich meinen Auftrag?<span class="faq-icon">+</span></button>
+          <div class="faq-a">Nach der Bestellung erhältst du deine Auftragsnummer per E-Mail. Damit kannst du unter bamadi.de/auftrag den Status jederzeit in Echtzeit einsehen.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="cta">
+  <div class="container">
+    <div class="cta-inner">
+      <div>
+        <h2>Abgabe in Sicht?<br>Lass es uns drucken.</h2>
+        <p>PDF hochladen, Bindung wählen, fertig — dein Preis erscheint sofort.</p>
+      </div>
+      <a href="#kalkulator" class="btn-dark">
+        Jetzt konfigurieren
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="ft-grid">
+      <div>
+        <span class="ft-logo">bamad<span class="acc">i</span></span>
+        <p class="ft-tag">Der spezialisierte Online-Druckdienst für Abschlussarbeiten. Bachelor, Master, Dissertation.</p>
+        <div class="ft-addr">
+          Schwob Digitaldruck · Inhaber Holger Schwob<br>
+          Michael-Henkel-Str. 4–6 · 36043 Fulda<br>
+          <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="3b535a5757547b595a565a5f52155f5e">[email&#160;protected]</a> · +49 661 480047-0
+        </div>
+      </div>
+      <div class="ft-col"><h4>Produkt</h4><ul class="ft-links"><li><a href="#kalkulator">Kalkulator</a></li><li><a href="#produkte">Bindungsarten</a></li><li><a href="#">Express-Lieferung</a></li><li><a href="#">Auftragsstatus</a></li></ul></div>
+      <div class="ft-col"><h4>Service</h4><ul class="ft-links"><li><a href="#">Über bamadi</a></li><li><a href="#how">So funktionierts</a></li><li><a href="#faq">FAQ</a></li><li><a href="#">PDF vorbereiten</a></li></ul></div>
+      <div class="ft-col"><h4>Rechtliches</h4><ul class="ft-links"><li><a href="#">Impressum</a></li><li><a href="#">Datenschutz</a></li><li><a href="#">AGB</a></li><li><a href="#">Widerruf</a></li></ul></div>
+    </div>
+    <div class="ft-bottom">
+      <span class="ft-copy">© 2026 bamadi.de — Ein Angebot von Schwob Digitaldruck, Fulda</span>
+      <div class="ft-socials"><a href="#">Instagram</a><a href="#">Google</a></div>
+    </div>
+  </div>
+</footer>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+// Nav scroll
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => nav.classList.toggle('scrolled', scrollY > 60), {passive:true});
+
+// Countdown
+function tick() {
+  const el = document.getElementById('cdTimer');
+  if (!el) return;
+  const now = new Date(), cut = new Date();
+  cut.setHours(14,0,0,0);
+  if (now >= cut) { el.textContent = '✓ Morgen'; return; }
+  const d = cut - now;
+  const h = String(Math.floor(d/3600000)).padStart(2,'0');
+  const m = String(Math.floor((d%3600000)/60000)).padStart(2,'0');
+  const s = String(Math.floor((d%60000)/1000)).padStart(2,'0');
+  el.textContent = h+':'+m+':'+s;
+}
+tick(); setInterval(tick, 1000);
+
+// FAQ
+function faq(btn) {
+  const a = btn.nextElementSibling, open = a.classList.contains('open');
+  document.querySelectorAll('.faq-a').forEach(function(el) { el.classList.remove('open'); });
+  document.querySelectorAll('.faq-q').forEach(function(b) { b.classList.remove('open'); });
+  if (!open) {
+    a.classList.add('open');
+    btn.classList.add('open');
+  }
+}
+</script>
+</body>
+</html>

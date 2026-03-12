@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extension:inkscape-extension xmlns:extension="http://www.inkscape.org/namespace/inkscape/extension" xmlns="http://www.inkscape.org/namespace/inkscape/extension">
+  <name>Personalisierung zuweisen (Buchdecken-Template)</name>
+  <id>org.kalkulator.personalization_helper</id>
+  <param name="nur_pruefung" type="bool" gui-text="Nur Prüfung (Infos anzeigen, keine Änderung)" gui-description="Wenn aktiviert: Zeigt aktuelle Attribute und Plausibilität an, ohne etwas zu ändern.">true</param>
+  <param name="assignment" type="optiongroup" gui-text="Zuweisung" gui-description="Welche Personalisierungs-Funktion dem ausgewählten Objekt zugewiesen werden soll.">
+    <option value="tpl-group-u1">Gruppe: Vorderseite (tpl-group-u1)</option>
+    <option value="tpl-group-u4">Gruppe: Rückseite (tpl-group-u4)</option>
+    <option value="tpl-group-spine">Gruppe: Buchrücken (tpl-group-spine)</option>
+    <option value="tpl-title">Text: Titel (tpl-title)</option>
+    <option value="tpl-subtitle">Text: Untertitel (tpl-subtitle)</option>
+    <option value="tpl-name">Text: Name (tpl-name)</option>
+    <option value="tpl-mat-nr">Text: Matrikelnummer (tpl-mat-nr)</option>
+    <option value="tpl-year">Text: Jahr (tpl-year)</option>
+    <option value="tpl-topic">Text: Thema/Topic (tpl-topic)</option>
+    <option value="tpl-topic-multiline">Text: Thema mehrzeilig (tpl-topic + data-multiline)</option>
+    <option value="tpl-subtitle-line1">Text Zeile 1: Untertitel (tpl-subtitle-line1)</option>
+    <option value="tpl-subtitle-line2">Text Zeile 2: Untertitel (tpl-subtitle-line2)</option>
+    <option value="tpl-subtitle-line3">Text Zeile 3: Untertitel (tpl-subtitle-line3)</option>
+    <option value="tpl-title-spine">Text Buchrücken: Titel (tpl-title-spine)</option>
+    <option value="tpl-name-spine">Text Buchrücken: Name (tpl-name-spine)</option>
+    <option value="tpl-topic-spine">Text Buchrücken: Thema (tpl-topic-spine)</option>
+    <option value="tpl-logo-Logo1">Logo: Logo1 (tpl-logo-Logo1)</option>
+    <option value="tpl-logo-Logo2">Logo: Logo2 (tpl-logo-Logo2)</option>
+    <option value="color1">Farbe: color1 (colorselector)</option>
+    <option value="color2">Farbe: color2 (colorselector)</option>
+  </param>
+  <effect needs-live-preview="false">
+    <object-type>all</object-type>
+    <effects-menu>
+      <submenu name="Buchdecken-Templates"/>
+    </effects-menu>
+  </effect>
+  <script>
+    <command location="inx" interpreter="python">personalization_helper.py</command>
+  </script>
+</extension:inkscape-extension>

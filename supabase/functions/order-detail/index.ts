@@ -77,6 +77,8 @@ Deno.serve(async (req) => {
         .from(BUCKET)
         .createSignedUrl(order.main_pdf_storage_path, 3600)
       if (signed?.signedUrl) downloadUrls.mainPdf = signed.signedUrl
+    } else if (order.main_pdf_external_url) {
+      downloadUrls.mainPdfExternalUrl = order.main_pdf_external_url
     } else {
       const pdfPath = prefix + order.order_number + '.pdf'
       const { data: signed } = await supabase.storage.from(BUCKET).createSignedUrl(pdfPath, 3600)

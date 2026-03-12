@@ -53,6 +53,7 @@ Die Auftragserstellung schreibt in die Tabelle **`orders`** und lädt Dateien in
 1. Im Supabase-Dashboard: **SQL Editor** → **New query**.
 2. Inhalt von **`supabase/migrations/001_orders_schema.sql`** einfügen und **Run** ausführen (erstellt Tabelle `orders` und RLS).
 3. Anschließend **`supabase/migrations/002_storage_order_files.sql`** einfügen und ausführen (legt den Bucket an und erlaubt Anon-Upload/Download).
+4. **`supabase/migrations/003_email_templates.sql`** und **`supabase/migrations/005_shop_config.sql`** ausführen (E-Mail-Templates und Shop-Konfiguration für den Kalkulator). Die Shop-Config wird im **Dashboard unter Einstellungen → Shop-Konfiguration** verwaltet (Papier, Bindungen, Extras, Preise).
 
 Falls der **Bucket** per SQL nicht angelegt werden kann (Berechtigung), im Dashboard **Storage** → **New bucket** erstellen:
 - Name: **`order-files`**

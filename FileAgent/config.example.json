@@ -1,0 +1,8 @@
+{
+  "port": 41123,
+  "listenHost": "127.0.0.1",
+  "apiKey": "",
+  "nasBasePath": "\\\\NAS\\Auftraege",
+  "supabaseUrl": "https://rzqyklanfjoofsmgfwts.supabase.co",
+  "adminSecret": ""
+}

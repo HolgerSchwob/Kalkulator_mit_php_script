@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>bamadi – Logo Komponenten</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   BAMADI LOGO – CSS KOMPONENTE
+   Einmalig in den globalen CSS einfügen (z.B. style.css)
+   Font im <head> laden:
+   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap" rel="stylesheet">
+   ============================================================ */
+
+.bamadi-logo {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  display: inline-block;
+  user-select: none;
+}
+
+/* Größen-Utilities */
+.bamadi-logo--sm  { font-size: 28px; }
+.bamadi-logo--md  { font-size: 48px; }
+.bamadi-logo--lg  { font-size: 80px; }
+.bamadi-logo--xl  { font-size: 120px; }
+
+/* Variante 1: Hauptvariante – Navy + Gold-i */
+.bamadi-logo--primary .logo-text    { color: #1A3A5C; }
+.bamadi-logo--primary .logo-accent  { color: #E8A000; }
+
+/* Variante 2: Invertiert – Weiß + Gold-i */
+.bamadi-logo--inverted .logo-text   { color: #FFFFFF; }
+.bamadi-logo--inverted .logo-accent { color: #E8A000; }
+
+/* Variante 3: Monochrom */
+.bamadi-logo--mono .logo-text,
+.bamadi-logo--mono .logo-accent     { color: #111111; }
+
+/* App-Icon / Favicon Mark */
+.bamadi-mark {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-weight: 400;
+  background: #1A3A5C;
+  color: #FFFFFF;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  line-height: 1;
+}
+.bamadi-mark--64  { width: 64px;  height: 64px;  font-size: 44px;  border-radius: 8px; }
+.bamadi-mark--32  { width: 32px;  height: 32px;  font-size: 22px;  border-radius: 4px; }
+.bamadi-mark--16  { width: 16px;  height: 16px;  font-size: 12px;  border-radius: 2px; }
+
+
+/* ============================================================
+   PREVIEW-STYLES (nur für diese Datei)
+   ============================================================ */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #EBEBEB; padding: 60px 48px; font-family: Arial, sans-serif; }
+.preview-section { margin-bottom: 64px; }
+.preview-label {
+  font-size: 10px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: #999; margin-bottom: 24px;
+}
+.preview-card {
+  display: inline-flex; align-items: center;
+  justify-content: center; padding: 40px 64px; border-radius: 6px;
+}
+.preview-card--white { background: #fff; box-shadow: 0 2px 16px rgba(0,0,0,0.08); }
+.preview-card--navy  { background: #1A3A5C; }
+.divider { width: 36px; height: 3px; background: #E8A000; margin: 28px 0 40px; border-radius: 2px; }
+.code-block {
+  background: #1e1e1e; color: #d4d4d4; padding: 20px 24px;
+  border-radius: 6px; font-family: 'Courier New', monospace;
+  font-size: 13px; line-height: 1.7; margin-top: 20px;
+  white-space: pre; overflow-x: auto; max-width: 700px;
+}
+.mark-row { display: flex; gap: 16px; align-items: center; }
+.sizes-col { display: flex; flex-direction: column; align-items: flex-start; gap: 32px; padding: 40px 56px; }
+</style>
+</head>
+<body>
+
+<div class="preview-section">
+  <div class="preview-label">Variante 1 — Hauptvariante · Navy + Gold-i · auf Weiß</div>
+  <div class="preview-card preview-card--white">
+    <span class="bamadi-logo bamadi-logo--primary bamadi-logo--lg">
+      <span class="logo-text">bamad</span><span class="logo-accent">i</span>
+    </span>
+  </div>
+  <div class="code-block">&lt;span class="bamadi-logo bamadi-logo--primary bamadi-logo--md"&gt;
+  &lt;span class="logo-text"&gt;bamad&lt;/span&gt;&lt;span class="logo-accent"&gt;i&lt;/span&gt;
+&lt;/span&gt;</div>
+</div>
+
+<div class="divider"></div>
+
+<div class="preview-section">
+  <div class="preview-label">Variante 2 — Invertiert · Weiß + Gold-i · auf Navy</div>
+  <div class="preview-card preview-card--navy">
+    <span class="bamadi-logo bamadi-logo--inverted bamadi-logo--lg">
+      <span class="logo-text">bamad</span><span class="logo-accent">i</span>
+    </span>
+  </div>
+  <div class="code-block">&lt;span class="bamadi-logo bamadi-logo--inverted bamadi-logo--md"&gt;
+  &lt;span class="logo-text"&gt;bamad&lt;/span&gt;&lt;span class="logo-accent"&gt;i&lt;/span&gt;
+&lt;/span&gt;</div>
+</div>
+
+<div class="divider"></div>
+
+<div class="preview-section">
+  <div class="preview-label">Variante 3 — Monochrom · Schwarz · für Druck / Stempel</div>
+  <div class="preview-card preview-card--white">
+    <span class="bamadi-logo bamadi-logo--mono bamadi-logo--lg">
+      <span class="logo-text">bamad</span><span class="logo-accent">i</span>
+    </span>
+  </div>
+  <div class="code-block">&lt;span class="bamadi-logo bamadi-logo--mono bamadi-logo--md"&gt;
+  &lt;span class="logo-text"&gt;bamad&lt;/span&gt;&lt;span class="logo-accent"&gt;i&lt;/span&gt;
+&lt;/span&gt;</div>
+</div>
+
+<div class="divider"></div>
+
+<div class="preview-section">
+  <div class="preview-label">Größenübersicht — sm · md (Header) · lg (Hero) · xl (Aushang)</div>
+  <div class="preview-card preview-card--white sizes-col">
+    <span class="bamadi-logo bamadi-logo--primary bamadi-logo--sm">
+      <span class="logo-text">bamad</span><span class="logo-accent">i</span>
+    </span>
+    <span class="bamadi-logo bamadi-logo--primary bamadi-logo--md">
+      <span class="logo-text">bamad</span><span class="logo-accent">i</span>
+    </span>
+    <span class="bamadi-logo bamadi-logo--primary bamadi-logo--lg">
+      <span class="logo-text">bamad</span><span class="logo-accent">i</span>
+    </span>
+    <span class="bamadi-logo bamadi-logo--primary bamadi-logo--xl">
+      <span class="logo-text">bamad</span><span class="logo-accent">i</span>
+    </span>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<div class="preview-section">
+  <div class="preview-label">Favicon / App-Icon · 64 · 32 · 16 px</div>
+  <div class="mark-row">
+    <div class="bamadi-mark bamadi-mark--64">b</div>
+    <div class="bamadi-mark bamadi-mark--32">b</div>
+    <div class="bamadi-mark bamadi-mark--16">b</div>
+  </div>
+</div>
+
+</body>
+</html>

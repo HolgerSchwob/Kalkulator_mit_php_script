@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auftragsstatus – Ihre Bestellung</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="frontend-tokens.css">
+    <link rel="stylesheet" href="../logo%20bamadi/bamadi-logo.css">
+    <link rel="stylesheet" href="auftrag.css">
+</head>
+<body>
+    <header class="auftrag-header">
+        <a href="index.html" class="bamadi-logo bamadi-logo--primary bamadi-logo--md" aria-label="bamadi zum Kalkulator"> <span class="logo-text">bamad</span><span class="logo-accent">i</span> </a>
+    </header>
+    <h1>Auftragsstatus</h1>
+    <p>Geben Sie Ihre Auftragsnummer und E-Mail-Adresse ein, um Ihren Auftrag einzusehen. Keine Downloads – nur Übersicht.</p>
+
+    <form id="orderForm">
+        <div class="form-group">
+            <label for="order_number">Auftragsnummer</label>
+            <input type="text" id="order_number" name="order_number" placeholder="z. B. A-20250211-X7K9M2" required>
+        </div>
+        <div class="form-group">
+            <label for="email">E-Mail-Adresse</label>
+            <input type="email" id="email" name="email" placeholder="ihre@email.de" required>
+        </div>
+        <button type="submit" id="submitBtn">Auftrag anzeigen</button>
+        <div id="formError" class="error" aria-live="polite"></div>
+    </form>
+
+    <div id="loading" class="hidden">Lade Auftrag …</div>
+    <div id="result" class="hidden"></div>
+
+    <footer class="auftrag-footer" role="contentinfo">
+        <nav class="footer-legal" aria-label="Rechtliches">
+            <a href="../legal/impressum.html">Impressum</a>
+            <span class="footer-sep" aria-hidden="true">·</span>
+            <a href="../legal/datenschutz.html">Datenschutz</a>
+            <span class="footer-sep" aria-hidden="true">·</span>
+            <a href="../legal/agb.html">AGB</a>
+            <span class="footer-sep" aria-hidden="true">·</span>
+            <a href="../legal/widerruf.html">Widerrufsbelehrung</a>
+        </nav>
+    </footer>
+
+    <script type="module">
+        const form = document.getElementById('orderForm');
+        const loading = document.getElementById('loading');
+        const resultEl = document.getElementById('result');
+        const formError = document.getElementById('formError');
+        const submitBtn = document.getElementById('submitBtn');
+
+        let supabaseUrl = '';
+        let anonKey = '';
+
+        async function loadConfig() {
+            if (supabaseUrl && anonKey) return;
+            const r = await fetch('../supabase.config.json?t=' + Date.now());
+            if (!r.ok) throw new Error('Konfiguration nicht geladen.');
+            const c = await r.json();
+            supabaseUrl = c.url?.replace(/\/$/, '') || '';
+            anonKey = c.anonKey || '';
+            if (!supabaseUrl || !anonKey) throw new Error('Supabase-Konfiguration unvollständig.');
+        }
+
+        async function getOrder(orderNumber, email) {
+            await loadConfig();
+            const res = await fetch(supabaseUrl + '/functions/v1/get-order', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + anonKey,
+                },
+                body: JSON.stringify({ order_number: orderNumber.trim(), email: email.trim() }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || 'Auftrag konnte nicht geladen werden.');
+            return data;
+        }
+
+        function escapeHtml(s) {
+            if (s == null || s === undefined) return '';
+            const t = document.createElement('span');
+            t.textContent = s;
+            return t.innerHTML;
+        }
+
+        function renderOrder(order) {
+            const p = order.payload || {};
+            const inquiry = p.inquiryDetails || {};
+            const priceDetails = p.priceDetails || {};
+            const variants = priceDetails.variantsWithPrices || [];
+            const extras = priceDetails.extrasWithPrices || [];
+            const total = order.total_price != null ? Number(order.total_price) : (priceDetails.totalOrderPrice != null ? Number(priceDetails.totalOrderPrice) : 0);
+            const customerData = p.customerData || {};
+            const shippingData = p.shippingData || order.shipping_data || {};
+            const personalizations = inquiry.personalizations || {};
+            const production = inquiry.production || {};
+            const currency = '€';
+
+            const deliveryMethodId = production.deliveryMethodId;
+            const deliveryMethods = inquiry.productionAndDelivery?.deliveryMethods || [
+                { id: 'pickup', name: 'Selbstabholung', requiresAddress: false },
+                { id: 'standard_shipping', name: 'Standardversand (DE)', requiresAddress: true },
+            ];
+            const delivery = deliveryMethods.find(d => d.id === deliveryMethodId) || { name: '–', requiresAddress: false };
+
+            let html = '<div class="status-badge">Status: ' + escapeHtml(order.status || 'Eingegangen') + '</div>';
+
+            html += '<div class="section"><h2>Ihre Bestellung</h2>';
+            variants.forEach(v => {
+                const thumb = personalizations[v.id]?.editorData?.thumbnailDataUrl;
+                const thumbHtml = thumb
+                    ? '<img class="thumb" src="' + escapeHtml(thumb) + '" alt="">'
+                    : '<div class="thumb placeholder">Vorschau</div>';
+                const name = (v.name != null ? v.name : 'Variante');
+                const qty = v.quantity != null ? v.quantity : 1;
+                const unitPrice = v.unitPrice != null ? Number(v.unitPrice).toFixed(2) : '0.00';
+                const totalPrice = v.totalPrice != null ? Number(v.totalPrice).toFixed(2) : '0.00';
+                html += '<div class="cart-item">' + thumbHtml + '<div><p><strong>' + qty + ' × ' + escapeHtml(name) + '</strong></p><p class="cart-item-unit-price">Stückpreis: ' + unitPrice + ' ' + currency + '</p><p>Gesamt: ' + totalPrice + ' ' + currency + '</p></div></div>';
+            });
+            if (extras.length > 0) {
+                html += '<h4 class="cart-extras-title">Extras</h4>';
+                extras.forEach(e => {
+                    const name = e.name != null ? e.name : 'Extra';
+                    const qty = e.quantity != null ? e.quantity : 1;
+                    const totalPrice = e.totalPrice != null ? Number(e.totalPrice).toFixed(2) : '0.00';
+                    html += '<div class="cart-item"><div class="thumb placeholder">–</div><div><p><strong>' + qty + '× ' + escapeHtml(name) + '</strong></p><p>Gesamt: ' + totalPrice + ' ' + currency + '</p></div></div>';
+                });
+            }
+            html += '<p class="cart-total">Gesamtkosten: ' + total.toFixed(2) + ' ' + currency + '</p></div>';
+
+            html += '<div class="section"><h2>Ihre Angaben</h2>';
+            html += '<div class="info-row"><strong>Name:</strong> ' + escapeHtml(customerData.customerName || customerData.name || order.customer_name || '–') + '</div>';
+            html += '<div class="info-row"><strong>E-Mail:</strong> ' + escapeHtml(customerData.customerEmail || customerData.email || order.customer_email || '–') + '</div>';
+            html += '<div class="info-row"><strong>Telefon:</strong> ' + escapeHtml(customerData.customerPhone || customerData.phone || order.customer_phone || '–') + '</div>';
+            if (customerData.customerNotes) html += '<div class="info-row"><strong>Anmerkungen:</strong> ' + escapeHtml(customerData.customerNotes) + '</div>';
+            html += '</div>';
+
+            html += '<div class="section"><h2>Lieferung</h2>';
+            html += '<div class="info-row"><strong>Lieferart:</strong> ' + escapeHtml(delivery.name) + '</div>';
+            if (delivery.requiresAddress && (shippingData.shippingStreet || shippingData.shippingZip || shippingData.shippingCity)) {
+                html += '<div class="info-row"><strong>Adresse:</strong> ' + escapeHtml([shippingData.shippingStreet, shippingData.shippingZip, shippingData.shippingCity].filter(Boolean).join(', ')) + '</div>';
+            }
+            html += '</div>';
+
+            return html;
+        }
+
+        function showError(msg) {
+            formError.textContent = msg;
+            formError.style.display = 'block';
+            resultEl.style.display = 'none';
+            resultEl.classList.add('hidden');
+        }
+
+        function showResult(order) {
+            formError.textContent = '';
+            formError.style.display = 'none';
+            resultEl.innerHTML = renderOrder(order);
+            resultEl.style.display = 'block';
+            resultEl.classList.remove('hidden');
+        }
+
+        async function handleSubmit(e) {
+            e.preventDefault();
+            const orderNumber = document.getElementById('order_number').value.trim();
+            const email = document.getElementById('email').value.trim();
+            if (!orderNumber || !email) {
+                showError('Bitte Auftragsnummer und E-Mail eingeben.');
+                return;
+            }
+            submitBtn.disabled = true;
+            loading.style.display = 'block';
+            loading.classList.remove('hidden');
+            resultEl.style.display = 'none';
+            resultEl.classList.add('hidden');
+            formError.textContent = '';
+            formError.style.display = 'none';
+            try {
+                const order = await getOrder(orderNumber, email);
+                showResult(order);
+            } catch (err) {
+                showError(err.message || 'Auftrag nicht gefunden oder E-Mail stimmt nicht überein.');
+            } finally {
+                submitBtn.disabled = false;
+                loading.style.display = 'none';
+                loading.classList.add('hidden');
+            }
+        }
+
+        form.addEventListener('submit', handleSubmit);
+
+        const params = new URLSearchParams(window.location.search);
+        const orderParam = params.get('order');
+        const emailParam = params.get('email');
+        if (orderParam && emailParam) {
+            document.getElementById('order_number').value = orderParam;
+            document.getElementById('email').value = emailParam;
+            handleSubmit(new Event('submit'));
+        }
+    </script>
+</body>
+</html>

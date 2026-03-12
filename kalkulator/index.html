@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Abschlussarbeits-Kalkulator V5.0 (mit Stepper & Editor)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap" rel="stylesheet">
+    <!-- Design Tokens (zuerst) -->
+    <link rel="stylesheet" href="frontend-tokens.css">
+    <link rel="stylesheet" href="../logo%20bamadi/bamadi-logo.css">
+    <!-- Haupt-Stylesheet für den Kalkulator -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Stylesheet für die Stepper-Navigation -->
+    <link rel="stylesheet" href="stepper.css">
+    <!-- Stylesheet für den Buchdeckeneditor -->
+    <link rel="stylesheet" href="editor-styles.css">
+    
+    <!-- Externe Bibliotheken -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@svgdotjs/svg.js@latest/dist/svg.min.js"></script>
+</head>
+<body>
+    <div class="page-wrapper">
+        <header class="page-header">
+            <div class="page-header-row">
+                <a href="index.html" class="bamadi-logo bamadi-logo--primary bamadi-logo--md" aria-label="bamadi Start">
+                    <span class="logo-text">bamad</span><span class="logo-accent">i</span>
+                </a>
+                <span class="page-header-tagline">Der Spezialist für Abschlussarbeiten</span>
+            </div>
+            <div id="configFallbackBanner" class="config-fallback-banner hidden" role="alert" aria-live="polite"></div>
+        </header>
+        <main class="page-container">
+        <!-- LINKE SPALTE: DER KONFIGURATOR MIT STEPPER -->
+        <div class="configurator-column">
+            <!-- 1. STEPPER-NAVIGATION -->
+            <nav class="stepper-nav" id="stepperNav">
+                <button class="stepper-nav-item active" data-step="1">1. Inhalt</button>
+                <button class="stepper-nav-item" data-step="2">2. Bindung</button>
+                <button class="stepper-nav-item" data-step="3">3. Extras</button>
+                <button class="stepper-nav-item" data-step="4">4. Fertigstellung</button>
+            </nav>
+
+            <!-- 2. STEPPER-PANELS (DIE EINZELNEN SEITEN) -->
+
+            <!-- STEP 1: BUCHBLOCK & INHALT -->
+            <div class="stepper-panel active" data-step="1">
+                <section class="config-section" id="bookBlockSection">
+                    <h2>Schritt 1: Buchblock-Details & Inhalt</h2>
+                    
+                    <div class="number-input-wrapper">
+                        <label for="totalPages">Gesamtseitenanzahl (A4):</label>
+                        <div class="input-group">
+                            <button type="button" class="btn-number" data-type="minus" data-field="totalPages" aria-label="Seitenanzahl verringern">-</button>
+                            <input type="number" id="totalPages" name="totalPages" min="1" value="50">
+                            <button type="button" class="btn-number" data-type="plus" data-field="totalPages" aria-label="Seitenanzahl erhöhen">+</button>
+                        </div>
+                    </div>
+
+                    <fieldset class="bookblock-options-group fieldset-spaced option-segment" aria-label="Druckmodus">
+                        <legend>Druckmodus (A4)</legend>
+                        <div class="segment-option"><label><input type="radio" name="printMode" value="single_sided" checked> Einseitig</label></div>
+                        <div class="segment-option"><label><input type="radio" name="printMode" value="double_sided"> Beidseitig</label></div>
+                    </fieldset>
+                    <fieldset id="bookBlockOptionsContainer" class="bookblock-options-group option-card-group">
+                        <legend>Papiersorte (A4)</legend>
+                        <label class="option-card" for="paper_80">
+                            <input type="radio" class="visually-hidden" name="paperType" id="paper_80" value="soporset_80">
+                            <span class="option-card__title">80 g/m²</span>
+                            <span class="option-card__desc">Standardpapier</span>
+                        </label>
+                        <label class="option-card" for="paper_100">
+                            <input type="radio" class="visually-hidden" name="paperType" id="paper_100" value="soporset_100">
+                            <span class="option-card__title">100 g/m²</span>
+                            <span class="option-card__desc">Schreibpapier</span>
+                        </label>
+                        <label class="option-card" for="paper_120">
+                            <input type="radio" class="visually-hidden" name="paperType" id="paper_120" value="soporset_120" checked>
+                            <span class="option-card__title">120 g/m²</span>
+                            <span class="option-card__desc">Premium, empfohlen</span>
+                        </label>
+                    </fieldset>
+                    <fieldset class="bookblock-options-group a3-options-group" id="a3PagesOptions">
+                        <legend>Optionale DIN A3 Seiten</legend>
+                        <div><label><input type="checkbox" id="hasA3Pages"> DIN A3 Seiten enthalten?</label></div>
+                        <div id="a3PagesCountContainer" class="hidden">
+                            <div class="number-input-wrapper number-input-indent">
+                                <label for="a3PagesCount">Anzahl DIN A3 Seiten (auf A4 gefalzt):</label>
+                                <div class="input-group">
+                                    <button type="button" class="btn-number" data-type="minus" data-field="a3PagesCount" aria-label="A3-Seitenanzahl verringern">-</button>
+                                    <input type="number" id="a3PagesCount" name="a3PagesCount" min="0" value="0">
+                                    <button type="button" class="btn-number" data-type="plus" data-field="a3PagesCount" aria-label="A3-Seitenanzahl erhöhen">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <div class="section-divider pdf-upload-row">
+                        <button id="uploadAndAnalyzePdfBtn" class="button-primary">Druckdatei auswählen</button>
+                        <span id="mainPdfStatusInBookBlock" class="pdf-upload-filename" aria-live="polite">Nur lokale Auswertung – es erfolgt kein Upload.</span>
+                    </div>
+                </section>
+                <div class="stepper-controls">
+                    <span></span> <!-- Leeres Span für Flexbox-Ausrichtung -->
+                    <button class="button-primary stepper-btn-next">Weiter zu Schritt 2</button>
+                </div>
+            </div>
+
+            <!-- STEP 2: BINDUNGSVARIANTEN -->
+            <div class="stepper-panel" data-step="2">
+                <section class="config-section" id="bindingVariantsSection">
+                    <h2>Schritt 2: Bindungsvarianten</h2>
+                    <div id="bindingVariantsContainer">
+                        <!-- Bindungsvarianten werden von JS geladen -->
+                    </div>
+                    <div class="add-button-bottom-container">
+                        <button id="addVariantButton" class="button-primary">weitere Bindeart hinzufügen</button>
+                    </div>
+                </section>
+                <div class="stepper-controls">
+                    <button class="button-secondary stepper-btn-prev">Zurück zu Schritt 1</button>
+                    <button class="button-primary stepper-btn-next">Weiter zu Schritt 3</button>
+                </div>
+            </div>
+
+            <!-- STEP 3: EXTRAS -->
+            <div class="stepper-panel" data-step="3">
+                <section class="config-section" id="extrasSection">
+                    <h2>Schritt 3: Extras</h2>
+                    <div id="extrasContainer">
+                        <!-- Extras werden von JS geladen -->
+                    </div>
+                    <div class="add-button-bottom-container">
+                        <button id="addExtraButton" class="button-primary">Extras hinzufügen</button>
+                    </div>
+                </section>
+                <div class="stepper-controls">
+                    <button class="button-secondary stepper-btn-prev">Zurück zu Schritt 2</button>
+                    <button class="button-primary stepper-btn-next">Weiter zu Schritt 4</button>
+                </div>
+            </div>
+
+            <!-- STEP 4: FERTIGSTELLUNG & AKTIONEN -->
+            <div class="stepper-panel" data-step="4">
+                <section class="config-section" id="productionDeliveryOptionsSection">
+                    <h2>Schritt 4: Produktionszeit & Lieferung</h2>
+                    <div class="production-delivery-grid">
+                        <fieldset id="productionTimeOptionsContainer" class="fieldset-group">
+                            <legend>Produktionszeit</legend>
+                             <!-- Optionen werden von JS geladen -->
+                        </fieldset>
+                        <fieldset id="deliveryMethodOptionsContainer" class="fieldset-group">
+                            <legend>Lieferart</legend>
+                            <!-- Optionen werden von JS geladen -->
+                        </fieldset>
+                    </div>
+                    <div class="lz-button-wrap">
+                        <button type="button" id="openLieferzeitenModalButton" class="button-secondary">Hilfe: Wann bestellen? (Lieferzeitenrechner)</button>
+                    </div>
+                </section>
+                <section class="config-section" id="furtherActions">
+                    <h2>Nächste Schritte</h2>
+                    <p id="pdfUploadRequirementNotice" class="error-text hidden">Bitte laden Sie Ihre Druckdatei für den Inhalt hoch (siehe Sektion 1).</p>
+                    <p id="personalizationRequirementNotice" class="error-text hidden">Bitte schließen Sie alle erforderlichen Personalisierungen ab.</p>
+
+                    <div class="cart-actions">
+                        <button id="startInquiryButton" class="button-primary" disabled>Konfiguration prüfen & Anfrage stellen</button>
+                    </div>
+                </section>
+                <div class="stepper-controls">
+                    <button class="button-secondary stepper-btn-prev">Zurück zu Schritt 3</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- RECHTE SPALTE: DER WARENKORB -->
+        <div class="cart-column" id="desktopCartColumn">
+            <div class="cart-sticky">
+                <h2>Deine Kalkulation</h2>
+                <div id="cartItemsContainerDesktop">
+                    <p class="info-text">Ihre Konfiguration wird hier angezeigt.</p>
+                </div>
+                <div class="cart-total cart-total-border">
+                    <span class="cart-total-label">Gesamtkosten:</span>
+                    <span class="cart-total-amount"><span id="orderTotalDesktop">0.00</span> €</span>
+                </div>
+                <div class="cart-actions-sticky">
+                    <button id="downloadOfferPdfButton" class="button-primary btn-full-width" disabled><i data-lucide="download"></i> Angebot als PDF herunterladen</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ===== GLOBALE ELEMENTE (MODALS, FOOTER) ===== -->
+    
+    <!-- MOBILER FOOTER -->
+    <div class="mobile-sticky-footer" id="mobileStickyFooter">
+        <div class="footer-price-summary"><strong id="orderTotalMobileFooter">Gesamt: 0.00 €</strong></div>
+        <button id="showMobileCartButton" class="button-secondary">Details</button>
+    </div>
+
+    <!-- MOBILER WARENKORB (MODAL) -->
+    <div class="modal-overlay" id="mobileCartModalOverlay">
+         <div class="modal-content">
+            <div class="modal-header">
+                <h2>Deine Kalkulation</h2>
+                <button id="closeMobileCartButton" class="button-danger">&times;</button>
+            </div>
+            <div class="modal-body" id="cartItemsContainerMobile"></div>
+            <div class="modal-footer-total">
+                 <strong id="orderTotalMobileModal">Gesamt: 0.00 €</strong>
+            </div>
+        </div>
+    </div>
+    
+    <!-- MODAL FÜR PDF ANALYSE -->
+    <div class="modal-overlay" id="pdfAnalysisModalOverlay">
+        <div class="modal-content pdf-analysis-modal-content">
+            <div class="modal-header">
+                <h2>Inhalt aus PDF auswerten</h2>
+                <button id="closePdfAnalysisModalButton" class="button-danger">&times;</button>
+            </div>
+            <div class="modal-body" id="pdfModalBody">
+                <div id="pdfModalIntroArea">
+                    <p>Laden Sie Ihre PDF hoch, um Seitenzahlen zu übernehmen und eine Vorschau zu sehen.</p>
+                    <input type="file" id="modalPdfFile" accept=".pdf" class="modal-file-mt">
+                </div>
+                <div id="modalLoadingMessage" class="hidden info-box">Verarbeite PDF...</div>
+                <div id="modalAnalysisResultArea" class="hidden modal-result-mt">
+                    <p id="pdfModalFileName" class="pdf-modal-filename" aria-live="polite"></p>
+                    <div class="pdf-modal-result-layout">
+                        <div class="pdf-modal-result-preview">
+                            <h4>Vorschau erste Seite</h4>
+                            <canvas id="modalPreviewCanvas" class="preview-canvas-box"></canvas>
+                        </div>
+                        <div id="pdfModalSummary" class="pdf-modal-summary" aria-live="polite"></div>
+                    </div>
+                    <div id="modalAnalysisResultText" class="analysis-text-box hidden" aria-hidden="true"></div>
+                </div>
+                <div id="pdfModalTooLargeArea" class="hidden modal-result-mt">
+                    <p class="pdf-modal-filename" aria-live="polite">Datei zu groß für direkten Upload (max. 45 MB).</p>
+                    <p>PDF z.&nbsp;B. über <a href="https://www.swisstransfer.com" target="_blank" rel="noopener noreferrer">SwissTransfer</a> oder <a href="https://wetransfer.com" target="_blank" rel="noopener noreferrer">WeTransfer</a> hochladen und unten den Download-Link eintragen.</p>
+                    <div class="pdf-modal-link-input-wrap">
+                        <label for="pdfModalExternalLinkInput">Download-Link zur Druckdatei:</label>
+                        <input type="url" id="pdfModalExternalLinkInput" class="modal-input-full" placeholder="https://…" autocomplete="off">
+                    </div>
+                    <button type="button" id="applyPdfLinkButton" class="button-primary">Link übernehmen</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                 <button id="applyPdfDataButton" class="button-primary" disabled>Daten übernehmen</button>
+                 <button id="cancelPdfAnalysisButton" class="button-secondary">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL FÜR ANFRAGEPROZESS -->
+    <div class="modal-overlay" id="inquiryModalOverlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="inquiryModalTitle">Unverbindliche Anfrage</h2>
+                <button id="closeInquiryModalButton" class="button-danger">&times;</button>
+            </div>
+            <div class="modal-body" id="inquiryModalBody">
+                
+                <!-- STEP 1: KUNDENDATEN -->
+                <div id="inquiryStepCustomerData" class="inquiry-step-content hidden">
+                    <h4>Schritt 1: Ihre Kontaktdaten</h4>
+                    <form id="inquiryCustomerForm">
+                        <div>
+                            <label for="customerName">Name*</label>
+                            <input type="text" id="customerName" name="customerName" required>
+                        </div>
+                        <div>
+                            <label for="customerEmail">E-Mail*</label>
+                            <input type="email" id="customerEmail" name="customerEmail" required>
+                        </div>
+                        <div>
+                            <label for="customerPhone">Telefon</label>
+                            <input type="tel" id="customerPhone" name="customerPhone">
+                        </div>
+                        <div>
+                            <label for="customerNotes">Anmerkungen</label>
+                            <textarea id="customerNotes" name="customerNotes"></textarea>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- STEP 2: LIEFERADRESSE -->
+                <div id="inquiryStepDeliveryAddress" class="inquiry-step-content hidden">
+                    <h4>Schritt 2: Lieferdetails</h4>
+                    <div id="selectedDeliveryMethodInfo">
+                        Gewählte Lieferart: <strong id="displaySelectedDeliveryMethod"></strong>
+                    </div>
+                    <div id="inquiryShippingAddressFields" class="hidden">
+                        <form id="inquiryShippingForm">
+                            <div>
+                                <label for="shippingStreet">Straße und Hausnummer*</label>
+                                <input type="text" id="shippingStreet" name="shippingStreet">
+                            </div>
+                            <div>
+                                <label for="shippingZip">PLZ*</label>
+                                <input type="text" id="shippingZip" name="shippingZip">
+                            </div>
+                            <div>
+                                <label for="shippingCity">Stadt*</label>
+                                <input type="text" id="shippingCity" name="shippingCity">
+                            </div>
+                        </form>
+                    </div>
+                    <div id="noAddressNeededInfo" class="info-box hidden">
+                        Für diese Lieferart ist keine Adressangabe erforderlich.
+                    </div>
+                </div>
+
+                <!-- STEP 3: ZAHLUNGSART -->
+                <div id="inquiryStepPaymentMethod" class="inquiry-step-content hidden">
+                    <h4>Schritt 3: Zahlungsart</h4>
+                    <fieldset id="inquiryPaymentMethodStripeWrap" class="hidden" aria-label="Zahlungsart">
+                        <legend class="visually-hidden">Zahlungsart</legend>
+                        <label class="block-mb"><input type="radio" name="inquiryPaymentMethod" value="stripe"> Online-Zahlung (Karte)</label>
+                        <label class="block-mb"><input type="radio" name="inquiryPaymentMethod" value="offline" checked> Rechnung / Vorkasse</label>
+                    </fieldset>
+                    <div id="inquiryPaymentMethodOfflineOnly" class="hidden">
+                        <p>Zahlung per Rechnung bzw. Vorkasse.</p>
+                    </div>
+                </div>
+
+                <!-- STEP 4: FINALE ÜBERPRÜFUNG -->
+                <div id="inquiryStepFinalReview" class="inquiry-step-content hidden">
+                    <h4>Schritt 4: Überprüfung und Absenden</h4>
+                    <p>Bitte überprüfen Sie Ihre Konfiguration. Mit dem Absenden stellen Sie eine <strong>unverbindliche Anfrage</strong>.</p>
+                    <div class="inquiry-summary-box">
+                        <div id="inquiryFinalSummaryDetails"></div>
+                        <p class="summary-total-line">
+                            <strong>Gesamt: <span id="inquiryFinalTotal">0.00</span> €</strong>
+                        </p>
+                    </div>
+                    <div class="modal-actions-mt">
+                        <label>
+                            <input type="checkbox" id="inquiryAcceptTerms">
+                            Ich habe die <a href="../legal/agb.html" target="_blank" rel="noopener">AGB</a> gelesen und akzeptiere sie.
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer" id="inquiryModalFooter">
+                <button id="cancelInquiryModalButton" class="button-secondary">Abbrechen</button>
+                <button id="inquiryModalBackButton" class="button-secondary hidden">Zurück</button>
+                <button id="inquiryModalNextButton" class="button-primary">Weiter</button>
+                <button id="submitInquiryFormButton" class="button-primary hidden">Bestellung absenden</button>
+            </div>
+</div>
+    </div>
+
+    <footer class="page-footer" role="contentinfo">
+        <p>Abschlussarbeits-Kalkulator V5.0</p>
+        <nav class="footer-legal" aria-label="Rechtliches">
+            <a href="../legal/impressum.html">Impressum</a>
+            <span class="footer-sep" aria-hidden="true">·</span>
+            <a href="../legal/datenschutz.html">Datenschutz</a>
+            <span class="footer-sep" aria-hidden="true">·</span>
+            <a href="../legal/agb.html">AGB</a>
+            <span class="footer-sep" aria-hidden="true">·</span>
+            <a href="../legal/widerruf.html">Widerrufsbelehrung</a>
+        </nav>
+    </footer>
+
+    <!-- MODAL FÜR BESTÄTIGUNGS-DIALOG -->
+    <div class="modal-overlay" id="confirmationModalOverlay">
+        <div class="modal-content confirmation-modal-content">
+            <div class="modal-header">
+                <h2 id="confirmationModalTitle">Bitte bestätigen</h2>
+                 <button id="closeConfirmationModalButton" class="button-danger">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmationModalMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button id="confirmationModalCancelButton" class="button-secondary">Ändern</button>
+                <button id="confirmationModalConfirmButton" class="button-primary">Beibehalten und Fortfahren</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- =================================================================== -->
+    <!-- BEGINN: HTML-STRUKTUR FÜR DEN BUCHDECKENEDITOR (SAUBERE VERSION)   -->
+    <!-- =================================================================== -->
+    <div id="editor-modal" class="modal-overlay">
+        <div class="editor-modal-content">
+            <div class="modal-header">
+                <h1 class="editor-title">Buchdecke Personalisieren</h1>
+                <button id="closeEditorModalButton" class="button-danger" aria-label="Editor schließen">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="editor-controls-column">
+                    <div class="template-selector-container">
+                        <button class="slider-arrow" id="prev-template" aria-label="Vorheriges Template">&lt;</button>
+                        <div class="template-slider">
+                            <div class="template-miniatures" id="template-miniatures-list"></div>
+                        </div>
+                        <button class="slider-arrow" id="next-template" aria-label="Nächstes Template">&gt;</button>
+                    </div>
+                    <div class="controls">
+                        <div class="control-group">
+                            <label for="text-title-input">Titel (U1):</label>
+                            <input type="text" id="text-title-input">
+                        </div>
+                        <div class="control-group">
+                            <label for="text-subtitle-input">Untertitel (U1):</label>
+                            <input type="text" id="text-subtitle-input">
+                        </div>
+                        <div class="control-group">
+                            <label for="text-author-input">Autor (U4):</label>
+                            <input type="text" id="text-author-input">
+                        </div>
+                        <div class="control-group">
+                            <label for="text-spine-title-input">Rückentitel:</label>
+                            <input type="text" id="text-spine-title-input">
+                        </div>
+                        <div class="control-group">
+                            <label for="spine-width-input">Rückenbreite (mm):</label>
+                            <input type="number" id="spine-width-input" min="5" max="100">
+                        </div>
+                        <div class="control-group">
+                            <label>Farbe U1:</label>
+                            <div class="color-palette" id="palette-u1"></div>
+                        </div>
+                         <div class="control-group">
+                            <label>Farbe U4:</label>
+                            <div class="color-palette" id="palette-u4"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="editor-preview-column">
+                    <div id="svg-container">
+                        <div id="svg-canvas"></div>
+                    </div>
+                    <div class="view-controls">
+                        <button id="zoom-in-button" aria-label="Hineinzoomen">+</button>
+                        <button id="zoom-out-button" aria-label="Herauszoomen">-</button>
+                        <button id="zoom-reset-button" aria-label="Zoom zurücksetzen">Reset</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="footer-actions-left">
+                    <button id="editor-preview-button" class="button-secondary">Vorschau</button>
+                </div>
+                <div class="footer-actions-right">
+                    <button id="editor-cancel-button" class="button-secondary">Abbrechen</button>
+                    <button id="editor-confirm-button" class="button-primary">Übernehmen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="preview-modal" class="modal-overlay">
+        <div class="editor-modal-content">
+            <div class="modal-header">
+                <h2>Vorschau Buchdecke</h2>
+                <button class="close-preview-button" id="close-preview-modal-button" aria-label="Vorschau schließen">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="preview-svg-container">
+                    <div id="preview-svg-canvas"></div>
+                </div>
+            </div>
+            <div class="modal-footer modal-footer-end">
+                 <button id="download-preview-svg-button" class="button-secondary">SVG Herunterladen</button>
+            </div>
+        </div>
+    </div>
+    <!-- =================================================================== -->
+    <!-- ENDE: HTML-STRUKTUR FÜR DEN BUCHDECKENEDITOR                      -->
+    <!-- =================================================================== -->
+
+    <!-- LADE-OVERLAY -->
+   <div id="loadingOverlay" class="loading-overlay hidden">
+       <div class="loading-content">
+            <svg version="1.1" id="loading-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 206.93 181.42">
+                <!-- ID zur Gruppe hinzugefügt, um sie mit CSS zu animieren -->
+                <g id="logo-spinner-group">
+                    <path id="logo-part-1" fill="#00506E" d="M154.93,49.23l-33.67,12.94c0.73-2.02,1.14-4.2,1.14-6.48c0-10.47-8.49-18.96-18.96-18.96
+                        c-10.47,0-18.96,8.49-18.96,18.96c0,7.26,4.08,13.56,10.06,16.74c0,0,7.18,3.99,22.07,7.71c14.9,3.72,42.66,9.86,38.7,53.43
+                        C155.32,133.57,189.7,96.26,154.93,49.23z"/>
+                    <path id="logo-part-2" fill="#00506E" d="M112.38,108.98c0,0-7.18-3.99-22.07-7.71c-14.9-3.72-42.66-9.86-38.7-53.43c0,0-34.38,37.31,0.39,84.34
+                        l33.67-12.94c-0.73,2.02-1.14,4.2-1.14,6.48c0,10.47,8.49,18.96,18.96,18.96c10.47,0,18.96-8.49,18.96-18.96
+                        C122.45,118.47,118.37,112.17,112.38,108.98z"/>
+                </g>
+            </svg>
+            <!-- Text geändert wie vom Kunden gewünscht -->
+            <p id="loading-text" class="loading-text">Bitte warten... Daten werden übertragen.</p>
+        </div>
+    </div>
+
+    </div><!-- .page-wrapper -->
+
+    <!-- HAUPT-SKRIPT (ORCHESTRATOR) -->
+    <script type="module" src="script.js"></script>
+    <!-- Lucide Icons (nach dem gesamten DOM) -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script>lucide.createIcons();</script>
+    <!-- Parent (Landingpage): Schließen nur erlauben, wenn kein Editor/Lieferzeiten-Modal offen -->
+    <script>
+      (function() {
+        function hasBlockingModalOpen() {
+          var lieferzeiten = document.getElementById('lieferzeiten-modal-overlay');
+          if (lieferzeiten && lieferzeiten.classList.contains('active')) return true;
+          var editorModal = document.getElementById('editor-modal');
+          if (editorModal && window.getComputedStyle(editorModal).display !== 'none') return true;
+          return false;
+        }
+        window.addEventListener('message', function(e) {
+          if (e.data && e.data.type === 'kalkulator-close-requested' && e.source === window.parent) {
+            try {
+              if (hasBlockingModalOpen()) {
+                e.source.postMessage({ type: 'kalkulator-close-blocked' }, e.origin);
+              } else {
+                e.source.postMessage({ type: 'kalkulator-can-close' }, e.origin);
+              }
+            } catch (err) {
+              e.source.postMessage({ type: 'kalkulator-can-close' }, e.origin);
+            }
+          }
+        });
+      })();
+    </script>
+
+</body>
+</html>

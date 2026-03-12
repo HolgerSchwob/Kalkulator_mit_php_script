@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>SVG Productioner – Schriften einbetten</title>
+    <style>
+        /* An Dashboard-Theme angepasst (Production-Dashboard) */
+        :root {
+            --bg: #0a0a0d;
+            --bg-elevated: #111114;
+            --surface: #16161a;
+            --surface-hover: #1c1c21;
+            --border: rgba(255,255,255,0.06);
+            --border-focus: rgba(6, 182, 212, 0.5);
+            --text: #f4f4f5;
+            --text-muted: #a1a1aa;
+            --accent: #06b6d4;
+            --accent-hover: #22d3ee;
+            --accent-dim: rgba(6, 182, 212, 0.15);
+            --success: #22c55e;
+            --success-bg: rgba(34, 197, 94, 0.15);
+            --radius: 10px;
+            --radius-sm: 6px;
+            --shadow: 0 4px 24px rgba(0,0,0,0.4);
+        }
+        * { box-sizing: border-box; }
+        body { font-family: 'Roboto', system-ui, sans-serif; padding: 12px 16px; max-width: 100%; margin: 0 auto; background: var(--bg); color: var(--text); font-size: 12px; line-height: 1.35; }
+        .container { background: var(--surface); padding: 14px 18px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); }
+        h1 { margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text); }
+        .container > p { color: var(--text-muted); margin-bottom: 6px; font-size: 0.95em; }
+        .drop-zone {
+            border: 2px dashed var(--border); padding: 18px 24px; text-align: center; margin: 8px 0; border-radius: var(--radius);
+            transition: border-color 0.2s, background 0.2s; cursor: pointer; color: var(--text-muted); font-size: 0.95em;
+        }
+        .drop-zone:hover, .drop-zone.dragover { border-color: var(--accent); background: var(--accent-dim); color: var(--text); }
+        .hint { margin: 8px 0; padding: 8px 10px; border-radius: var(--radius-sm); font-size: 0.8rem; background: var(--bg-elevated); color: var(--text-muted); min-height: 20px; border: 1px solid var(--border); }
+        .hint.success { background: var(--success-bg); color: var(--success); border-color: var(--success); }
+        .preview-section { display: flex; gap: 14px; margin-top: 12px; flex-wrap: wrap; }
+        .preview-box { flex: 1; min-width: 240px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--bg-elevated); }
+        .preview-box h3 { margin: 0; padding: 6px 10px; font-size: 0.75rem; color: var(--text-muted); background: var(--surface); text-transform: uppercase; letter-spacing: 0.04em; }
+        .preview-box .frame { height: 200px; display: flex; align-items: center; justify-content: center; padding: 8px; box-sizing: border-box; cursor: pointer; transition: background 0.15s; }
+        .preview-box .frame:not(.empty):hover { background: var(--surface-hover); outline: 1px solid var(--accent); outline-offset: -1px; }
+        .preview-box .frame.empty { cursor: default; color: var(--text-muted); font-size: 0.8rem; }
+        .preview-box .frame object, .preview-box .frame img { max-width: 100%; max-height: 100%; object-fit: contain; pointer-events: none; }
+        .preview-box .frame object { pointer-events: none; }
+        .btn { background: var(--accent); color: #0a0a0d; border: none; padding: 10px 20px; border-radius: var(--radius-sm); font-size: 0.9rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+        .btn:hover { background: var(--accent-hover); }
+        .svg-modal { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.92); align-items: center; justify-content: center; padding: 0; box-sizing: border-box; flex-direction: column; }
+        .svg-modal.open { display: flex; }
+        .svg-modal .modal-content { position: relative; width: 100%; height: 100%; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 56px 16px 16px; box-sizing: border-box; }
+        .svg-modal .modal-close { position: absolute; top: 12px; right: 16px; z-index: 1; background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 10px 20px; border-radius: var(--radius-sm); font-size: 0.9rem; cursor: pointer; font-family: inherit; }
+        .svg-modal .modal-close:hover { background: var(--surface-hover); border-color: var(--accent); }
+        .svg-modal #modal-svg-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; min-height: 0; }
+        .svg-modal #modal-svg-container object { width: 100%; height: 100%; object-fit: contain; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>SVG Productioner (Stufe 2)</h1>
+    <p>Eingabe: <b>Editor-SVG</b> (z. B. Ausgabe des Postprozessors „Inkscape → Editor“). Lädt die SVG, erkennt benötigte Schriftschnitte (Bold, Italic, Light) und bettet sie ein; Schriften, die es bei Google Fonts nicht gibt, werden durch eine <b>ähnliche Ersatzschrift</b> ersetzt. Gleichzeitig werden <b>alle für die Produktion unnötigen Metadaten</b> entfernt (inkscape:, sodipodi: etc.). Ausgabe: <b>Production-SVG</b> – druckfertig und schlank.</p>
+
+    <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+        <input type="file" id="file-input" accept=".svg" style="display: none;">
+        <strong>SVG hier ablegen</strong> oder klicken zum Auswählen
+    </div>
+
+    <div class="hint" id="hint">SVG auswählen oder hier ablegen – danach wird die Vorschau angezeigt.</div>
+
+    <div class="preview-section">
+        <div class="preview-box">
+            <h3>Original</h3>
+            <div class="frame empty" id="preview-original" title="Klick zum Vergrößern">Keine Datei gewählt</div>
+        </div>
+        <div class="preview-box">
+            <h3>Ergebnis (Production-SVG: Schriften + Optimierung)</h3>
+            <div class="frame empty" id="preview-result" title="Klick zum Vergrößern">Wird nach der Verarbeitung angezeigt</div>
+        </div>
+    </div>
+</div>
+
+<div class="svg-modal" id="svg-modal" role="dialog" aria-label="SVG Detailansicht">
+    <div class="modal-content">
+        <button type="button" class="modal-close" id="modal-close">Schließen</button>
+        <div id="modal-svg-container"></div>
+    </div>
+</div>
+
+<script>
+    /**
+     * SVG Productioner – Schriften fest in SVG einbetten (Buchdeckentemplate-Vorbereitung).
+     * Ablauf: SVG parsen → font-family/font-weight/font-style aus allen Text-Elementen sammeln
+     * → Google Fonts CSS für benötigte Schnitte laden → WOFF2-URLs per Fetch holen, als Base64
+     * in CSS ersetzen → <style> ins SVG einfügen → Serialisieren & Download.
+     * So entstehen druckfertige SVGs ohne Abhängigkeit von externen Schriften.
+     */
+    /* --- CONFIG --- */
+    const IGNORE_FONTS = ['Arial', 'Helvetica', 'Verdana', 'Times New Roman', 'Courier New', 'sans-serif', 'serif', 'monospace'];
+
+    /**
+     * Strategie für Ersatzschriften, wenn eine Schrift bei Google Fonts nicht gefunden wird:
+     * 1. Bekannte Zuordnung (häufige Nicht-Google-Schriften → ähnliche Google Fonts)
+     * 2. Namens-/Kategorie-Heuristik (Serif, Mono, Display → passende Google-Standards)
+     * 3. Universalfallback: Open Sans (sans-serif)
+     */
+    const REPLACEMENT_MAP = {
+        'Futura': 'Nunito', 'Gill Sans': 'Lato', 'Trebuchet MS': 'Open Sans',
+        'Tahoma': 'Open Sans', 'Century Gothic': 'Questrial', 'Calibri': 'Source Sans 3',
+        'Candara': 'Lato', 'Segoe UI': 'Open Sans', 'Georgia': 'Lora',
+        'Palatino': 'Lora', 'Garamond': 'EB Garamond', 'Baskerville': 'Libre Baskerville',
+        'Impact': 'Oswald', 'Copperplate': 'Oswald', 'Lucida Console': 'Source Code Pro',
+        'Consolas': 'Source Code Pro', 'Monaco': 'Fira Code'
+    };
+    const FALLBACK_BY_CATEGORY = {
+        serif: 'Lora',
+        mono: 'Source Code Pro',
+        display: 'Oswald',
+        sans: 'Open Sans'
+    };
+    function getReplacementFont(family) {
+        const key = Object.keys(REPLACEMENT_MAP).find(k => 
+            family.toLowerCase().includes(k.toLowerCase())
+        );
+        if (key) return REPLACEMENT_MAP[key];
+        const lower = family.toLowerCase();
+        if (lower.includes('serif') || lower.includes('times') || lower.includes('georgia') || lower.includes('garamond') || lower.includes('palatino') || lower.includes('baskerville'))
+            return FALLBACK_BY_CATEGORY.serif;
+        if (lower.includes('mono') || lower.includes('code') || lower.includes('console') || lower.includes('consolas'))
+            return FALLBACK_BY_CATEGORY.mono;
+        if (lower.includes('display') || lower.includes('impact') || lower.includes('condensed'))
+            return FALLBACK_BY_CATEGORY.display;
+        return FALLBACK_BY_CATEGORY.sans;
+    }
+
+    /** Ersetzt im gesamten SVG-DOM eine Schriftfamilie durch eine andere (font-family + style). Laufweiten/Größen bleiben unverändert. */
+    function replaceFontInDocument(xmlDoc, oldFamily, newFamily) {
+        const elements = xmlDoc.querySelectorAll('*');
+        elements.forEach(el => {
+            const styleAttr = el.getAttribute('style');
+            if (styleAttr && styleAttr.includes('font-family')) {
+                const newStyle = styleAttr.replace(/font-family\s*:\s*['"]?([^;'"]+)['"]?/gi, (m, val) => {
+                    if (val.replace(/['"]/g, '').trim() === oldFamily) return `font-family: '${newFamily}'`;
+                    return m;
+                });
+                if (newStyle !== styleAttr) el.setAttribute('style', newStyle);
+            }
+            const directFamily = el.getAttribute('font-family');
+            if (directFamily) {
+                const first = directFamily.split(',')[0].replace(/['"]/g, '').trim();
+                if (first === oldFamily) {
+                    const rest = directFamily.includes(',') ? directFamily.substring(directFamily.indexOf(',')) : '';
+                    el.setAttribute('font-family', `'${newFamily}'${rest}`);
+                }
+            }
+        });
+    }
+
+    const hintEl = document.getElementById('hint');
+    const previewOriginal = document.getElementById('preview-original');
+    const previewResult = document.getElementById('preview-result');
+
+    function setHint(msg, isSuccess) {
+        hintEl.textContent = msg;
+        hintEl.className = 'hint' + (isSuccess ? ' success' : '');
+    }
+
+    function showSVGInFrame(frameEl, svgString) {
+        clearFrameBlobUrl(frameEl);
+        frameEl._lastSvgString = svgString || null;
+        frameEl.classList.remove('empty');
+        frameEl.innerHTML = '';
+        frameEl.title = svgString ? 'Klick zum Vergrößern' : '';
+        if (!svgString) { frameEl.classList.add('empty'); frameEl.textContent = frameEl.id === 'preview-original' ? 'Keine Datei gewählt' : 'Wird nach der Verarbeitung angezeigt'; return; }
+        const blob = new Blob([svgString], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const obj = document.createElement('object');
+        obj.data = url;
+        obj.type = 'image/svg+xml';
+        obj.style.maxWidth = '100%';
+        obj.style.maxHeight = '100%';
+        frameEl.appendChild(obj);
+        frameEl._blobUrl = url;
+    }
+
+    const modal = document.getElementById('svg-modal');
+    const modalContainer = document.getElementById('modal-svg-container');
+    document.getElementById('modal-close').addEventListener('click', closeSvgModal);
+    modal.addEventListener('click', e => { if (e.target === modal) closeSvgModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && modal.classList.contains('open')) closeSvgModal(); });
+
+    /** SVG für Detailansicht anpassen: root skaliert auf Container, ViewBox gesetzt falls nötig – Bildschirm maximal genutzt. */
+    function svgStringForDetailView(svgString) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(svgString, 'image/svg+xml');
+        const svg = doc.querySelector('svg');
+        if (!svg) return svgString;
+        let vb = svg.getAttribute('viewBox');
+        const w = svg.getAttribute('width');
+        const h = svg.getAttribute('height');
+        if (!vb && (w || h)) {
+            const num = (s) => (s && !/%/.test(s)) ? parseFloat(s) || 100 : 100;
+            svg.setAttribute('viewBox', `0 0 ${num(w)} ${num(h)}`);
+        }
+        svg.setAttribute('width', '100%');
+        svg.setAttribute('height', '100%');
+        svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+        return new XMLSerializer().serializeToString(doc);
+    }
+
+    function openSvgModal(svgString) {
+        if (!svgString) return;
+        if (modal._blobUrl) URL.revokeObjectURL(modal._blobUrl);
+        const optimized = svgStringForDetailView(svgString);
+        modal._blobUrl = URL.createObjectURL(new Blob([optimized], { type: 'image/svg+xml' }));
+        modalContainer.innerHTML = '';
+        const obj = document.createElement('object');
+        obj.data = modal._blobUrl;
+        obj.type = 'image/svg+xml';
+        modalContainer.appendChild(obj);
+        modal.classList.add('open');
+    }
+
+    function closeSvgModal() {
+        modal.classList.remove('open');
+        if (modal._blobUrl) { URL.revokeObjectURL(modal._blobUrl); modal._blobUrl = null; }
+        modalContainer.innerHTML = '';
+    }
+
+    previewOriginal.addEventListener('click', () => {
+        if (previewOriginal._lastSvgString) openSvgModal(previewOriginal._lastSvgString);
+    });
+    previewResult.addEventListener('click', () => {
+        if (previewResult._lastSvgString) openSvgModal(previewResult._lastSvgString);
+    });
+
+    function clearFrameBlobUrl(frameEl) {
+        if (frameEl._blobUrl) { URL.revokeObjectURL(frameEl._blobUrl); frameEl._blobUrl = null; }
+    }
+
+    // --- Drag & Drop Logic ---
+    const dz = document.getElementById('drop-zone');
+    dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+    dz.addEventListener('drop', e => {
+        e.preventDefault(); dz.classList.remove('dragover');
+        if (e.dataTransfer.files.length) selectAndProcessSVG(e.dataTransfer.files[0]);
+    });
+    document.getElementById('file-input').addEventListener('change', e => {
+        if (e.target.files.length) selectAndProcessSVG(e.target.files[0]);
+    });
+
+    async function selectAndProcessSVG(file) {
+        clearFrameBlobUrl(previewOriginal);
+        clearFrameBlobUrl(previewResult);
+        const text = await file.text();
+        showSVGInFrame(previewOriginal, text);
+        setHint(`„${file.name}" geladen. Starte Einbettung …`);
+        previewResult.classList.add('empty');
+        previewResult.innerHTML = '';
+        previewResult.textContent = 'Wird nach der Verarbeitung angezeigt';
+        await processSVG(file, text);
+    }
+
+    // --- HAUPTLOGIK ---
+    async function processSVG(file, text) {
+        const embeddedList = [];
+        const replacedList = [];
+
+        try {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(text, "image/svg+xml");
+
+            const fontMap = scanFonts(xmlDoc);
+
+            if (fontMap.size === 0) {
+                setHint('Keine einzubettenden Schriften gefunden (nur Systemschriften oder keine Texte).');
+                alert('Keine Schriften zum Einbetten gefunden.\n\nEs wurden nur Systemschriften (z. B. Arial) erkannt oder das SVG enthält keine relevanten Texte.');
+                return;
+            }
+
+            setHint(`Schriften erkannt: ${Array.from(fontMap.keys()).join(', ')}. Lade von Google Fonts …`);
+
+            let cssGlobal = "";
+
+            for (const [family, variants] of fontMap.entries()) {
+                let familyToEmbed = family;
+                let css = null;
+
+                try {
+                    css = await fetchGoogleFontCSS(family, variants);
+                } catch (err) {
+                    const replacement = getReplacementFont(family);
+                    const useReplacement = confirm(
+                        `Die Schrift „${family}" wurde bei Google Fonts nicht gefunden.\n\n` +
+                        `Als Ersatz vorschlagen: „${replacement}" (Schnitte und Laufweiten werden beibehalten).\n\n` +
+                        `Ersatzschrift verwenden?`
+                    );
+                    if (!useReplacement) {
+                        setHint(`Schrift „${family}" übersprungen.`);
+                        continue;
+                    }
+                    replaceFontInDocument(xmlDoc, family, replacement);
+                    familyToEmbed = replacement;
+                    replacedList.push(`${family} → ${replacement}`);
+                    try {
+                        css = await fetchGoogleFontCSS(replacement, variants);
+                    } catch (err2) {
+                        alert(`Die Ersatzschrift „${replacement}" konnte nicht geladen werden: ${err2.message}`);
+                        continue;
+                    }
+                }
+
+                if (css) {
+                    const cssWithBase64 = await embedWoff2(css);
+                    cssGlobal += cssWithBase64 + "\n";
+                    if (familyToEmbed === family) embeddedList.push(family);
+                }
+            }
+
+            if (cssGlobal.length === 0) {
+                setHint('Keine Schriften konnten eingebettet werden.');
+                alert('Es konnte keine der erkannten Schriften eingebettet werden.');
+                return;
+            }
+
+            const styleEl = xmlDoc.createElementNS("http://www.w3.org/2000/svg", "style");
+            styleEl.textContent = "/* Embedded by SVG Productioner */ \n" + cssGlobal;
+            xmlDoc.documentElement.prepend(styleEl);
+
+            stripProductionUnusedMetadata(xmlDoc);
+
+            const serializer = new XMLSerializer();
+            const resultSvg = serializer.serializeToString(xmlDoc);
+
+            showSVGInFrame(previewResult, resultSvg);
+
+            let summary = 'Fertig. ';
+            if (embeddedList.length) summary += `Eingebettet: ${embeddedList.join(', ')}. `;
+            if (replacedList.length) summary += `Ersetzt: ${replacedList.join('; ')}. `;
+            summary += ' Metadaten bereinigt. Download gestartet.';
+            setHint(summary, true);
+
+            downloadSVGBlob(resultSvg, file.name);
+
+        } catch (e) {
+            setHint('Ein Fehler ist aufgetreten.');
+            alert('Fehler: ' + e.message);
+        }
+    }
+
+    /**
+     * Entfernt für die Produktion unnötige Metadaten (inkscape:, sodipodi:, Editor-spezifische Attribute).
+     * Struktur, IDs (tpl-*, colorselector etc.), viewBox und Stile bleiben erhalten.
+     */
+    function stripProductionUnusedMetadata(xmlDoc) {
+        const root = xmlDoc.documentElement;
+        const removeAttrs = (el) => {
+            const toRemove = [];
+            for (let i = 0; i < el.attributes.length; i++) {
+                const name = el.attributes[i].name;
+                if (name.startsWith('inkscape:') || name.startsWith('sodipodi:') ||
+                    name === 'xmlns:inkscape' || name === 'xmlns:sodipodi') {
+                    toRemove.push(name);
+                }
+            }
+            toRemove.forEach(n => el.removeAttribute(n));
+            Array.from(el.children).forEach(removeAttrs);
+        };
+        removeAttrs(root);
+        const meta = root.querySelector('metadata');
+        if (meta && meta.parentNode) meta.parentNode.removeChild(meta);
+    }
+
+    // --- HELPER: DOM SCAN ---
+    function scanFonts(xmlDoc) {
+        const fontMap = new Map(); // Key: "Roboto", Value: Set(["400", "700italic"])
+
+        // Wir suchen alles, was Text haben könnte
+        const elements = xmlDoc.querySelectorAll('text, tspan, flowPara, flowSpan, g');
+
+        elements.forEach(el => {
+            // Attribute lesen (Inkscape nutzt oft 'style' Attribut als String)
+            const styleAttr = el.getAttribute('style') || "";
+            const directFamily = el.getAttribute('font-family');
+            const directWeight = el.getAttribute('font-weight');
+            const directStyle = el.getAttribute('font-style');
+
+            // Schriftfamilie ermitteln
+            let family = directFamily;
+            if (!family && styleAttr.includes('font-family')) {
+                // Regex um 'font-family: Wert' aus style-string zu holen
+                const match = styleAttr.match(/font-family:\s*([^;"]+)/);
+                if (match) family = match[1];
+            }
+
+            if (!family) return;
+
+            // Bereinigen (Anführungszeichen weg, Fallbacks weg)
+            family = family.split(',')[0].replace(/['"]/g, '').trim();
+            if (IGNORE_FONTS.includes(family)) return;
+
+            // Gewicht ermitteln (Standard 400)
+            let weight = "400";
+            if (directWeight) weight = normalizeWeight(directWeight);
+            else if (styleAttr.includes('font-weight')) {
+                const match = styleAttr.match(/font-weight:\s*([^;"]+)/);
+                if (match) weight = normalizeWeight(match[1]);
+            }
+
+            // Style ermitteln (italic oder normal)
+            let isItalic = false;
+            if (directStyle === 'italic') isItalic = true;
+            else if (styleAttr.includes('font-style:')) {
+                if (styleAttr.includes('font-style:italic') || styleAttr.includes('font-style: italic')) isItalic = true;
+            }
+
+            // In Map speichern
+            if (!fontMap.has(family)) fontMap.set(family, new Set());
+            
+            // Format für unsere interne Verarbeitung: "400" oder "700italic"
+            let variantKey = weight + (isItalic ? 'italic' : '');
+            fontMap.get(family).add(variantKey);
+        });
+
+        return fontMap;
+    }
+
+    function normalizeWeight(w) {
+        // Konvertiert "bold" -> "700", "normal" -> "400"
+        if (w === 'bold') return "700";
+        if (w === 'normal') return "400";
+        if (w === 'light') return "300";
+        // Wenn es schon eine Nummer ist (z.B. "600"), Nummer zurückgeben
+        return isNaN(w) ? "400" : w; 
+    }
+
+    // --- HELPER: NETZWERK & CODING ---
+    async function fetchGoogleFontCSS(family, variantsSet) {
+        // Wir müssen die URL für die API v2 bauen
+        // Format: family=Name:ital,wght@0,400;0,700;1,400
+        
+        let tuples = [];
+        variantsSet.forEach(v => {
+            const italic = v.includes('italic') ? 1 : 0;
+            const weight = parseInt(v.replace('italic', ''));
+            tuples.push([italic, weight]);
+        });
+
+        // Sortieren ist wichtig für Google API!
+        tuples.sort((a, b) => {
+            if (a[0] !== b[0]) return a[0] - b[0];
+            return a[1] - b[1];
+        });
+
+        const axisStr = tuples.map(t => `${t[0]},${t[1]}`).join(';');
+        const url = `https://fonts.googleapis.com/css2?family=${family.replace(/ /g, '+')}:ital,wght@${axisStr}`;
+
+        const res = await fetch(url);
+        if(!res.ok) throw new Error(`Google API 404 (Gibt es diesen Schnitt? ${axisStr})`);
+        return await res.text();
+    }
+
+    async function embedWoff2(cssText) {
+        // Regex um alle URL(...) im CSS zu finden und zu ersetzen
+        // Da ein CSS mehrere @font-face Blöcke haben kann (für Bold, Regular etc),
+        // müssen wir alle durchgehen.
+        
+        // Wir splitten das CSS in @font-face Blöcke
+        const blocks = cssText.split('}');
+        let newCss = "";
+
+        for (let block of blocks) {
+            if(!block.includes('@font-face')) continue;
+            
+            const match = block.match(/src:\s*url\((.*?)\)/);
+            if (match && match[1]) {
+                const url = match[1].replace(/['"]/g, '');
+                
+                // Fetch & Base64
+                const fontRes = await fetch(url);
+                const blob = await fontRes.blob();
+                const base64 = await new Promise(r => {
+                    const reader = new FileReader();
+                    reader.onload = () => r(reader.result);
+                    reader.readAsDataURL(blob);
+                });
+
+                // URL im CSS durch Base64 ersetzen
+                const newBlock = block.replace(match[0], `src: url('${base64}')`) + "}";
+                newCss += newBlock + "\n";
+            }
+        }
+        return newCss;
+    }
+
+    function downloadSVGBlob(svgString, originalName) {
+        const blob = new Blob([svgString], { type: "image/svg+xml" });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = originalName.replace(/\.svg$/i, '_production.svg');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+</script>
+
+</body>
+</html>

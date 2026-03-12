@@ -1,0 +1,99 @@
+/* ==========================================================
+   bamadi.de – Logo CSS Komponente
+   Version: 1.0 | Stand: März 2026
+
+   EINBINDUNG:
+   1. Diese Datei verlinken: <link rel="stylesheet" href="bamadi-logo.css">
+   2. Google Font im <head> laden:
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap" rel="stylesheet">
+
+   VERWENDUNG – Beispiel Header:
+      <a href="/" class="bamadi-logo bamadi-logo--primary bamadi-logo--md">
+        <span class="logo-text">bamad</span><span class="logo-accent">i</span>
+      </a>
+   ========================================================== */
+
+.bamadi-logo {
+  font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  display: inline-block;
+  user-select: none;
+  text-decoration: none; /* falls als <a> verwendet */
+}
+
+/* ----------------------------------------------------------
+   Größen
+   ---------------------------------------------------------- */
+.bamadi-logo--sm  { font-size: 28px; }   /* Navigation klein, Mobile */
+.bamadi-logo--md  { font-size: 48px; }   /* Standard-Header */
+.bamadi-logo--lg  { font-size: 80px; }   /* Hero / Landingpage */
+.bamadi-logo--xl  { font-size: 120px; }  /* Aushang-Vorschau / Print */
+
+/* ----------------------------------------------------------
+   Variante 1: Hauptvariante
+   Verwendung: Website-Header, heller Hintergrund
+   ---------------------------------------------------------- */
+.bamadi-logo--primary .logo-text   { color: #1A3A5C; }
+.bamadi-logo--primary .logo-accent { color: #E8A000; }
+
+.bamadi-logo--primary:hover .logo-text,
+.bamadi-logo--primary:hover .logo-accent {
+  opacity: 0.85;
+  transition: opacity 0.15s ease;
+}
+
+/* ----------------------------------------------------------
+   Variante 2: Invertiert
+   Verwendung: Dunkle Hintergründe, Footer, Navy-Banner
+   ---------------------------------------------------------- */
+.bamadi-logo--inverted .logo-text   { color: #FFFFFF; }
+.bamadi-logo--inverted .logo-accent { color: #E8A000; }
+
+/* ----------------------------------------------------------
+   Variante 3: Monochrom
+   Verwendung: Druck, Stempel, PDF, Briefkopf
+   ---------------------------------------------------------- */
+.bamadi-logo--mono .logo-text,
+.bamadi-logo--mono .logo-accent { color: #111111; }
+
+/* ----------------------------------------------------------
+   App-Icon / Favicon Mark  –  "b" als Bildmarke
+   Verwendung: Social-Media-Profilbild, App-Icon, Favicon-Fallback
+   ---------------------------------------------------------- */
+.bamadi-mark {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-weight: 400;
+  background-color: #1A3A5C;
+  color: #FFFFFF;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1 / 1;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.bamadi-mark--64 {
+  width: 64px;
+  height: 64px;
+  font-size: 44px;
+  border-radius: 8px;
+}
+
+.bamadi-mark--32 {
+  width: 32px;
+  height: 32px;
+  font-size: 22px;
+  border-radius: 4px;
+}
+
+.bamadi-mark--16 {
+  width: 16px;
+  height: 16px;
+  font-size: 12px;
+  border-radius: 2px;
+}

@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preview-Overlay-Editor – Thumbnail-Transformation kalibrieren</title>
+    <style>
+        :root {
+            --bg: #0a0a0d;
+            --bg-elevated: #111114;
+            --surface: #16161a;
+            --surface-hover: #1c1c21;
+            --border: rgba(255,255,255,0.06);
+            --border-focus: rgba(6, 182, 212, 0.5);
+            --text: #f4f4f5;
+            --text-muted: #a1a1aa;
+            --accent: #06b6d4;
+            --accent-hover: #22d3ee;
+            --accent-dim: rgba(6, 182, 212, 0.15);
+            --success: #22c55e;
+            --success-bg: rgba(34, 197, 94, 0.15);
+            --radius: 10px;
+            --radius-sm: 6px;
+            --shadow: 0 4px 24px rgba(0,0,0,0.4);
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Roboto', system-ui, sans-serif;
+            padding: 12px 16px;
+            max-width: 100%;
+            margin: 0 auto;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 12px;
+            line-height: 1.35;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 { margin: 0 0 4px 0; font-size: 1.1rem; color: var(--text); }
+        .subtitle { color: var(--text-muted); margin-bottom: 16px; font-size: 0.95em; }
+        .section {
+            background: var(--surface);
+            padding: 14px 18px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            margin-bottom: 16px;
+        }
+        .section h2 { margin: 0 0 10px 0; font-size: 0.95rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+        .editor-layout {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: flex-start;
+        }
+        .canvas-section {
+            flex: 0 0 auto;
+        }
+        .canvas-wrap {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 8px;
+            display: inline-block;
+        }
+        .canvas-wrap h3 { margin: 0 0 8px 0; font-size: 0.75rem; color: var(--text-muted); }
+        #mainCanvas {
+            display: block;
+            background: #1a1a1e;
+            cursor: crosshair;
+        }
+        .panel {
+            flex: 1;
+            min-width: 280px;
+        }
+        .layer-list { list-style: none; padding: 0; margin: 0 0 12px 0; }
+        .layer-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            margin-bottom: 6px;
+        }
+        .layer-item .ord { color: var(--text-muted); font-weight: 600; min-width: 1.2em; }
+        .layer-item .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.9em; }
+        .layer-item .actions { display: flex; gap: 4px; }
+        .layer-item .thumb { width: 36px; height: 36px; object-fit: cover; border-radius: 4px; background: var(--surface); }
+        .btn-icon { width: 28px; height: 28px; padding: 0; line-height: 1; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; font-size: 0.85rem; }
+        .btn-icon:hover { background: var(--surface-hover); border-color: var(--accent); }
+        .btn-icon:disabled { opacity: 0.4; cursor: not-allowed; }
+        .drop-zone {
+            border: 2px dashed var(--border);
+            padding: 12px 16px;
+            text-align: center;
+            margin: 6px 0;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 0.85em;
+        }
+        .drop-zone:hover, .drop-zone.dragover { border-color: var(--accent); background: var(--accent-dim); color: var(--text); }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: var(--text-muted); font-size: 0.9em; }
+        .control-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .control-group input[type="number"] {
+            width: 80px;
+            padding: 6px 8px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--bg-elevated);
+            color: var(--text);
+            font-size: 0.9rem;
+        }
+        .control-group input[type="text"] {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--bg-elevated);
+            color: var(--text);
+            font-size: 0.9rem;
+        }
+        .btn {
+            background: var(--accent);
+            color: #0a0a0d;
+            border: none;
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .btn:hover { background: var(--accent-hover); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-secondary { background: var(--surface-hover); color: var(--text); border: 1px solid var(--border); }
+        .btn-secondary:hover { border-color: var(--accent); }
+        .hint { margin: 8px 0; padding: 8px 10px; border-radius: var(--radius-sm); font-size: 0.8rem; background: var(--bg-elevated); color: var(--text-muted); border: 1px solid var(--border); }
+        .hint.success { background: var(--success-bg); color: var(--success); border-color: var(--success); }
+        input[type="file"] { display: none; }
+        #thumbDropZone { margin-top: 8px; }
+        .export-json { margin-top: 12px; }
+        #jsonOutput { width: 100%; min-height: 120px; font-family: monospace; font-size: 0.8rem; padding: 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-elevated); color: var(--text); resize: vertical; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Preview-Overlay-Editor</h1>
+        <p class="subtitle">Hintergründe (von Ihnen in Photoshop vorbereitet) laden und Reihenfolge festlegen. Thumbnail-Muster laden und per Maus verschieben sowie über die Werte verzerren, bis es exakt passt. Die Transformationswerte als JSON speichern – der Shop wendet sie dann auf die echten Thumbnails an.</p>
+
+        <div class="section">
+            <h2>Hintergründe (bis zu 3, unterste zuerst)</h2>
+            <ul class="layer-list" id="layerList"></ul>
+            <p style="margin: 0 0 6px 0; font-size: 0.9em; color: var(--text-muted);">Neuen Hintergrund hinzufügen (Slot 1–3):</p>
+            <div class="drop-zone" id="bgDropZone">Bild hier ablegen oder klicken</div>
+            <input type="file" id="bgFileInput" accept="image/*" multiple>
+        </div>
+
+        <div class="section">
+            <h2>Thumbnail-Muster</h2>
+            <p style="margin: 0 0 6px 0; font-size: 0.9em; color: var(--text-muted);">Ein Bild, das dem Shop-Thumbnail entspricht (z. B. erste Buchblockseite). Mit Maus verschieben, Werte unten anpassen.</p>
+            <div class="drop-zone" id="thumbDropZone">Thumbnail-Muster hier ablegen oder klicken</div>
+            <input type="file" id="thumbFileInput" accept="image/*">
+        </div>
+
+        <div class="section editor-layout">
+            <div class="canvas-section">
+                <div class="canvas-wrap">
+                    <h3>Vorschau (groß zum präzisen Arbeiten)</h3>
+                    <canvas id="mainCanvas" width="700" height="980"></canvas>
+                </div>
+            </div>
+            <div class="panel">
+                <h2>Thumbnail-Transformation</h2>
+                <p class="hint" id="transformHint">Thumbnail auf dem Canvas mit der Maus verschieben. Werte für Verzerrung hier anpassen.</p>
+                <div class="control-group">
+                    <label>Position X (px)</label>
+                    <input type="number" id="inputX" value="0" step="1">
+                </div>
+                <div class="control-group">
+                    <label>Position Y (px)</label>
+                    <input type="number" id="inputY" value="0" step="1">
+                </div>
+                <div class="control-group">
+                    <label>Skalierung X / Y</label>
+                    <div class="control-row">
+                        <input type="number" id="inputScaleX" value="1" step="0.01" min="0.01" max="10" title="scaleX">
+                        <input type="number" id="inputScaleY" value="1" step="0.01" min="0.01" max="10" title="scaleY">
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label>Rotation (°)</label>
+                    <input type="number" id="inputRotation" value="0" step="0.1">
+                </div>
+                <div class="control-group">
+                    <label>Verzerrung (Skew) X / Y</label>
+                    <div class="control-row">
+                        <input type="number" id="inputSkewX" value="0" step="0.01" title="skewX">
+                        <input type="number" id="inputSkewY" value="0" step="0.01" title="skewY">
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label>Preset-Name (z. B. Bindung/Option)</label>
+                    <input type="text" id="inputPresetName" placeholder="z. B. softcover_foil oder wire_o">
+                </div>
+                <div class="control-row" style="margin-top:14px; gap:8px;">
+                    <button type="button" class="btn" id="btnReset">Transformation zurücksetzen</button>
+                    <button type="button" class="btn btn-secondary" id="btnCopyJson">JSON kopieren</button>
+                    <button type="button" class="btn btn-secondary" id="btnDownloadJson">JSON speichern</button>
+                </div>
+                <div class="export-json">
+                    <label style="display:block; margin-bottom:4px; color: var(--text-muted); font-size:0.9em;">Exportierte Transformation (JSON)</label>
+                    <textarea id="jsonOutput" readonly placeholder="Nach Anpassung hier anzeigen und kopieren/speichern."></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            const PREVIEW_W = 700;
+            const PREVIEW_H = 980;
+            const MAX_BACKGROUNDS = 3;
+
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d');
+            const layerList = document.getElementById('layerList');
+            const bgDropZone = document.getElementById('bgDropZone');
+            const bgFileInput = document.getElementById('bgFileInput');
+            const thumbDropZone = document.getElementById('thumbDropZone');
+            const thumbFileInput = document.getElementById('thumbFileInput');
+            const jsonOutput = document.getElementById('jsonOutput');
+            const inputs = {
+                x: document.getElementById('inputX'),
+                y: document.getElementById('inputY'),
+                scaleX: document.getElementById('inputScaleX'),
+                scaleY: document.getElementById('inputScaleY'),
+                rotation: document.getElementById('inputRotation'),
+                skewX: document.getElementById('inputSkewX'),
+                skewY: document.getElementById('inputSkewY')
+            };
+            const inputPresetName = document.getElementById('inputPresetName');
+            const btnReset = document.getElementById('btnReset');
+            const btnCopyJson = document.getElementById('btnCopyJson');
+            const btnDownloadJson = document.getElementById('btnDownloadJson');
+
+            let backgrounds = [];
+            let thumbnailImage = null;
+            let dragStart = null;
+
+            function loadImage(file) {
+                return new Promise((resolve, reject) => {
+                    const url = URL.createObjectURL(file);
+                    const img = new Image();
+                    img.onload = () => { URL.revokeObjectURL(url); resolve({ img, name: file.name || 'Bild' }); };
+                    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Bild konnte nicht geladen werden.')); };
+                    img.src = url;
+                });
+            }
+
+            function addBackground(file) {
+                if (backgrounds.length >= MAX_BACKGROUNDS) return;
+                loadImage(file).then(({ img, name }) => {
+                    backgrounds.push({ img, name });
+                    renderLayerList();
+                    draw();
+                }).catch(() => {});
+            }
+
+            function moveLayer(index, direction) {
+                const next = index + direction;
+                if (next < 0 || next >= backgrounds.length) return;
+                [backgrounds[index], backgrounds[next]] = [backgrounds[next], backgrounds[index]];
+                renderLayerList();
+                draw();
+            }
+
+            function removeLayer(index) {
+                backgrounds.splice(index, 1);
+                renderLayerList();
+                draw();
+            }
+
+            function renderLayerList() {
+                layerList.innerHTML = backgrounds.map((bg, i) =>
+                    '<li class="layer-item" data-index="' + i + '">' +
+                    '<span class="ord">' + (i + 1) + '</span>' +
+                    '<img class="thumb" src="' + bg.img.src + '" alt="">' +
+                    '<span class="name" title="' + escapeHtml(bg.name) + '">' + escapeHtml(bg.name) + '</span>' +
+                    '<div class="layer-item actions">' +
+                    '<button type="button" class="btn-icon layer-up" title="Nach oben">↑</button>' +
+                    '<button type="button" class="btn-icon layer-down" title="Nach unten">↓</button>' +
+                    '<button type="button" class="btn-icon layer-remove" title="Entfernen">✕</button>' +
+                    '</div></li>'
+                ).join('');
+                layerList.querySelectorAll('.layer-up').forEach((btn, i) => {
+                    btn.onclick = () => moveLayer(parseInt(btn.closest('.layer-item').getAttribute('data-index'), 10), -1);
+                    btn.disabled = i === 0;
+                });
+                layerList.querySelectorAll('.layer-down').forEach((btn, i) => {
+                    const idx = parseInt(btn.closest('.layer-item').getAttribute('data-index'), 10);
+                    btn.onclick = () => moveLayer(idx, 1);
+                    btn.disabled = idx === backgrounds.length - 1;
+                });
+                layerList.querySelectorAll('.layer-remove').forEach(btn => {
+                    btn.onclick = () => removeLayer(parseInt(btn.closest('.layer-item').getAttribute('data-index'), 10));
+                });
+            }
+
+            function escapeHtml(s) {
+                const div = document.createElement('div');
+                div.textContent = s;
+                return div.innerHTML;
+            }
+
+            function getTransform() {
+                return {
+                    x: Number(inputs.x.value) || 0,
+                    y: Number(inputs.y.value) || 0,
+                    scaleX: Number(inputs.scaleX.value) || 1,
+                    scaleY: Number(inputs.scaleY.value) || 1,
+                    rotation: Number(inputs.rotation.value) || 0,
+                    skewX: Number(inputs.skewX.value) || 0,
+                    skewY: Number(inputs.skewY.value) || 0
+                };
+            }
+
+            function setTransform(t) {
+                inputs.x.value = t.x;
+                inputs.y.value = t.y;
+                inputs.scaleX.value = t.scaleX;
+                inputs.scaleY.value = t.scaleY;
+                inputs.rotation.value = t.rotation;
+                inputs.skewX.value = t.skewX;
+                inputs.skewY.value = t.skewY;
+                updateJson();
+                draw();
+            }
+
+            function draw() {
+                ctx.fillStyle = '#1a1a1e';
+                ctx.fillRect(0, 0, PREVIEW_W, PREVIEW_H);
+                backgrounds.forEach(bg => {
+                    const img = bg.img;
+                    const scale = Math.min(PREVIEW_W / img.naturalWidth, PREVIEW_H / img.naturalHeight, 1);
+                    const w = img.naturalWidth * scale;
+                    const h = img.naturalHeight * scale;
+                    const x = (PREVIEW_W - w) / 2;
+                    const y = (PREVIEW_H - h) / 2;
+                    ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, x, y, w, h);
+                });
+                if (thumbnailImage) {
+                    const t = getTransform();
+                    const img = thumbnailImage;
+                    const w = img.naturalWidth;
+                    const h = img.naturalHeight;
+                    ctx.save();
+                    ctx.translate(t.x, t.y);
+                    ctx.rotate((t.rotation * Math.PI) / 180);
+                    ctx.scale(t.scaleX, t.scaleY);
+                    ctx.transform(1, t.skewY, t.skewX, 1, 0, 0);
+                    ctx.drawImage(img, -w / 2, -h / 2, w, h);
+                    ctx.restore();
+                }
+            }
+
+            function screenToCanvas(clientX, clientY) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                return {
+                    x: (clientX - rect.left) * scaleX,
+                    y: (clientY - rect.top) * scaleY
+                };
+            }
+
+            function hitThumbnail(screenX, screenY) {
+                if (!thumbnailImage) return false;
+                const t = getTransform();
+                const w = thumbnailImage.naturalWidth * Math.abs(t.scaleX);
+                const h = thumbnailImage.naturalHeight * Math.abs(t.scaleY);
+                const cx = t.x;
+                const cy = t.y;
+                const dx = Math.abs(screenX - cx);
+                const dy = Math.abs(screenY - cy);
+                return dx <= w / 2 + 5 && dy <= h / 2 + 5;
+            }
+
+            canvas.addEventListener('mousedown', function (e) {
+                const p = screenToCanvas(e.clientX, e.clientY);
+                if (hitThumbnail(p.x, p.y)) dragStart = { x: p.x - getTransform().x, y: p.y - getTransform().y };
+            });
+            canvas.addEventListener('mousemove', function (e) {
+                if (dragStart === null) return;
+                const p = screenToCanvas(e.clientX, e.clientY);
+                inputs.x.value = Math.round(p.x - dragStart.x);
+                inputs.y.value = Math.round(p.y - dragStart.y);
+                updateJson();
+                draw();
+            });
+            canvas.addEventListener('mouseup', () => { dragStart = null; });
+            canvas.addEventListener('mouseleave', () => { dragStart = null; });
+
+            function updateJson() {
+                const preset = (inputPresetName.value || '').trim();
+                const out = {
+                    previewWidth: PREVIEW_W,
+                    previewHeight: PREVIEW_H,
+                    thumbnailTransform: getTransform()
+                };
+                if (preset) out.presetName = preset;
+                jsonOutput.value = JSON.stringify(out, null, 2);
+            }
+
+            bgDropZone.addEventListener('click', () => bgFileInput.click());
+            bgDropZone.addEventListener('dragover', e => { e.preventDefault(); bgDropZone.classList.add('dragover'); });
+            bgDropZone.addEventListener('dragleave', () => bgDropZone.classList.remove('dragover'));
+            bgDropZone.addEventListener('drop', e => {
+                e.preventDefault();
+                bgDropZone.classList.remove('dragover');
+                const files = e.dataTransfer ? e.dataTransfer.files : null;
+                if (files) for (let i = 0; i < Math.min(files.length, MAX_BACKGROUNDS - backgrounds.length); i++) addBackground(files[i]);
+            });
+            bgFileInput.addEventListener('change', function () {
+                const files = this.files;
+                if (files) for (let i = 0; i < Math.min(files.length, MAX_BACKGROUNDS - backgrounds.length); i++) addBackground(files[i]);
+                this.value = '';
+            });
+
+            thumbDropZone.addEventListener('click', () => thumbFileInput.click());
+            thumbDropZone.addEventListener('dragover', e => { e.preventDefault(); thumbDropZone.classList.add('dragover'); });
+            thumbDropZone.addEventListener('dragleave', () => thumbDropZone.classList.remove('dragover'));
+            thumbDropZone.addEventListener('drop', e => {
+                e.preventDefault();
+                thumbDropZone.classList.remove('dragover');
+                const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+                if (f && f.type.startsWith('image/')) {
+                    loadImage(f).then(({ img }) => {
+                        thumbnailImage = img;
+                        if (backgrounds.length > 0 && Number(inputs.x.value) === 0 && Number(inputs.y.value) === 0)
+                            setTransform({ x: PREVIEW_W / 2, y: PREVIEW_H / 2, scaleX: 1, scaleY: 1, rotation: 0, skewX: 0, skewY: 0 });
+                        else { draw(); updateJson(); }
+                    });
+                }
+            });
+            thumbFileInput.addEventListener('change', function () {
+                const f = this.files && this.files[0];
+                if (f && f.type.startsWith('image/')) {
+                    loadImage(f).then(({ img }) => {
+                        thumbnailImage = img;
+                        if (backgrounds.length > 0 && Number(inputs.x.value) === 0 && Number(inputs.y.value) === 0)
+                            setTransform({ x: PREVIEW_W / 2, y: PREVIEW_H / 2, scaleX: 1, scaleY: 1, rotation: 0, skewX: 0, skewY: 0 });
+                        else { draw(); updateJson(); }
+                    });
+                }
+                this.value = '';
+            });
+
+            ['x', 'y', 'scaleX', 'scaleY', 'rotation', 'skewX', 'skewY'].forEach(key => {
+                const el = inputs[key];
+                if (el) el.addEventListener('input', () => { updateJson(); draw(); });
+            });
+            inputPresetName.addEventListener('input', updateJson);
+
+            btnReset.addEventListener('click', function () {
+                setTransform({ x: PREVIEW_W / 2, y: PREVIEW_H / 2, scaleX: 1, scaleY: 1, rotation: 0, skewX: 0, skewY: 0 });
+            });
+
+            btnCopyJson.addEventListener('click', function () {
+                jsonOutput.select();
+                document.execCommand('copy');
+            });
+
+            btnDownloadJson.addEventListener('click', function () {
+                const name = (inputPresetName.value || 'preview-transform').trim().replace(/[^a-z0-9_-]/gi, '_') || 'preview-transform';
+                const a = document.createElement('a');
+                a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(jsonOutput.value);
+                a.download = name + '.json';
+                a.click();
+            });
+
+            draw();
+            updateJson();
+        })();
+    </script>
+</body>
+</html>

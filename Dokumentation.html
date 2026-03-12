@@ -230,7 +230,7 @@
                 <h2 class="text-3xl font-extrabold tracking-tight text-slate-900">Wartung & Erweiterung</h2>
                  <div class="mt-6 prose prose-slate max-w-none">
                      <h3 class="font-semibold mt-6">Ein neues Produkt hinzufügen</h3>
-                     <p>Um eine neue Papiersorte, Bindung oder ein Extra im <strong>Kalkulator</strong> anzubieten, muss lediglich die Datei <code>config.json</code> erweitert werden. Es sind keine Code-Änderungen am Frontend nötig.</p>
+                     <p>Papiersorten, Bindungen und Extras werden in der <strong>Shop-Konfiguration</strong> verwaltet: im <strong>Production-Dashboard</strong> unter <strong>Einstellungen (Zahnrad) → Shop-Konfiguration</strong>. Dort können Sie Einträge hinzufügen, bearbeiten und löschen; die Daten liegen in Supabase. Der Kalkulator lädt die Config beim Start von dort (Fallback: lokale <code>config.json</code>). Es sind keine Code-Änderungen am Frontend nötig.</p>
 
                       <h3 class="font-semibold mt-6">Workflow im Backend anpassen</h3>
                      <p>Um den Auftragsstatus-Workflow zu ändern (z.B. einen neuen Status hinzufügen), müssen die Objekte <code>statusOrder</code> und <code>statusWorkflow</code> in der <strong><code>code.gs</code></strong>-Datei angepasst werden. Die Dashboard-UI passt sich automatisch an.</p>

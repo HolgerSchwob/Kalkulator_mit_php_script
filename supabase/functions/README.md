@@ -7,7 +7,16 @@
 - **order-detail:** Für das Dashboard. POST mit `order_id` (oder `order_number`). Liefert Auftrag inkl. signierter Download-URLs für PDF und SVGs. Header `x-admin-secret` erforderlich.
 - **update-order:** Für das Dashboard. POST mit `order_id` sowie optional `status`, `assignee`, `notes`. Header `x-admin-secret` erforderlich.
 - **send-order-email:** Versand automatisierter E-Mails per Gmail API (z. B. „Auftrag eingegangen“, Status-Update). POST mit `order_id` und `type: 'received' | 'status'`. Verwendet Einträge aus der Tabelle `email_templates` (template_key = Status); nur aktive Templates. Header `x-admin-secret` erforderlich. Zusätzliche Secrets: siehe Abschnitt „Gmail API (send-order-email)“.
+- **trigger-order-received-email:** Wird von einem **Database Webhook** bei INSERT in `orders` aufgerufen. Ruft intern `send-order-email` mit `type: 'received'` auf – die Eingangsbestätigung wird so **automatisch 24/7 direkt nach Auftragseingang** versendet, ohne dass ein Mitarbeiter im Dashboard aktiv werden muss. Einrichtung: siehe Abschnitt „Eingangs-E-Mail automatisch (Database Webhook)“.
 - **email-templates:** Verwaltung der E-Mail-Templates fürs Dashboard. GET liefert alle Templates; PATCH mit `template_key`, optional `subject_template`, `body_html`, `body_plain`, `active`. Header `x-admin-secret` erforderlich.
+- **get-shop-config:** Öffentlich (GET). Liefert die komplette Shop-Konfiguration (general, papers, bindings, extras, productionAndDelivery) für den Kalkulator. Der Kalkulator lädt die Config beim Start von dieser Function; falls Supabase nicht erreichbar ist, wird `config.json` als Fallback verwendet.
+- **shop-config:** Admin: Shop-Konfiguration laden und speichern. GET (mit `x-admin-secret`) liefert die Config; PATCH mit Body `{ config }` (vollständig) oder Teilbereiche. Im Dashboard unter Einstellungen → Shop-Konfiguration können Papiersorten, Bindungen, Extras, Preise und allgemeine Werte bearbeitet werden.
+- **upload-preview-asset:** Admin: Bild für Shop-Vorschau (Preview-Hintergründe) in Storage hochladen. POST mit `x-admin-secret`, Body: multipart/form-data (`file` = Bilddatei, optional `path` = Ordner-Prefix, z. B. Bindung-ID). Antwort: `{ url, path }` (öffentliche URL). Bucket: `preview-assets` (Migration 006).
+- **spot-color-palette:** Spotfarben-Palette für das SVG-Preflight-Tool. GET (mit `x-admin-secret`) liefert alle Einträge; POST mit Body `{ entries: [ { id?, name, srgb, cmyk, sort_order } ] }` ersetzt die Palette. Tabelle: `spot_color_palette` (Migration 007). Lesen geht auch direkt per anon über die Tabelle.
+
+## Shop-Konfiguration (Tabelle shop_config)
+
+Migration `005_shop_config.sql` legt die Tabelle `shop_config` an (eine Zeile, id=1, Spalte `config` JSONB) und befüllt sie mit der Struktur der bisherigen `config.json`. Die Konfiguration wird ausschließlich in Supabase verwaltet; die statische `config.json` dient nur noch als Fallback, wenn die Edge Function nicht erreichbar ist.
 
 ## E-Mail-Templates (Tabelle email_templates)
 
@@ -38,7 +47,11 @@ Prüfen, ob Secrets gesetzt sind: `npx supabase secrets list`
    `supabase functions deploy order-detail`  
    `supabase functions deploy update-order`  
    `supabase functions deploy send-order-email`  
-   `supabase functions deploy email-templates`
+   `supabase functions deploy trigger-order-received-email`  
+   `supabase functions deploy email-templates`  
+   `supabase functions deploy get-shop-config`  
+   `supabase functions deploy shop-config`  
+   `supabase functions deploy spot-color-palette`
 
 ## Gmail API (send-order-email)
 
@@ -84,11 +97,40 @@ Im Supabase-Dashboard unter **Edge Functions** → **Secrets** eintragen:
   `{ "order_id": "<uuid>", "type": "status", "status": "In Produktion" }`  
   Ohne `status` wird der aktuelle Auftragsstatus verwendet.
 
-Das Dashboard kann diese Function z. B. nach Speichern oder bei Statusänderung aufrufen (optional, noch nicht eingebaut).
+Die **Eingangsbestätigung** („Auftrag eingegangen“) wird **nicht** mehr manuell aus dem Dashboard ausgelöst, sondern **automatisch** über einen Database Webhook direkt nach dem Speichern des Auftrags (siehe Abschnitt „Eingangs-E-Mail automatisch“). Im Dashboard gibt es nur noch die Option „Eingangs-E-Mail erneut senden“ für den Fall, dass die automatische E-Mail fehlgeschlagen ist oder nachträglich erneut gesendet werden soll.
+
+## Eingangs-E-Mail automatisch (Database Webhook)
+
+Die erste E-Mail an den Kunden – die Bestätigung des Auftragseingangs in der Datenbank – soll **obligatorisch und automatisch** direkt nach der Auftragsübermittlung versendet werden (24/7, ohne dass ein Mitarbeiter im Dashboard aktiv wird).
+
+### Ablauf
+
+1. Kunde schickt die Bestellung ab (Kalkulator-Frontend).
+2. Der Auftrag wird in die Tabelle `orders` eingefügt (Supabase Client).
+3. Ein **Database Webhook** löst bei jedem INSERT in `orders` die Edge Function **trigger-order-received-email** aus.
+4. Diese Function ruft intern **send-order-email** mit `order_id` und `type: 'received'` auf und versendet die Eingangsbestätigung per Gmail API.
+
+### Einrichtung im Supabase-Dashboard
+
+1. **Edge Function deployen** (falls noch nicht geschehen):  
+   `supabase functions deploy trigger-order-received-email`
+
+2. **Database Webhook anlegen:**  
+   - Im Supabase-Dashboard: **Database** → **Webhooks** → **Create a new hook** (oder **Database** → **Replication** / **Webhooks**, je nach Oberfläche).  
+   - **Name:** z. B. „Eingangs-E-Mail bei neuem Auftrag“  
+   - **Table:** `public.orders`  
+   - **Events:** nur **INSERT**  
+   - **Type:** Supabase Edge Functions (oder „HTTP Request“)  
+   - **Function:** `trigger-order-received-email` (bzw. als URL: `https://<PROJECT_REF>.supabase.co/functions/v1/trigger-order-received-email`)
+
+3. **Secrets:** Die Function **trigger-order-received-email** benötigt dasselbe **ADMIN_SECRET** wie **send-order-email** (wird beim internen Aufruf von send-order-email mitgesendet). Die Gmail-Secrets müssen nur bei **send-order-email** gesetzt sein.
+
+Nach der Einrichtung wird jede neue Zeile in `orders` (also jeder neue Auftrag) automatisch mit einer Eingangsbestätigungs-E-Mail an die im Auftrag hinterlegte Kunden-E-Mail-Adresse versehen.
 
 ## Konfiguration im Projekt
 
 - **Kunden-Landingpage:** Verwendet `supabase.config.json` (url, anonKey). Die GetOrder-URL ist `{url}/functions/v1/get-order`.
-- **Dashboard:** In `dashboard.config.json` müssen eingetragen sein: `supabaseUrl`, `anonKey` (wie in supabase.config.json) und **`adminSecret`** – exakt derselbe Wert wie das Secret `ADMIN_SECRET` in Supabase (am besten im Dashboard gesetzt). Ohne `adminSecret` zeigt das Dashboard eine Hinweisbox und lädt keine Aufträge.
+- **Dashboard:** In `dashboard.config.json` müssen eingetragen sein: `supabaseUrl`, `anonKey` (wie in supabase.config.json) und **`adminSecret`** – exakt derselbe Wert wie das Secret `ADMIN_SECRET` in Supabase (am besten im Dashboard gesetzt). Ohne `adminSecret` zeigt das Dashboard eine Hinweisbox und lädt keine Aufträge. Unter Einstellungen (Zahnrad) können E-Mail-Templates und die **Shop-Konfiguration** (Papier, Bindungen, Extras, Preise) bearbeitet werden.
+- **Kalkulator:** Lädt die Shop-Config von `{supabaseUrl}/functions/v1/get-shop-config`. Dafür muss `supabase.config.json` (url, anonKey) vorhanden sein. Bei Fehler oder fehlender Supabase-URL wird `config.json` als Fallback geladen.
 - **Optional – Login:** Wenn **`dashboardPassword`** in `dashboard.config.json` gesetzt ist, erscheint beim Aufruf der Dashboard-Seite eine Anmeldemaske; nur mit korrektem Passwort wird die Auftragsliste angezeigt. Für den Einsatz auf dem Webserver empfohlen (z. B. in Kombination mit geschütztem Zugriff auf die Config).
 - **E-Mail:** Klick auf die Kunden-E-Mail öffnet die Standard-Mail-Anwendung (z. B. Gmail) mit vorausgefülltem Empfänger und Betreff „Auftrag [Auftragsnummer]“. Automatisierte Mails (Auftrag eingegangen, Status-Update) werden über die Edge Function **send-order-email** per Gmail API versendet (Absender: **bamadi@schwob-digitaldruck.de**). Dafür müssen die Google-Service-Account-Secrets in Supabase gesetzt sein (siehe Abschnitt „Gmail API“).

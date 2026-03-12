@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVG Template Preflight – Produktionstemplates prüfen</title>
+    <style>
+        :root {
+            --bg: #0a0a0d;
+            --bg-elevated: #111114;
+            --surface: #16161a;
+            --surface-hover: #1c1c21;
+            --border: rgba(255,255,255,0.06);
+            --text: #f4f4f5;
+            --text-muted: #a1a1aa;
+            --accent: #06b6d4;
+            --accent-hover: #22d3ee;
+            --accent-dim: rgba(6, 182, 212, 0.15);
+            --success: #22c55e;
+            --success-bg: rgba(34, 197, 94, 0.15);
+            --warn: #eab308;
+            --warn-bg: rgba(234, 179, 8, 0.12);
+            --radius: 10px;
+            --radius-sm: 6px;
+        }
+        * { box-sizing: border-box; }
+        body { font-family: 'Roboto', system-ui, sans-serif; padding: 8px 12px; margin: 0 auto; max-width: 100%; background: var(--bg); color: var(--text); font-size: 11px; line-height: 1.35; }
+        h1 { margin: 0 0 2px 0; font-size: 1rem; }
+        .subtitle { color: var(--text-muted); margin-bottom: 6px; font-size: 0.85em; }
+        .section { background: var(--surface); padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); margin-bottom: 8px; }
+        .section h2 { margin: 0 0 6px 0; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+        .top-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+        .drop-zone { border: 2px dashed var(--border); padding: 8px 14px; text-align: center; border-radius: var(--radius-sm); cursor: pointer; color: var(--text-muted); flex: 1; min-width: 120px; }
+        .drop-zone:hover, .drop-zone.dragover { border-color: var(--accent); background: var(--accent-dim); color: var(--text); }
+        .hint { margin: 0; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; background: var(--bg-elevated); color: var(--text-muted); border: 1px solid var(--border); }
+        .hint.success { background: var(--success-bg); color: var(--success); border-color: var(--success); }
+        .hint.warn { background: var(--warn-bg); color: var(--warn); border-color: var(--warn); }
+        .compact-bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .compact-bar button { padding: 4px 8px; font-size: 0.75rem; border-radius: 4px; border: 1px solid var(--border); background: var(--surface-hover); color: var(--text); cursor: pointer; }
+        .compact-bar button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+        .compact-bar button:hover { border-color: var(--accent); background: var(--accent-dim); }
+        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--border); }
+        th { color: var(--text-muted); font-weight: 500; }
+        .report-table td:first-child { font-family: monospace; font-size: 0.8em; }
+        .color-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 2px; border: 1px solid var(--border); vertical-align: middle; margin-right: 4px; }
+        .svg-preview-wrap { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px; height: min(320px, calc(100vh - 220px)); max-height: 320px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .svg-preview-wrap svg { max-width: 100%; max-height: 100%; width: auto; height: auto; display: block; }
+        .color-pair-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; padding: 4px 6px; border-radius: 4px; cursor: pointer; border: 1px solid transparent; }
+        .color-pair-row:hover { background: var(--surface-hover); border-color: var(--border); }
+        .color-pair-row.active { border-color: var(--accent); background: var(--accent-dim); }
+        .color-pair-boxes { display: flex; gap: 4px; }
+        .color-box { width: 28px; height: 28px; border-radius: 4px; border: 1px solid var(--border); flex-shrink: 0; }
+        .color-pair-labels { display: flex; gap: 8px; align-items: center; flex: 1; flex-wrap: wrap; font-size: 0.8rem; }
+        .color-pair-labels code { font-size: 0.75rem; margin-left: 2px; }
+        .collapsible summary { cursor: pointer; padding: 4px 8px; background: var(--bg-elevated); border-radius: 4px; border: 1px solid var(--border); font-size: 0.8rem; list-style: none; }
+        .collapsible summary::-webkit-details-marker { display: none; }
+        .collapsible summary::before { content: '▶ '; font-size: 0.65em; opacity: 0.7; }
+        .collapsible[open] summary::before { content: '▼ '; }
+        .collapsible-inner { padding: 6px 0 0 0; }
+        .spickzettel summary { cursor: pointer; padding: 6px 10px; background: var(--bg-elevated); border-radius: 4px; border: 1px solid var(--border); font-size: 0.85rem; list-style: none; }
+        .spickzettel summary::-webkit-details-marker { display: none; }
+        .spickzettel summary::before { content: '▶ '; font-size: 0.7em; opacity: 0.7; }
+        .spickzettel[open] summary::before { content: '▼ '; }
+        .spickzettel-inner { padding: 10px 0 0 0; }
+        .spickzettel h3 { font-size: 0.8rem; margin: 8px 0 4px 0; color: var(--accent); }
+        .spickzettel code { background: var(--bg-elevated); padding: 2px 4px; border-radius: 3px; font-size: 0.85em; }
+        .spickzettel ul { margin: 2px 0; padding-left: 18px; }
+        .spickzettel li { margin: 1px 0; }
+        .empty-state { color: var(--text-muted); font-style: italic; padding: 6px 0; font-size: 0.85rem; }
+        input[type="file"] { display: none; }
+        .palette-table { width: 100%; margin-top: 4px; font-size: 0.8rem; }
+        .palette-table input { max-width: 100px; padding: 2px 6px; font-size: 0.8rem; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 4px; color: var(--text); }
+        .palette-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--border); vertical-align: middle; margin-right: 4px; }
+        .btn-row { margin-top: 6px; }
+        .report-spot-section { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+    </style>
+</head>
+<body>
+    <div class="section">
+        <h1>SVG Template Preflight</h1>
+        <div class="top-bar">
+            <div class="drop-zone" id="dropZone">SVG ablegen oder klicken</div>
+            <div class="hint" id="hint">Keine Datei. Aus Dashboard öffnen für Supabase.</div>
+            <input type="file" id="fileInput" accept=".svg,image/svg+xml">
+        </div>
+        <div class="compact-bar" id="paletteBar">
+            <span class="hint" id="paletteHint" style="flex:0 0 auto;">Spot-Palette: aus Dashboard laden.</span>
+            <button type="button" id="btnPaletteLoad" class="primary">Laden</button>
+            <button type="button" id="btnPaletteSave">Speichern</button>
+            <button type="button" id="btnPaletteAdd">+ Farbe</button>
+            <details class="collapsible" id="paletteDetails" style="display:inline-block;">
+                <summary>Palette bearbeiten</summary>
+                <div class="collapsible-inner" id="paletteTableWrap">
+                    <table class="palette-table report-table">
+                        <thead><tr><th>Name</th><th>sRGB</th><th>CMYK</th><th>Reihe</th><th></th></tr></thead>
+                        <tbody id="paletteTbody"></tbody>
+                    </table>
+                </div>
+            </details>
+        </div>
+    </div>
+
+    <div id="reportWrap" class="section" style="display: none;">
+        <h2>Vorschau & Farbpaare</h2>
+        <div id="reportPreview"></div>
+        <div id="reportColors"></div>
+        <details class="collapsible" style="margin-top:6px;">
+            <summary>Größe, Boxen, Text, Logos, Hinweise</summary>
+            <div class="collapsible-inner">
+                <div id="reportSize"></div>
+                <div id="reportBoxes"></div>
+                <div id="reportText"></div>
+                <div id="reportLogos"></div>
+                <div id="reportSpotCmyk" class="report-spot-section" style="display: none;"></div>
+                <div id="reportWarnings"></div>
+            </div>
+        </details>
+    </div>
+
+    <div class="section spickzettel">
+        <details>
+            <summary>Nomenklatur / Spickzettel für Inkscape (Template-Erstellung)</summary>
+            <div class="spickzettel-inner">
+                <h3>Boxen / Bereiche (Gruppen)</h3>
+                <p>Diese drei Gruppen sind <strong>grundsätzlich nötig</strong> – der Editor erwartet sie, um Vorderseite, Rückseite und Buchrücken zuzuordnen:</p>
+                <ul>
+                    <li><code>tpl-group-u1</code> – Vorderseite (U1)</li>
+                    <li><code>tpl-group-u4</code> – Rückseite (U4)</li>
+                    <li><code>tpl-group-spine</code> – Buchrücken</li>
+                </ul>
+                <p>In Inkscape: Objekt gruppieren → Objekt → Objekt-ID setzen (z. B. <code>tpl-group-u1</code>). Bei älteren Templates kommen teils die Kurz-IDs <code>group-u1</code>, <code>group-u4</code>, <code>group-spine</code> vor – das Tool erkennt beide Schreibweisen.</p>
+
+                <h3>Text-Platzhalter</h3>
+                <p>Text-Elemente, die der Kunde im Editor ausfüllt, müssen eine ID mit Präfix <code>tpl-</code> haben und sich <em>innerhalb</em> einer der obigen Gruppen befinden:</p>
+                <ul>
+                    <li>Beispiele: <code>tpl-title</code>, <code>tpl-subtitle</code>, <code>tpl-name</code>, <code>tpl-topic</code>, <code>tpl-title-spine</code>, <code>tpl-name-spine</code></li>
+                    <li>Mehrzeilig: <code>data-multiline="true"</code> und optional <code>data-max-lines="4"</code> am Text-Element setzen.</li>
+                </ul>
+                <p>In Inkscape: Text auswählen → Objekt-ID setzen (z. B. <code>tpl-title</code>). Für mehrzeilige Felder im XML-Editor <code>data-multiline="true"</code> ergänzen.</p>
+
+                <h3>Logo-Platzhalter</h3>
+                <p>Rechtecke, an deren Stelle ein Logo eingefügt wird:</p>
+                <ul>
+                    <li>ID-Schema: <code>tpl-logo-</code> + Name, z. B. <code>tpl-logo-Logo1</code>, <code>tpl-logo-Logo2</code></li>
+                </ul>
+                <p>In Inkscape: Rechteck zeichnen → Objekt-ID auf <code>tpl-logo-Logo1</code> setzen. Das Rechteck wird im Editor durch das hochgeladene Bild ersetzt.</p>
+
+                <h3>Farbpaare</h3>
+                <p>Farbpalette für den Editor: kleine Rechtecke mit ID-Schema <code>pal-p</code>{PaarNr}<code>_c</code>{1 oder 2}<code>_</code>{Name}:</p>
+                <ul>
+                    <li>Paar 1, Farbe 1: <code>pal-p1_c1_blau</code>, Fill = gewünschte Farbe (z. B. #000080)</li>
+                    <li>Paar 1, Farbe 2: <code>pal-p1_c2_hellblau</code>, Fill = zweite Farbe</li>
+                    <li>Paar 2: <code>pal-p2_c1_rot</code>, <code>pal-p2_c2_rosa</code> usw.</li>
+                </ul>
+                <p>Elemente, die sich mit dem gewählten Paar färben sollen, erhalten das Attribut <code>colorselector="color1"</code> oder <code>colorselector="color2"</code> (im XML-Editor setzen).</p>
+
+                <h3>Spot/CMYK für Druck (data-spot, data-cmyk)</h3>
+                <p>Für produktionssichere PDFs mit Sonderfarben (z. B. EFI SpotOn): In der <strong>Spotfarben-Palette</strong> (oben) Namen sowie sRGB- und CMYK-Werte pflegen. Nach dem Laden eines SVGs werden Füllfarben mit der Palette abgeglichen; über „data-spot und data-cmyk in SVG eintragen und herunterladen“ schreibt das Tool die Attribute <code>data-spot</code> und <code>data-cmyk</code> in die passenden Elemente. Ein nachgelagerter PDF-Post-Processing-Schritt kann diese Werte ins PDF übernehmen (Named/Spot mit CMYK-Fallback).</p>
+
+                <h3>Alternative IDs (ältere Editor-Versionen)</h3>
+                <p>In manchen Projekten werden noch kürzere IDs ohne <code>tpl-</code>-Präfix verwendet: <code>group-u1</code>, <code>group-u4</code>, <code>group-spine</code>, <code>text-title</code>, <code>text-subtitle</code>, <code>text-author</code>, <code>text-spine-title</code>, <code>color-target-u1</code>, <code>color-target-u4</code>, <code>spine-bg</code>, <code>logo-placeholder</code>. Das Preflight-Tool erkennt beide Varianten.</p>
+            </div>
+        </details>
+    </div>
+
+    <script>
+        (function () {
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('fileInput');
+            const hint = document.getElementById('hint');
+            const reportWrap = document.getElementById('reportWrap');
+            const reportPreview = document.getElementById('reportPreview');
+            const reportSize = document.getElementById('reportSize');
+            const reportBoxes = document.getElementById('reportBoxes');
+            const reportText = document.getElementById('reportText');
+            const reportLogos = document.getElementById('reportLogos');
+            const reportColors = document.getElementById('reportColors');
+            const reportSpotCmyk = document.getElementById('reportSpotCmyk');
+            const reportWarnings = document.getElementById('reportWarnings');
+
+            const paletteHint = document.getElementById('paletteHint');
+            const btnPaletteLoad = document.getElementById('btnPaletteLoad');
+            const btnPaletteSave = document.getElementById('btnPaletteSave');
+            const btnPaletteAdd = document.getElementById('btnPaletteAdd');
+            const paletteTableWrap = document.getElementById('paletteTableWrap');
+            const paletteTbody = document.getElementById('paletteTbody');
+
+            let toolConfig = { supabaseUrl: '', anonKey: '', adminSecret: '' };
+            let palette = [];
+            let lastSvgText = '';
+            let lastName = '';
+
+            window.addEventListener('message', function (e) {
+                if (e.data && e.data.type === 'dashboard-tool-config') {
+                    toolConfig.supabaseUrl = (e.data.supabaseUrl || '').replace(/\/$/, '');
+                    toolConfig.anonKey = e.data.anonKey || '';
+                    toolConfig.adminSecret = e.data.adminSecret || '';
+                    paletteHint.textContent = toolConfig.supabaseUrl ? 'Verbunden. Palette laden oder bearbeiten, dann speichern.' : 'Keine Supabase-URL erhalten.';
+                }
+            });
+
+            function normalizeToHex(c) {
+                if (!c || typeof c !== 'string') return '';
+                c = c.trim();
+                if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(c)) {
+                    if (c.length === 4) return '#' + c[1] + c[1] + c[2] + c[2] + c[3] + c[3];
+                    return c.toLowerCase();
+                }
+                const rgb = c.match(/rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/);
+                if (rgb) {
+                    const r = ('0' + parseInt(rgb[1], 10).toString(16)).slice(-2);
+                    const g = ('0' + parseInt(rgb[2], 10).toString(16)).slice(-2);
+                    const b = ('0' + parseInt(rgb[3], 10).toString(16)).slice(-2);
+                    return '#' + r + g + b;
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = canvas.height = 1;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return '';
+                ctx.fillStyle = c;
+                ctx.fillRect(0, 0, 1, 1);
+                const d = ctx.getImageData(0, 0, 1, 1).data;
+                return '#' + ('0' + d[0].toString(16)).slice(-2) + ('0' + d[1].toString(16)).slice(-2) + ('0' + d[2].toString(16)).slice(-2);
+            }
+
+            function loadPalette() {
+                if (!toolConfig.supabaseUrl || !toolConfig.anonKey) {
+                    paletteHint.textContent = 'Bitte Tool aus dem Dashboard öffnen (Supabase-Config nötig).';
+                    paletteHint.className = 'hint warn';
+                    return;
+                }
+                const url = toolConfig.supabaseUrl + '/rest/v1/spot_color_palette?select=id,name,srgb,cmyk,sort_order&order=sort_order.asc';
+                fetch(url, { headers: { 'apikey': toolConfig.anonKey, 'Authorization': 'Bearer ' + toolConfig.anonKey } })
+                    .then(r => r.ok ? r.json() : Promise.reject(new Error(r.statusText)))
+                    .then(data => { palette = data || []; renderPaletteTable(); paletteHint.textContent = 'Palette geladen (' + palette.length + ' Einträge).'; paletteHint.className = 'hint success'; })
+                    .catch(err => { paletteHint.textContent = 'Laden fehlgeschlagen: ' + (err.message || err); paletteHint.className = 'hint warn'; });
+            }
+
+            function savePalette() {
+                if (!toolConfig.supabaseUrl || !toolConfig.adminSecret) {
+                    paletteHint.textContent = 'Speichern nur mit Admin-Secret (Tool aus Dashboard öffnen).';
+                    paletteHint.className = 'hint warn';
+                    return;
+                }
+                const rows = paletteTbody.querySelectorAll('tr');
+                const entries = [];
+                rows.forEach((tr, i) => {
+                    const name = (tr.querySelector('.palette-name') && tr.querySelector('.palette-name').value || '').trim();
+                    if (!name) return;
+                    const srgb = (tr.querySelector('.srgb') && tr.querySelector('.srgb').value || '').trim();
+                    const cmyk = (tr.querySelector('.cmyk') && tr.querySelector('.cmyk').value || '').trim();
+                    const sortOrder = parseInt(tr.querySelector('.sort-order') && tr.querySelector('.sort-order').value, 10) || i;
+                    const id = tr.getAttribute('data-id') || undefined;
+                    entries.push({ id: id || undefined, name, srgb, cmyk, sort_order: sortOrder });
+                });
+                fetch(toolConfig.supabaseUrl + '/functions/v1/spot-color-palette', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-admin-secret': toolConfig.adminSecret },
+                    body: JSON.stringify({ entries })
+                })
+                    .then(r => { if (!r.ok) return r.json().then(j => Promise.reject(new Error(j.error || r.statusText))); return r.json(); })
+                    .then(data => { palette = (data && data.entries) ? data.entries : palette; renderPaletteTable(); paletteHint.textContent = 'Palette gespeichert.'; paletteHint.className = 'hint success'; })
+                    .catch(err => { paletteHint.textContent = 'Speichern fehlgeschlagen: ' + (err.message || err); paletteHint.className = 'hint warn'; });
+            }
+
+            function renderPaletteTable() {
+                paletteTbody.innerHTML = palette.map((p, i) => {
+                    const id = (p.id || '');
+                    return '<tr data-index="' + i + '" data-id="' + escapeHtml(id) + '"><td><input type="text" class="palette-name" value="' + escapeHtml(p.name || '') + '" placeholder="z. B. SCHWOB_dunkelblau"></td><td><input type="text" class="srgb" value="' + escapeHtml(p.srgb || '') + '" placeholder="#1a2b3c"></td><td><input type="text" class="cmyk" value="' + escapeHtml(p.cmyk || '') + '" placeholder="0.2,0.8,0,0.4"></td><td><input type="number" class="sort-order" value="' + (p.sort_order ?? i) + '" min="0" style="width:60px;"></td><td><button type="button" class="palette-delete">Entfernen</button></td></tr>';
+                }).join('');
+                paletteTbody.querySelectorAll('tr').forEach(tr => {
+                    const idx = parseInt(tr.getAttribute('data-index'), 10);
+                    const btn = tr.querySelector('.palette-delete');
+                    if (btn) btn.addEventListener('click', () => { palette.splice(idx, 1); renderPaletteTable(); });
+                });
+            }
+
+            btnPaletteLoad.addEventListener('click', loadPalette);
+            btnPaletteSave.addEventListener('click', savePalette);
+            btnPaletteAdd.addEventListener('click', function () {
+                palette.push({ name: '', srgb: '', cmyk: '', sort_order: palette.length });
+                renderPaletteTable();
+                document.getElementById('paletteDetails').setAttribute('open', 'open');
+            });
+
+            const BOX_IDS = ['tpl-group-u1', 'tpl-group-u4', 'tpl-group-spine', 'group-u1', 'group-u4', 'group-spine'];
+            const BOX_LABELS = { 'tpl-group-u1': 'U1 (Vorderseite)', 'tpl-group-u4': 'U4 (Rückseite)', 'tpl-group-spine': 'Buchrücken', 'group-u1': 'U1 (legacy)', 'group-u4': 'U4 (legacy)', 'group-spine': 'Buchrücken (legacy)' };
+
+            function escapeHtml(s) {
+                const div = document.createElement('div');
+                div.textContent = s == null ? '' : s;
+                return div.innerHTML;
+            }
+
+            function parseSvg(svgText) {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(svgText, 'image/svg+xml');
+                const err = doc.querySelector('parsererror');
+                if (err) return { error: err.textContent };
+                const svg = doc.documentElement;
+                if (!svg || svg.nodeName.toLowerCase() !== 'svg') return { error: 'Kein SVG-Wurzelelement.' };
+
+                const viewBox = svg.getAttribute('viewBox');
+                let width = svg.getAttribute('width') || '';
+                let height = svg.getAttribute('height') || '';
+                let sizeText = '';
+                if (viewBox) {
+                    const parts = viewBox.trim().split(/\s+|,/);
+                    if (parts.length >= 4) {
+                        sizeText = parts[2] + ' × ' + parts[3] + ' (viewBox)';
+                        if (!width) width = parts[2];
+                        if (!height) height = parts[3];
+                    }
+                }
+                if (!sizeText) sizeText = (width || '?') + ' × ' + (height || '?');
+
+                const boxes = [];
+                BOX_IDS.forEach(id => {
+                    const el = svg.querySelector('#' + id.replace('#', ''));
+                    if (el) boxes.push({ id, label: BOX_LABELS[id] || id });
+                });
+
+                const textEls = Array.from(svg.querySelectorAll('text[id^="tpl-"]'));
+                const legacyText = ['text-title', 'text-subtitle', 'text-author', 'text-spine-title'];
+                legacyText.forEach(id => {
+                    const el = svg.querySelector('#' + id);
+                    if (el) textEls.push(el);
+                });
+                const textPlaceholders = textEls.map(el => {
+                    let area = '–';
+                    if (el.closest('#tpl-group-u1')) area = 'U1';
+                    else if (el.closest('#tpl-group-spine')) area = 'Buchrücken';
+                    else if (el.closest('#tpl-group-u4')) area = 'U4';
+                    const tspan = el.querySelector('tspan');
+                    const sample = tspan ? tspan.textContent.trim().slice(0, 40) : el.textContent.trim().slice(0, 40);
+                    const label = el.getAttribute('data-label') || '';
+                    return {
+                        id: el.id || '(ohne ID)',
+                        area,
+                        label,
+                        multiline: el.getAttribute('data-multiline') === 'true',
+                        maxLines: el.getAttribute('data-max-lines') || '–',
+                        sample: sample ? sample + (sample.length >= 40 ? '…' : '') : '–'
+                    };
+                });
+
+                const logoRects = Array.from(svg.querySelectorAll('rect[id^="tpl-logo"]'));
+                const logoLegacy = svg.querySelector('#logo-placeholder');
+                if (logoLegacy) logoRects.push(logoLegacy);
+                const logos = logoRects.map(el => {
+                    const x = el.getAttribute('x'), y = el.getAttribute('y'), w = el.getAttribute('width'), h = el.getAttribute('height');
+                    const label = el.getAttribute('data-label') || '';
+                    return { id: el.id || '(ohne ID)', label, x: x || '–', y: y || '–', w: w || '–', h: h || '–' };
+                });
+
+                function getFillColor(el) {
+                    let fill = el.getAttribute('fill') || '';
+                    if (!fill && el.getAttribute('style')) {
+                        const m = el.getAttribute('style').match(/fill\s*:\s*([^;]+)/);
+                        fill = m ? m[1].trim() : '';
+                    }
+                    if (!fill || fill === 'none' || fill.indexOf('url(') === 0) return '';
+                    return fill;
+                }
+                const palRects = Array.from(svg.querySelectorAll('rect[id^="pal-p"]'));
+                const colorPairsData = {};
+                palRects.forEach(rect => {
+                    const id = rect.getAttribute('id') || '';
+                    const match = id.match(/^pal-p(\d+)_c([12])_?(.*)$/);
+                    if (!match) return;
+                    const pairNum = parseInt(match[1], 10) - 1;
+                    const colorIndex = parseInt(match[2], 10);
+                    const name = (match[3] || '').replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase()) || 'Farbe ' + colorIndex;
+                    const fill = getFillColor(rect);
+                    if (!colorPairsData[pairNum]) colorPairsData[pairNum] = { index: pairNum + 1, color1: '', name1: '', color2: '', name2: '' };
+                    if (colorIndex === 1) { colorPairsData[pairNum].color1 = fill; colorPairsData[pairNum].name1 = name; }
+                    else { colorPairsData[pairNum].color2 = fill; colorPairsData[pairNum].name2 = name; }
+                });
+                const colorPairs = Object.values(colorPairsData).sort((a, b) => a.index - b.index);
+                const color1Count = svg.querySelectorAll('[colorselector="color1"]').length;
+                const color2Count = svg.querySelectorAll('[colorselector="color2"]').length;
+
+                const fillTags = ['path', 'rect', 'circle', 'ellipse', 'polygon', 'polyline'];
+                const uniqueFills = [];
+                const seen = {};
+                fillTags.forEach(tag => {
+                    svg.querySelectorAll(tag).forEach(el => {
+                        const fill = getFillColor(el);
+                        if (fill && fill !== 'none' && fill.indexOf('url(') !== 0 && !seen[fill]) {
+                            seen[fill] = true;
+                            uniqueFills.push(fill);
+                        }
+                    });
+                });
+
+                const warnings = [];
+                if (boxes.length === 0) warnings.push('Keine erkannten Boxen (tpl-group-u1, tpl-group-u4, tpl-group-spine).');
+                if (textPlaceholders.length === 0) warnings.push('Keine Text-Platzhalter (text[id^="tpl-"] oder legacy text-title/…) gefunden.');
+                if (colorPairs.length === 0) warnings.push('Keine Farbpaare (rect[id^="pal-p"]) gefunden.');
+
+                return {
+                    sizeText,
+                    boxes,
+                    textPlaceholders,
+                    logos,
+                    colorPairs,
+                    color1Count,
+                    color2Count,
+                    uniqueFills,
+                    warnings
+                };
+            }
+
+            function renderPreview(svgText) {
+                if (!svgText) { reportPreview.innerHTML = ''; return; }
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(svgText, 'image/svg+xml');
+                const svg = doc.documentElement;
+                if (!svg || svg.nodeName.toLowerCase() !== 'svg') { reportPreview.innerHTML = ''; return; }
+                const clone = document.importNode(svg, true);
+                clone.removeAttribute('width');
+                clone.removeAttribute('height');
+                clone.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+                reportPreview.innerHTML = '<div class="svg-preview-wrap"></div>';
+                reportPreview.querySelector('.svg-preview-wrap').appendChild(clone);
+            }
+
+            function applyColorPairToPreview(pair) {
+                const wrap = reportPreview.querySelector('.svg-preview-wrap');
+                if (!wrap) return;
+                const svg = wrap.querySelector('svg');
+                if (!svg) return;
+                const c1 = (pair.color1 && pair.color1.trim() && pair.color1.indexOf('url(') !== 0) ? pair.color1.trim() : '#888';
+                const c2 = (pair.color2 && pair.color2.trim() && pair.color2.indexOf('url(') !== 0) ? pair.color2.trim() : '#ccc';
+                
+                function applyFill(el, color) {
+                    el.setAttribute('fill', color);
+                    const style = el.getAttribute('style') || '';
+                    if (style) {
+                        const newStyle = style.replace(/fill\s*:\s*[^;]+/gi, '').replace(/;\s*;/g, ';').replace(/^;|;$/g, '');
+                        el.setAttribute('style', (newStyle ? newStyle + '; ' : '') + 'fill: ' + color);
+                    } else {
+                        el.setAttribute('style', 'fill: ' + color);
+                    }
+                }
+                
+                svg.querySelectorAll('[colorselector="color1"]').forEach(el => applyFill(el, c1));
+                svg.querySelectorAll('[colorselector="color2"]').forEach(el => applyFill(el, c2));
+            }
+
+            function renderReport(data, svgText) {
+                if (svgText) renderPreview(svgText);
+                else reportPreview.innerHTML = '';
+                reportSize.innerHTML = '<h3 style="margin:0 0 4px 0;font-size:0.8rem;">SVG-Größe</h3><p style="margin:0;font-size:0.85rem;">' + escapeHtml(data.sizeText) + '</p>';
+                reportBoxes.innerHTML = '<h3 style="margin:0 0 4px 0;font-size:0.8rem;">Boxen / Bereiche</h3>' +
+                    (data.boxes.length ? '<table class="report-table"><thead><tr><th>ID</th><th>Bereich</th></tr></thead><tbody>' +
+                    data.boxes.map(b => '<tr><td>' + escapeHtml(b.id) + '</td><td>' + escapeHtml(b.label) + '</td></tr>').join('') + '</tbody></table>' :
+                    '<p class="empty-state">Keine Boxen gefunden.</p>');
+                reportText.innerHTML = '<h3 style="margin:0 0 4px 0;font-size:0.8rem;">Text-Platzhalter</h3>' +
+                    (data.textPlaceholders.length ? '<table class="report-table"><thead><tr><th>ID</th><th>Label</th><th>Bereich</th><th>Multiline</th><th>Max. Zeilen</th><th>Beispieltext</th></tr></thead><tbody>' +
+                    data.textPlaceholders.map(t => {
+                        const labelHtml = t.label
+                            ? escapeHtml(t.label)
+                            : '<span style="color:var(--warn);">⚠ kein data-label</span>';
+                        return '<tr><td>' + escapeHtml(t.id) + '</td><td>' + labelHtml + '</td><td>' + escapeHtml(t.area) + '</td><td>' + (t.multiline ? 'Ja' : '–') + '</td><td>' + escapeHtml(String(t.maxLines)) + '</td><td>' + escapeHtml(t.sample) + '</td></tr>';
+                    }).join('') + '</tbody></table>' :
+                    '<p class="empty-state">Keine Text-Platzhalter gefunden.</p>');
+                reportLogos.innerHTML = '<h3 style="margin:0 0 4px 0;font-size:0.8rem;">Logo-Platzhalter</h3>' +
+                    (data.logos.length ? '<table class="report-table"><thead><tr><th>ID</th><th>Label</th><th>x</th><th>y</th><th>Breite</th><th>Höhe</th></tr></thead><tbody>' +
+                    data.logos.map(l => {
+                        const labelHtml = l.label
+                            ? escapeHtml(l.label)
+                            : '<span style="color:var(--warn);">⚠ kein data-label</span>';
+                        return '<tr><td>' + escapeHtml(l.id) + '</td><td>' + labelHtml + '</td><td>' + escapeHtml(String(l.x)) + '</td><td>' + escapeHtml(String(l.y)) + '</td><td>' + escapeHtml(String(l.w)) + '</td><td>' + escapeHtml(String(l.h)) + '</td></tr>';
+                    }).join('') + '</tbody></table>' :
+                    '<p class="empty-state">Keine Logo-Platzhalter gefunden.</p>');
+                function cssColor(c) {
+                    if (!c || c === 'none' || c.indexOf('url(') === 0) return '#888';
+                    return c.trim();
+                }
+                reportColors.innerHTML = (data.colorPairs.length ? '<p style="margin:0 0 6px 0;font-size:0.75rem;color:var(--text-muted);">Klick auf ein Farbpaar → Vorschau wechselt. color1: ' + data.color1Count + ', color2: ' + data.color2Count + '</p>' +
+                    data.colorPairs.map((p, idx) => {
+                        const c1 = cssColor(p.color1);
+                        const c2 = cssColor(p.color2);
+                        return '<div class="color-pair-row" role="button" tabindex="0" data-pair-index="' + idx + '" title="Vorschau anwenden"><div class="color-pair-boxes"><div class="color-box" style="background:' + c1.replace(/"/g, '&quot;') + '"></div><div class="color-box" style="background:' + c2.replace(/"/g, '&quot;') + '"></div></div><div class="color-pair-labels"><span>Paar ' + p.index + '</span><span><span class="color-swatch" style="background:' + c1.replace(/"/g, '&quot;') + '"></span>' + escapeHtml(p.name1) + '</span><span><span class="color-swatch" style="background:' + c2.replace(/"/g, '&quot;') + '"></span>' + escapeHtml(p.name2) + '</span></div></div>';
+                    }).join('') :
+                    '<p class="empty-state">Keine Farbpaare gefunden.</p>');
+                reportColors.querySelectorAll('.color-pair-row[data-pair-index]').forEach(row => {
+                    row.addEventListener('click', function () {
+                        const idx = parseInt(this.getAttribute('data-pair-index'), 10);
+                        const pair = data.colorPairs[idx];
+                        if (pair) {
+                            applyColorPairToPreview(pair);
+                            reportColors.querySelectorAll('.color-pair-row').forEach(r => r.classList.remove('active'));
+                            this.classList.add('active');
+                        }
+                    });
+                });
+                if (data.colorPairs.length > 0) {
+                    applyColorPairToPreview(data.colorPairs[0]);
+                    const firstRow = reportColors.querySelector('.color-pair-row[data-pair-index="0"]');
+                    if (firstRow) firstRow.classList.add('active');
+                }
+                reportWarnings.innerHTML = data.warnings.length ? '<h3 style="margin:0 0 4px 0;font-size:0.8rem;">Hinweise</h3><ul style="margin:0;padding-left:18px;font-size:0.85rem;color:var(--warn);">' + data.warnings.map(w => '<li>' + escapeHtml(w) + '</li>').join('') + '</ul>' : '';
+
+                reportSpotCmyk.style.display = 'none';
+                reportSpotCmyk.innerHTML = '';
+                if (data.uniqueFills && data.uniqueFills.length > 0 && palette.length > 0) {
+                    const map = [];
+                    data.uniqueFills.forEach(fill => {
+                        const norm = normalizeToHex(fill);
+                        let spotName = ''; let cmykVal = '';
+                        for (let k = 0; k < palette.length; k++) {
+                            const pNorm = normalizeToHex(palette[k].srgb);
+                            if (pNorm && norm && pNorm === norm) { spotName = palette[k].name; cmykVal = palette[k].cmyk || ''; break; }
+                        }
+                        map.push({ fill, norm, spotName, cmykVal });
+                    });
+                    const hasAny = map.some(m => m.spotName);
+                    reportSpotCmyk.style.display = 'block';
+                    reportSpotCmyk.innerHTML = '<h3 style="margin:0 0 4px 0;font-size:0.8rem;">Spot/CMYK-Zuordnung</h3><p style="margin:0 0 6px 0;font-size:0.8em;color:var(--text-muted);">Füllfarben mit Palette abgleichen, dann „In SVG eintragen“.</p>' +
+                        (hasAny ? '<table class="report-table"><thead><tr><th>Farbe (SVG)</th><th>Spot-Name</th><th>CMYK</th></tr></thead><tbody>' +
+                        map.filter(m => m.spotName).map(m => '<tr><td><span class="color-swatch" style="background:' + (m.fill.replace(/"/g, '&quot;')) + '"></span> ' + escapeHtml(m.fill) + '</td><td>' + escapeHtml(m.spotName) + '</td><td><code>' + escapeHtml(m.cmykVal) + '</code></td></tr>').join('') + '</tbody></table>' : '<p class="empty-state">Keine Füllfarbe entspricht einem Paletteintrag. sRGB in der Palette anpassen oder Palette laden.</p>') +
+                        '<div class="btn-row"><button type="button" id="btnInjectSpotCmyk" class="compact-bar primary">data-spot/data-cmyk in SVG eintragen & herunterladen</button></div>';
+                    const btnInject = document.getElementById('btnInjectSpotCmyk');
+                    if (btnInject) btnInject.addEventListener('click', injectAndDownload);
+                }
+            }
+
+            function injectAndDownload() {
+                if (!lastSvgText) return;
+                const out = injectSpotCmykIntoXml(lastSvgText, palette);
+                const blob = new Blob([out], { type: 'image/svg+xml' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = (lastName && lastName.toLowerCase().endsWith('.svg') ? lastName.replace(/\.svg$/i, '-spot.svg') : 'template-spot.svg');
+                a.click();
+                URL.revokeObjectURL(a.href);
+            }
+
+            function injectSpotCmykIntoXml(svgText, pal) {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(svgText, 'image/svg+xml');
+                const svg = doc.documentElement;
+                if (!svg || svg.nodeName.toLowerCase() !== 'svg') return svgText;
+                const tags = ['path', 'rect', 'circle', 'ellipse', 'polygon', 'polyline'];
+                tags.forEach(tag => {
+                    const list = svg.querySelectorAll(tag);
+                    list.forEach(el => {
+                        let fill = el.getAttribute('fill') || '';
+                        if (!fill && el.getAttribute('style')) {
+                            const m = el.getAttribute('style').match(/fill\s*:\s*([^;]+)/);
+                            fill = m ? m[1].trim() : '';
+                        }
+                        if (!fill || fill === 'none' || fill.indexOf('url(') === 0) return;
+                        const norm = normalizeToHex(fill);
+                        for (let k = 0; k < pal.length; k++) {
+                            const pNorm = normalizeToHex(pal[k].srgb);
+                            if (pNorm && norm && norm === pNorm) {
+                                el.setAttribute('data-spot', pal[k].name || '');
+                                if (pal[k].cmyk) el.setAttribute('data-cmyk', pal[k].cmyk);
+                                break;
+                            }
+                        }
+                    });
+                });
+                return new XMLSerializer().serializeToString(doc);
+            }
+
+            function onFile(file) {
+                if (!file || !file.name.toLowerCase().endsWith('.svg')) {
+                    hint.textContent = 'Bitte eine SVG-Datei wählen.';
+                    hint.className = 'hint warn';
+                    reportWrap.style.display = 'none';
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function () {
+                    const data = parseSvg(reader.result);
+                    if (data.error) {
+                        hint.textContent = 'Fehler beim Parsen: ' + data.error;
+                        hint.className = 'hint warn';
+                        reportWrap.style.display = 'none';
+                        return;
+                    }
+                    hint.textContent = 'Geladen: ' + file.name + ' – Preflight-Report unten.';
+                    hint.className = 'hint success';
+                    reportWrap.style.display = 'block';
+                    lastSvgText = reader.result;
+                    lastName = file.name;
+                    renderReport(data, reader.result);
+                };
+                reader.readAsText(file);
+            }
+
+            dropZone.addEventListener('click', () => fileInput.click());
+            dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+            dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+            dropZone.addEventListener('drop', e => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+                const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+                if (f) onFile(f);
+            });
+            fileInput.addEventListener('change', function () {
+                const f = this.files && this.files[0];
+                if (f) onFile(f);
+                this.value = '';
+            });
+        })();
+    </script>
+</body>
+</html>

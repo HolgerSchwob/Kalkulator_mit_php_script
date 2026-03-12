@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>bamadi – Buchslider Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #1A3A5C;
+  --navy-deep: #0F2338;
+  --gold: #E8A000;
+  --white: #fff;
+  --serif: 'DM Serif Display', Georgia, serif;
+  --sans: 'Instrument Sans', system-ui, sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--navy-deep);
+  font-family: var(--sans);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 40px;
+}
+
+/* ── Wrapper ── */
+.slider-wrap {
+  position: relative;
+  width: 420px;
+  height: 520px;
+}
+
+/* ── Jedes Buch-Slide ── */
+.book-slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+.book-slide.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ── Buchkörper (CSS-3D) ── */
+.book {
+  position: relative;
+  width: 220px;
+  height: 300px;
+  transform-style: preserve-3d;
+  transform: perspective(1200px) rotateY(-22deg) rotateX(4deg);
+  filter: drop-shadow(-20px 30px 50px rgba(0,0,0,0.65));
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.book:hover {
+  transform: perspective(1200px) rotateY(-12deg) rotateX(2deg) translateY(-6px);
+}
+
+/* Cover-Fläche */
+.book-cover {
+  position: absolute;
+  inset: 0;
+  border-radius: 2px 6px 6px 2px;
+  overflow: hidden;
+}
+/* Buchrücken */
+.book-spine {
+  position: absolute;
+  left: -28px; top: 0; bottom: 0;
+  width: 28px;
+  border-radius: 2px 0 0 2px;
+  transform: rotateY(90deg);
+  transform-origin: right center;
+}
+/* Seiten-Illusion */
+.book-pages {
+  position: absolute;
+  right: -6px; top: 3px; bottom: 3px;
+  width: 6px;
+  background: repeating-linear-gradient(
+    to bottom,
+    #e8e6e0 0px, #e8e6e0 1px,
+    #d4d2cc 1px, #d4d2cc 2px
+  );
+  border-radius: 0 2px 2px 0;
+}
+/* Cover-Glanzeffekt */
+.book-cover::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255,255,255,0.18) 0%,
+    transparent 40%,
+    rgba(0,0,0,0.12) 100%
+  );
+  border-radius: inherit;
+}
+
+/* Cover-Inhalt */
+.cover-inner {
+  position: absolute;
+  inset: 0;
+  padding: 28px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  z-index: 1;
+}
+.cover-tag {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  opacity: 0.75;
+}
+.cover-rule {
+  width: 28px;
+  height: 1.5px;
+  margin-bottom: 14px;
+  opacity: 0.6;
+}
+.cover-title {
+  font-family: var(--serif);
+  font-size: 13.5px;
+  line-height: 1.45;
+  flex: 1;
+}
+.cover-author {
+  font-size: 9px;
+  letter-spacing: 0.07em;
+  opacity: 0.45;
+  margin-top: auto;
+}
+
+/* Badge */
+.book-badge {
+  position: absolute;
+  top: -10px; right: -16px;
+  background: var(--gold);
+  color: var(--navy-deep);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 3px;
+  z-index: 10;
+  box-shadow: 0 4px 16px rgba(232,160,0,0.4);
+}
+
+/* ── Label unter dem Buch ── */
+.slide-label {
+  margin-top: 36px;
+  text-align: center;
+  transition: opacity 0.6s;
+}
+.slide-label-name {
+  font-family: var(--serif);
+  font-size: 22px;
+  color: var(--white);
+  margin-bottom: 5px;
+}
+.slide-label-detail {
+  font-size: 12px;
+  color: rgba(255,255,255,0.38);
+  letter-spacing: 0.08em;
+}
+
+/* ── Dots ── */
+.dots {
+  position: absolute;
+  bottom: -44px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+}
+.dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  cursor: pointer;
+  transition: background 0.3s, transform 0.3s;
+}
+.dot.active {
+  background: var(--gold);
+  transform: scale(1.3);
+}
+
+/* ── Demo-Kontext: Mini-Hero drumherum ── */
+.demo-context {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 80px;
+  align-items: center;
+  max-width: 960px;
+  width: 100%;
+}
+.demo-text {
+  color: var(--white);
+}
+.demo-eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.demo-eyebrow::before {
+  content: '';
+  display: block;
+  width: 24px; height: 2px;
+  background: var(--gold);
+}
+.demo-h1 {
+  font-family: var(--serif);
+  font-size: clamp(38px, 4.5vw, 62px);
+  line-height: 1.05;
+  margin-bottom: 20px;
+}
+.demo-h1 em {
+  font-style: italic;
+  color: var(--gold);
+}
+.demo-sub {
+  font-size: 15px;
+  color: rgba(255,255,255,0.5);
+  line-height: 1.65;
+  max-width: 380px;
+  margin-bottom: 36px;
+}
+.demo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--gold);
+  color: var(--navy-deep);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 14px 26px;
+  border-radius: 4px;
+}
+
+/* ── Progress-Bar oben am Buch ── */
+.progress-bar {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: rgba(255,255,255,0.07);
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--gold);
+  width: 0%;
+  transition: width linear;
+}
+</style>
+</head>
+<body>
+
+<div class="demo-context">
+
+  <!-- Text-Seite (Kontext) -->
+  <div class="demo-text">
+    <div class="demo-eyebrow">Bachelor · Master · Dissertation</div>
+    <h1 class="demo-h1">
+      Deine Abschluss&shy;arbeit.<br>
+      Gedruckt wie sie es<br>
+      <em>verdient.</em>
+    </h1>
+    <p class="demo-sub">
+      120 g/m² säurefreies Papier, Lay-flat-Bindung, Digitaldruck in Spitzenqualität — heute bestellt, morgen bei dir.
+    </p>
+    <a href="#" class="demo-btn">
+      Preis berechnen →
+    </a>
+  </div>
+
+  <!-- Slider -->
+  <div style="position:relative; padding-bottom: 56px;">
+    <div class="slider-wrap" id="slider">
+
+      <!-- 1: Hardcover Modern Navy -->
+      <div class="book-slide active">
+        <div class="book">
+          <div class="book-spine" style="background:linear-gradient(to bottom,#0d2035,#1A3A5C)"></div>
+          <div class="book-cover" style="background:linear-gradient(155deg,#1A3A5C 0%,#244d78 50%,#1a3a5c 100%)">
+            <div class="cover-inner" style="color:#fff">
+              <div class="cover-tag" style="color:var(--gold)">Masterarbeit · 2026</div>
+              <div class="cover-rule" style="background:var(--gold)"></div>
+              <div class="cover-title">Nachhaltige Mobilität im urbanen Kontext der Metropolregion Rhein-Main</div>
+              <div class="cover-author">M. Hoffmann · TU Darmstadt</div>
+            </div>
+          </div>
+          <div class="book-pages"></div>
+          <div class="book-badge">Beliebt</div>
+        </div>
+        <div class="slide-label">
+          <div class="slide-label-name">Hardcover Modern</div>
+          <div class="slide-label-detail">Vollfarbcover · Lay-flat · 120 g/m²</div>
+        </div>
+      </div>
+
+      <!-- 2: Hardcover Klassik Efalin Dunkelgrün -->
+      <div class="book-slide">
+        <div class="book">
+          <div class="book-spine" style="background:linear-gradient(to bottom,#112218,#1a3424)"></div>
+          <div class="book-cover" style="background:linear-gradient(160deg,#1e3d28 0%,#264d32 60%,#1a3424 100%)">
+            <div class="cover-inner" style="color:#fff">
+              <div class="cover-tag" style="color:rgba(255,255,255,0.5)">Dissertation</div>
+              <div class="cover-rule" style="background:rgba(255,255,255,0.3)"></div>
+              <div class="cover-title" style="font-size:12.5px">Epigenetische Regulation der Stressantwort bei chronischer Inflammation</div>
+              <div class="cover-author">Dr. S. Weber · Universität Marburg</div>
+            </div>
+          </div>
+          <div class="book-pages"></div>
+        </div>
+        <div class="slide-label">
+          <div class="slide-label-name">Hardcover Klassik</div>
+          <div class="slide-label-detail">Efalin-Leineneinband · Lay-flat · 120 g/m²</div>
+        </div>
+      </div>
+
+      <!-- 3: Hardcover Klassik Efalin Bordeaux -->
+      <div class="book-slide">
+        <div class="book">
+          <div class="book-spine" style="background:linear-gradient(to bottom,#2a0d12,#4a1520)"></div>
+          <div class="book-cover" style="background:linear-gradient(160deg,#4a1520 0%,#6b1e2d 60%,#4a1520 100%)">
+            <div class="cover-inner" style="color:#fff">
+              <div class="cover-tag" style="color:rgba(255,200,200,0.55)">Bachelorarbeit · 2026</div>
+              <div class="cover-rule" style="background:rgba(255,200,200,0.3)"></div>
+              <div class="cover-title">Influencer Marketing und Kaufentscheidung — eine empirische Analyse</div>
+              <div class="cover-author">L. Schmidt · Hochschule Fulda</div>
+            </div>
+          </div>
+          <div class="book-pages"></div>
+        </div>
+        <div class="slide-label">
+          <div class="slide-label-name">Hardcover Klassik</div>
+          <div class="slide-label-detail">Efalin Bordeaux · Lay-flat · 120 g/m²</div>
+        </div>
+      </div>
+
+      <!-- 4: Hardcover Modern Weiss/Hell -->
+      <div class="book-slide">
+        <div class="book">
+          <div class="book-spine" style="background:linear-gradient(to bottom,#c8c4b8,#e8e4d8)"></div>
+          <div class="book-cover" style="background:linear-gradient(155deg,#f0ece0 0%,#faf8f2 50%,#e8e4d8 100%)">
+            <div class="cover-inner" style="color:#1A3A5C">
+              <div class="cover-tag" style="color:var(--gold)">Masterarbeit · 2025</div>
+              <div class="cover-rule" style="background:var(--gold)"></div>
+              <div class="cover-title" style="color:#1A3A5C">KI-gestützte Diagnostik in der Radiologie — Chancen und Grenzen</div>
+              <div class="cover-author" style="color:#1A3A5C;opacity:0.4">J. Müller · LMU München</div>
+            </div>
+          </div>
+          <div class="book-pages"></div>
+        </div>
+        <div class="slide-label">
+          <div class="slide-label-name">Hardcover Modern</div>
+          <div class="slide-label-detail">Helles Cover · Lay-flat · 120 g/m²</div>
+        </div>
+      </div>
+
+      <!-- 5: Paperback Folie -->
+      <div class="book-slide">
+        <div class="book">
+          <div class="book-spine" style="background:linear-gradient(to bottom,#1c2a3a,#2a3d52)"></div>
+          <div class="book-cover" style="background:linear-gradient(155deg,#243447 0%,#2e4460 50%,#1c2a3a 100%)">
+            <div class="cover-inner" style="color:#fff">
+              <div class="cover-tag" style="color:rgba(150,200,255,0.6)">Bachelorarbeit</div>
+              <div class="cover-rule" style="background:rgba(150,200,255,0.3)"></div>
+              <div class="cover-title" style="font-size:12.5px">Nachhaltige Lieferketten im E-Commerce — Bewertungsmodelle im Vergleich</div>
+              <div class="cover-author">T. Braun · FH Frankfurt</div>
+            </div>
+          </div>
+          <div class="book-pages"></div>
+        </div>
+        <div class="slide-label">
+          <div class="slide-label-name">Paperback Folie</div>
+          <div class="slide-label-detail">Laminierter Umschlag · 90 g/m²</div>
+        </div>
+      </div>
+
+      <!-- 6: Hardcover Klassik Schwarz -->
+      <div class="book-slide">
+        <div class="book">
+          <div class="book-spine" style="background:linear-gradient(to bottom,#111,#222)"></div>
+          <div class="book-cover" style="background:linear-gradient(160deg,#1a1a1a 0%,#2a2a2a 60%,#111 100%)">
+            <div class="cover-inner" style="color:#fff">
+              <div class="cover-tag" style="color:var(--gold)">Dissertation · 2026</div>
+              <div class="cover-rule" style="background:var(--gold)"></div>
+              <div class="cover-title">Digitale Transformation im Gesundheitswesen — eine institutionenökonomische Analyse</div>
+              <div class="cover-author">Prof. Dr. A. Klein · Goethe Universität</div>
+            </div>
+          </div>
+          <div class="book-pages"></div>
+        </div>
+        <div class="slide-label">
+          <div class="slide-label-name">Hardcover Klassik</div>
+          <div class="slide-label-detail">Efalin Schwarz · Lay-flat · 120 g/m²</div>
+        </div>
+      </div>
+
+      <!-- Progress -->
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+
+    </div><!-- /slider-wrap -->
+
+    <!-- Dots -->
+    <div class="dots" id="dots"></div>
+  </div>
+
+</div><!-- /demo-context -->
+
+<script>
+const slides = document.querySelectorAll('.book-slide');
+const dotsEl = document.getElementById('dots');
+const fill   = document.getElementById('progressFill');
+const DURATION = 4200; // ms pro Slide
+let current = 0;
+let timer, progressTimer;
+
+// Dots bauen
+slides.forEach((_, i) => {
+  const d = document.createElement('div');
+  d.className = 'dot' + (i === 0 ? ' active' : '');
+  d.addEventListener('click', () => goTo(i));
+  dotsEl.appendChild(d);
+});
+
+function goTo(n) {
+  slides[current].classList.remove('active');
+  dotsEl.children[current].classList.remove('active');
+  current = (n + slides.length) % slides.length;
+  slides[current].classList.add('active');
+  dotsEl.children[current].classList.add('active');
+  resetProgress();
+}
+
+function next() { goTo(current + 1); }
+
+function resetProgress() {
+  fill.style.transition = 'none';
+  fill.style.width = '0%';
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      fill.style.transition = `width ${DURATION}ms linear`;
+      fill.style.width = '100%';
+    });
+  });
+  clearInterval(timer);
+  timer = setInterval(next, DURATION);
+}
+
+// Start
+resetProgress();
+</script>
+</body>
+</html>

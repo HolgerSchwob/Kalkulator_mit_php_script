@@ -7,457 +7,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="logo bamadi/bamadi-logo.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js"></script>
-    <style>
-        :root {
-            --bg: #0a0a0d;
-            --bg-elevated: #111114;
-            --surface: #16161a;
-            --surface-hover: #1c1c21;
-            --border: rgba(255,255,255,0.06);
-            --border-focus: rgba(6, 182, 212, 0.5);
-            --text: #f4f4f5;
-            --text-muted: #a1a1aa;
-            --accent: #06b6d4;
-            --accent-hover: #22d3ee;
-            --accent-dim: rgba(6, 182, 212, 0.15);
-            --danger: #ef4444;
-            --danger-dim: rgba(239, 68, 68, 0.15);
-            --success: #22c55e;
-            --warn: #eab308;
-            --warn-bg: rgba(234, 179, 8, 0.12);
-            --radius: 10px;
-            --radius-sm: 6px;
-            --shadow: 0 4px 24px rgba(0,0,0,0.4);
-        }
-        * { box-sizing: border-box; }
-        body {
-            font-family: 'Roboto', system-ui, sans-serif;
-            margin: 0;
-            min-height: 100vh;
-            background: var(--bg);
-            color: var(--text);
-            line-height: 1.5;
-        }
-        .app {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 24px 32px;
-        }
-        .header {
-            padding: 24px 0 28px;
-            border-bottom: 1px solid var(--border);
-            margin-bottom: 24px;
-        }
-        .header h1 {
-            font-size: 1.75rem;
-            font-weight: 700;
-            margin: 0;
-            letter-spacing: -0.02em;
-            background: linear-gradient(135deg, var(--text) 0%, var(--text-muted) 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .header h1 .dot {
-            -webkit-text-fill-color: var(--accent);
-        }
-        .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
-        .btn-logout {
-            padding: 6px 14px;
-            background: transparent;
-            color: var(--text-muted);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            font-family: inherit;
-            font-size: 0.85rem;
-            cursor: pointer;
-        }
-        .btn-logout:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
-        .header-actions { display: flex; align-items: center; gap: 10px; }
-        .btn-settings {
-            padding: 6px 10px;
-            background: transparent;
-            color: var(--text-muted);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            font-size: 1.2rem;
-            cursor: pointer;
-            line-height: 1;
-        }
-        .btn-settings:hover { color: var(--accent); border-color: var(--accent); }
-        .login-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 1000;
-            background: var(--bg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        .login-box {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 28px;
-            max-width: 360px;
-            width: 100%;
-        }
-        .login-box h2 { margin: 0 0 8px 0; font-size: 1.25rem; }
-        .login-hint { color: var(--text-muted); font-size: 0.9rem; margin: 0 0 20px 0; }
-        .login-box .form-row label { display: block; margin-bottom: 6px; }
-        .login-box input[type="password"] {
-            width: 100%;
-            padding: 10px 12px;
-            background: var(--bg-elevated);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            color: var(--text);
-            font-family: inherit;
-            font-size: 1rem;
-        }
-        .login-box .btn-primary { width: 100%; margin-top: 8px; }
-        .auth-warn {
-            background: var(--warn-bg);
-            border: 1px solid var(--warn);
-            color: var(--text);
-            padding: 14px 18px;
-            border-radius: var(--radius);
-            margin-bottom: 20px;
-            font-size: 0.9rem;
-        }
-        .auth-warn code { background: var(--surface); padding: 2px 6px; border-radius: 4px; font-size: 0.85em; }
-        .toolbar {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-        }
-        .toolbar label { font-size: 0.9rem; color: var(--text-muted); font-weight: 500; }
-        .toolbar select {
-            padding: 10px 14px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            min-width: 200px;
-            color: var(--text);
-            font-family: inherit;
-            font-size: 0.9rem;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        .toolbar select:hover { border-color: rgba(255,255,255,0.12); }
-        .toolbar select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
-        .toolbar button, .btn-primary {
-            padding: 10px 20px;
-            background: var(--accent);
-            color: #0a0a0d;
-            border: none;
-            border-radius: var(--radius-sm);
-            font-family: inherit;
-            font-weight: 600;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
-        }
-        .toolbar button:hover, .btn-primary:hover { background: var(--accent-hover); }
-        .toolbar button:active, .btn-primary:active { transform: scale(0.98); }
-        .toolbar .btn-new-orders {
-            background: var(--danger);
-            color: #fff;
-        }
-        .toolbar .btn-new-orders:hover { background: #f87171; }
-        .btn-payment-open {
-            padding: 10px 20px;
-            background: var(--danger);
-            color: #fff;
-            border: none;
-            border-radius: var(--radius-sm);
-            font-family: inherit;
-            font-weight: 700;
-            font-size: 0.9rem;
-            cursor: pointer;
-            margin-bottom: 12px;
-            transition: background 0.2s, transform 0.1s;
-        }
-        .btn-payment-open:hover { background: #f87171; }
-        .btn-payment-paid {
-            padding: 10px 20px;
-            background: var(--success);
-            color: #fff;
-            border: none;
-            border-radius: var(--radius-sm);
-            font-family: inherit;
-            font-weight: 700;
-            font-size: 0.9rem;
-            cursor: pointer;
-            margin-bottom: 12px;
-            transition: background 0.2s, transform 0.1s;
-        }
-        .btn-payment-paid:hover { background: #4ade80; }
-        .table-wrap {
-            background: var(--surface);
-            border-radius: var(--radius);
-            overflow: hidden;
-            border: 1px solid var(--border);
-            box-shadow: var(--shadow);
-        }
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        th, td {
-            padding: 10px 12px;
-            text-align: left;
-            border-bottom: 1px solid var(--border);
-            font-size: 0.75rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        td[tabindex="0"] {
-            cursor: text;
-            outline: none;
-        }
-        td[tabindex="0"]:focus {
-            overflow: visible;
-            white-space: normal;
-            z-index: 5;
-            position: relative;
-            background: var(--surface-hover);
-            box-shadow: 0 0 0 2px var(--accent-dim);
-            min-width: 12em;
-            max-width: 320px;
-        }
-        th {
-            background: var(--bg-elevated);
-            font-weight: 600;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-muted);
-        }
-        tr { transition: background 0.15s; }
-        tr.row-eingegangen td { font-weight: 700; }
-        tr:hover { background: var(--surface-hover); }
-        tr:last-child td { border-bottom: none; }
-        td .btn-link { white-space: nowrap; }
-        .btn-link {
-            background: none;
-            color: var(--accent);
-            border: none;
-            cursor: pointer;
-            text-decoration: none;
-            padding: 6px 0;
-            font-size: inherit;
-            font-family: inherit;
-            font-weight: 500;
-            transition: color 0.2s;
-        }
-        .btn-link:hover { color: var(--accent-hover); text-decoration: underline; }
-        .list-view { display: block; }
-        .list-view.hidden { display: none !important; }
-        .hidden { display: none !important; }
-        .settings-view { display: block; padding: 0 24px 32px; max-width: 900px; margin: 0 auto; }
-        .settings-view .settings-section { margin-top: 24px; }
-        .settings-view .settings-section h2 { font-size: 1.25rem; margin: 0 0 12px 0; color: var(--text); }
-        .settings-hint { color: var(--text-muted); font-size: 0.9rem; margin: 0 0 16px 0; }
-        .settings-hint code { background: var(--surface-hover); padding: 2px 6px; border-radius: 4px; font-size: 0.85em; }
-        .templates-list { display: flex; flex-direction: column; gap: 8px; }
-        .templates-list .template-row {
-            display: flex; align-items: center; justify-content: space-between; gap: 12px;
-            padding: 12px 16px; background: var(--surface); border: 1px solid var(--border);
-            border-radius: var(--radius-sm); cursor: pointer;
-        }
-        .templates-list .template-row:hover { border-color: var(--accent); background: var(--surface-hover); }
-        .templates-list .template-row .template-name { font-weight: 500; }
-        .templates-list .template-row .template-active { font-size: 0.8rem; color: var(--success); }
-        .templates-list .template-row .template-inactive { font-size: 0.8rem; color: var(--text-muted); }
-        .template-form { margin-top: 24px; padding: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
-        .template-form h3 { margin: 0 0 16px 0; font-size: 1.1rem; }
-        .template-form .form-row input[type="text"].readonly { max-width: 100%; background: var(--bg-elevated); color: var(--text-muted); }
-        .template-form .form-row textarea { max-width: 100%; min-height: 100px; }
-        .template-form button.secondary { background: var(--surface-hover); color: var(--text); border: 1px solid var(--border); padding: 8px 14px; border-radius: var(--radius-sm); cursor: pointer; font-family: inherit; margin-left: 8px; }
-        .template-form button.secondary:hover { border-color: var(--accent); }
-        .detail-panel {
-            position: fixed;
-            inset: 0;
-            z-index: 100;
-            background: var(--bg);
-            overflow: auto;
-            padding: 20px 24px 40px;
-            display: none;
-        }
-        .detail-panel.visible { display: block; }
-        .detail-panel .detail-close {
-            position: absolute;
-            top: 20px;
-            right: 24px;
-            width: 44px;
-            height: 44px;
-            border: none;
-            background: var(--surface);
-            color: var(--text-muted);
-            font-size: 1.5rem;
-            line-height: 1;
-            cursor: pointer;
-            border-radius: var(--radius-sm);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s, color 0.2s;
-        }
-        .detail-panel .detail-close:hover {
-            background: var(--surface-hover);
-            color: var(--text);
-        }
-        .detail-panel .detail-inner {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding-top: 8px;
-        }
-        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-        @media (max-width: 768px) { .detail-grid { grid-template-columns: 1fr; } }
-        .detail-section {
-            margin-bottom: 1.5rem;
-        }
-        .detail-section h3 {
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            margin: 0 0 12px 0;
-            color: var(--accent);
-        }
-        .detail-section p { margin: 0 0 8px 0; font-size: 0.95rem; color: var(--text-muted); }
-        .detail-section p strong { color: var(--text); }
-        .cart-item {
-            display: flex;
-            gap: 12px;
-            align-items: flex-start;
-            margin-bottom: 12px;
-            padding: 10px 12px;
-            background: var(--bg-elevated);
-            border-radius: var(--radius-sm);
-        }
-        .cart-item .thumb {
-            width: 48px;
-            height: 64px;
-            object-fit: cover;
-            border-radius: 6px;
-            border: 1px solid var(--border);
-            flex-shrink: 0;
-        }
-        .cart-item .thumb.placeholder {
-            background: var(--surface-hover);
-            font-size: 0.65rem;
-            color: var(--text-muted);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-        }
-        .actions-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
-        .actions-row a, .actions-row button {
-            padding: 10px 16px;
-            font-size: 0.9rem;
-            font-family: inherit;
-            font-weight: 500;
-            border-radius: var(--radius-sm);
-            text-decoration: none;
-            cursor: pointer;
-            border: none;
-            transition: opacity 0.2s, transform 0.1s;
-        }
-        .actions-row a:hover, .actions-row button:hover { opacity: 0.9; }
-        .actions-row a:active, .actions-row button:active { transform: scale(0.98); }
-        .actions-row a.btn-primary, .actions-row .btn-primary { background: var(--accent); color: #0a0a0d; }
-        .actions-row .secondary { background: var(--surface-hover); color: var(--text); border: 1px solid var(--border); }
-        .actions-row .danger { background: var(--danger); color: #fff; }
-        .form-row { margin-bottom: 14px; }
-        .form-row label { display: block; font-weight: 500; margin-bottom: 6px; font-size: 0.9rem; color: var(--text-muted); }
-        .form-row select, .form-row textarea {
-            width: 100%;
-            max-width: 320px;
-            padding: 10px 12px;
-            background: var(--bg-elevated);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            color: var(--text);
-            font-family: inherit;
-            font-size: 0.9rem;
-        }
-        .form-row select:focus, .form-row textarea:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 2px var(--accent-dim);
-        }
-        .form-row textarea { min-height: 88px; resize: vertical; }
-        .email-actions { display: flex; flex-wrap: wrap; gap: 10px; }
-        .email-actions button { padding: 8px 14px; font-size: 0.9rem; font-family: inherit; cursor: pointer; border-radius: var(--radius-sm); }
-        .email-actions .secondary { background: var(--surface-hover); color: var(--text); border: 1px solid var(--border); }
-        .email-actions .secondary:hover:not(:disabled) { border-color: var(--accent); }
-        .email-actions .secondary:disabled { opacity: 0.7; cursor: not-allowed; }
-        .email-sent-log { margin: 0; padding-left: 20px; color: var(--text-muted); font-size: 0.9rem; }
-        .email-sent-log li { margin-bottom: 4px; }
-        .status-badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-        .status-badge { background: var(--accent-dim); color: var(--accent); }
-        .status-badge[data-status="Eingegangen"] { background: rgba(6, 182, 212, 0.2); color: #22d3ee; }
-        .status-badge[data-status="In Prüfung"] { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
-        .status-badge[data-status="Wartet auf Zahlung"] { background: rgba(234, 179, 8, 0.2); color: #facc15; }
-        .status-badge[data-status="Bezahlt"] { background: rgba(34, 197, 94, 0.25); color: #4ade80; }
-        .status-badge[data-status="Bereit für Druck"],
-        .status-badge[data-status="Bereit für Bindung"] { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
-        .status-badge[data-status="Versand-/Abholbereit"] { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
-        .status-badge[data-status="Versendet"],
-        .status-badge[data-status="Abgeholt"] { background: rgba(34, 197, 94, 0.25); color: #86efac; }
-        .status-badge[data-status="Storniert"] { background: rgba(239, 68, 68, 0.2); color: #f87171; }
-        .status-badge[data-status="Archiviert"] { background: rgba(113, 113, 122, 0.25); color: #a1a1aa; }
-        .express-badge {
-            background: var(--danger-dim);
-            color: #f87171;
-            font-size: 0.7rem;
-            padding: 3px 8px;
-            border-radius: 20px;
-            font-weight: 600;
-            margin-left: 6px;
-        }
-        #listLoading, #detailLoading {
-            padding: 24px;
-            color: var(--text-muted);
-            font-size: 0.95rem;
-        }
-        #listLoading::before, #detailLoading::before {
-            content: '';
-            display: inline-block;
-            width: 18px;
-            height: 18px;
-            border: 2px solid var(--border);
-            border-top-color: var(--accent);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            vertical-align: middle;
-            margin-right: 10px;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        #emptyList {
-            text-align: center;
-            padding: 48px 24px;
-            color: var(--text-muted);
-            font-size: 1rem;
-        }
-        .detail-section .cart-item + .cart-item { margin-top: 0; }
-        .detail-section p:last-of-type { margin-bottom: 0; }
-        .text-muted { color: var(--text-muted); font-size: 0.9rem; }
-        .error-msg { color: var(--danger); margin: 0; }
-        .mailto-link { color: var(--accent); text-decoration: none; }
-        .mailto-link:hover { text-decoration: underline; }
-    </style>
+    <link rel="stylesheet" href="dashboard.css">
 </head>
 <body>
     <div id="loginOverlay" class="login-overlay" style="display: none;">
@@ -478,9 +32,13 @@
     <div class="app" id="appContent">
         <div id="listView" class="list-view">
             <header class="header">
-                <h1>Production<span class="dot">.</span>Dashboard</h1>
+                <div class="header-brand">
+                    <a href="dashboard.html" class="bamadi-logo bamadi-logo--primary bamadi-logo--sm" aria-label="bamadi"> <span class="logo-text">bamad</span><span class="logo-accent">i</span> </a>
+                    <h1>Production<span class="dot">.</span>Dashboard</h1>
+                </div>
                 <span class="header-actions">
-                    <button type="button" id="btnSettings" class="btn-settings" aria-label="Einstellungen – E-Mail-Templates verwalten" title="Einstellungen – E-Mail-Templates">⚙</button>
+                    <button type="button" id="btnTools" class="btn-settings" aria-label="Tools – Hilfsprogramme" title="Tools">🔧</button>
+                    <button type="button" id="btnSettings" class="btn-settings" aria-label="Einstellungen – E-Mail-Templates und Shop-Konfiguration" title="Einstellungen">⚙</button>
                     <span id="logoutWrap" style="display: none;"><button type="button" id="btnLogout" class="btn-logout">Abmelden</button></span>
                 </span>
             </header>
@@ -503,6 +61,7 @@
                 </select>
                 <button type="button" id="btnNewOrders" class="btn-new-orders" style="display: none;">NEUE AUFTRÄGE!</button>
                 <button type="button" id="btnRefresh">Aktualisieren</button>
+                <button type="button" id="btnStats" class="btn-stats">Statistik</button>
             </div>
 
             <div id="listLoading" style="display: none;">Lade Aufträge …</div>
@@ -514,10 +73,9 @@
                             <th>Kunde</th>
                             <th>E-Mail</th>
                             <th>Status</th>
-                            <th>Bearbeiter</th>
+                            <th>Verantwortliche/r</th>
                             <th>Betrag</th>
                             <th>Datum</th>
-                            <th></th>
                         </tr>
                     </thead>
                     <tbody id="ordersBody"></tbody>
@@ -534,694 +92,202 @@
             </div>
         </div>
 
+        <div id="statsModalOverlay" class="stats-modal-overlay" aria-hidden="true">
+            <div class="stats-modal">
+                <div class="stats-modal-header">
+                    <h2>Auftragsstatistik</h2>
+                    <button type="button" id="statsModalClose" class="stats-modal-close" aria-label="Schließen">&times;</button>
+                </div>
+                <div class="stats-modal-body">
+                    <div class="stats-period">
+                        <label for="statsMonth">Monat</label>
+                        <select id="statsMonth"></select>
+                        <label for="statsYear">Jahr</label>
+                        <select id="statsYear"></select>
+                        <button type="button" id="statsApplyPeriod" class="btn-primary">Anwenden</button>
+                    </div>
+                    <div id="statsLoading" class="stats-loading" style="display: none;">Lade Auswertung …</div>
+                    <div id="statsContent" class="stats-content"></div>
+                </div>
+            </div>
+        </div>
+
         <div id="settingsView" class="settings-view hidden">
             <header class="header">
                 <h1>Einstellungen</h1>
                 <button type="button" id="btnSettingsBack" class="btn-logout">← Zurück zum Dashboard</button>
             </header>
-            <section class="settings-section">
-                <h2>E-Mail-Templates</h2>
-                <p class="settings-hint">Jedes Template ist einem Auftragsstatus zugeordnet (template_key). Nur aktive Templates werden beim E-Mail-Versand verwendet. Platzhalter: <code>{{order_number}}</code>, <code>{{customer_name}}</code>, <code>{{status}}</code>.</p>
-                <div id="settingsTemplatesLoading" style="display: none;">Lade Templates …</div>
-                <div id="settingsTemplatesList" class="templates-list"></div>
-                <div id="settingsTemplateForm" class="template-form hidden">
-                    <h3 id="settingsTemplateFormTitle">Template bearbeiten</h3>
-                    <div class="form-row">
-                        <label>Template (Status)</label>
-                        <input type="text" id="settingsTemplateKey" readonly class="readonly">
-                    </div>
-                    <div class="form-row">
-                        <label><input type="checkbox" id="settingsTemplateActive"> Aktiv (wird beim Versand verwendet)</label>
-                    </div>
-                    <div class="form-row">
-                        <label>Betreff</label>
-                        <input type="text" id="settingsSubject" placeholder="z. B. Auftrag {{order_number}} – {{status}}">
-                    </div>
-                    <div class="form-row">
-                        <label>Plain-Text (E-Mail-Text)</label>
-                        <textarea id="settingsBodyPlain" rows="8" placeholder="Hallo {{customer_name}}, …"></textarea>
-                    </div>
-                    <div class="form-row">
-                        <label>HTML (optional, für formatierte E-Mails)</label>
-                        <textarea id="settingsBodyHtml" rows="12" placeholder="&lt;html&gt;… mit inline CSS, Platzhalter {{order_number}}, {{customer_name}}, {{status}}"></textarea>
-                    </div>
-                    <div class="form-row">
-                        <button type="button" id="btnTemplateSave" class="btn-primary">Speichern</button>
-                        <button type="button" id="btnTemplateCancel" class="secondary">Abbrechen</button>
+            <div class="settings-accordion" id="settingsAccordion">
+                <div class="settings-accordion-item" data-accordion="mail">
+                    <button type="button" class="settings-accordion-header" id="settingsAccordionMail" aria-expanded="false" aria-controls="settingsAccordionBodyMail">
+                        Mailversandeinstellungen
+                    </button>
+                    <div class="settings-accordion-body" id="settingsAccordionBodyMail" role="region" aria-labelledby="settingsAccordionMail">
+                        <div class="settings-accordion-body-inner">
+                            <section class="settings-section">
+                                <h2>E-Mail-Templates</h2>
+                                <p class="settings-hint">Jedes Template ist einem Auftragsstatus zugeordnet (template_key). Nur aktive Templates werden beim E-Mail-Versand verwendet. Platzhalter: <code>{{order_number}}</code>, <code>{{customer_name}}</code>, <code>{{status}}</code>. <button type="button" class="btn-link" id="btnShowEmailPlaceholders" title="Liste der Platzhalter anzeigen">Platzhalter anzeigen</button></p>
+                                <div id="settingsTemplatesLoading" style="display: none;">Lade Templates …</div>
+                                <div id="settingsTemplatesList" class="templates-list"></div>
+                                <div id="settingsTemplateFormContainer">
+                                <div id="settingsTemplateForm" class="template-form hidden">
+                                    <h3 id="settingsTemplateFormTitle">Template bearbeiten</h3>
+                                    <div class="form-row">
+                                        <label>Template (Status)</label>
+                                        <input type="text" id="settingsTemplateKey" readonly class="readonly">
+                                    </div>
+                                    <div class="form-row">
+                                        <label><input type="checkbox" id="settingsTemplateActive"> Aktiv (wird beim Versand verwendet)</label>
+                                    </div>
+                                    <div class="form-row">
+                                        <label>Betreff</label>
+                                        <input type="text" id="settingsSubject" placeholder="z. B. Auftrag {{order_number}} – {{status}}">
+                                    </div>
+                                    <div class="form-row">
+                                        <label>Plain-Text (E-Mail-Text)</label>
+                                        <textarea id="settingsBodyPlain" rows="8" placeholder="Hallo {{customer_name}}, …"></textarea>
+                                    </div>
+                                    <div class="form-row">
+                                        <label>HTML (optional, für formatierte E-Mails)</label>
+                                        <textarea id="settingsBodyHtml" rows="12" placeholder="&lt;html&gt;… mit inline CSS, Platzhalter {{order_number}}, {{customer_name}}, {{status}}"></textarea>
+                                    </div>
+                                    <div class="form-row">
+                                        <button type="button" id="btnTemplateSave" class="btn-primary">Speichern</button>
+                                        <button type="button" id="btnTemplateCancel" class="secondary">Abbrechen</button>
+                                    </div>
+                                </div>
+                                </div>
+                            </section>
+                        </div>
                     </div>
                 </div>
-            </section>
+                <div class="settings-accordion-item" data-accordion="shop">
+                    <button type="button" class="settings-accordion-header" id="settingsAccordionShop" aria-expanded="false" aria-controls="settingsAccordionBodyShop">
+                        Shopkonfiguration
+                    </button>
+                    <div class="settings-accordion-body" id="settingsAccordionBodyShop" role="region" aria-labelledby="settingsAccordionShop">
+                        <div class="settings-accordion-body-inner">
+                            <section class="settings-section" id="shopConfigSection">
+                                <h2>Shop-Konfiguration</h2>
+                                <p class="settings-hint">Papiersorten, Bindungen, Extras, Preise und Texte für den Kalkulator. Änderungen wirken sofort im Shop nach dem Speichern.</p>
+                                <div id="shopConfigLoading" style="display: none;">Lade Shop-Konfiguration …</div>
+                                <div id="shopConfigError" class="error-msg" style="display: none;"></div>
+                                <div id="shopConfigWrap" style="display: none;">
+                                    <div class="shop-config-tabs">
+                                        <button type="button" class="shop-config-tab active" data-tab="general">Allgemein</button>
+                                        <button type="button" class="shop-config-tab" data-tab="papers">Papier</button>
+                                        <button type="button" class="shop-config-tab" data-tab="production">Produktion & Versand</button>
+                                        <button type="button" class="shop-config-tab" data-tab="bindings">Bindungen</button>
+                                        <button type="button" class="shop-config-tab" data-tab="extras">Extras</button>
+                                        <button type="button" class="shop-config-tab" data-tab="colorpairs">Farben (Supabase)</button>
+                                        <button type="button" class="shop-config-tab" data-tab="templates">Templates</button>
+                                        <button type="button" class="shop-config-tab" data-tab="templatezuordnung">Template-Zuordnung</button>
+                                    </div>
+                                    <div id="shopConfigPanelGeneral" class="shop-config-panel">
+                                        <div id="shopGeneralForm" class="template-form"></div>
+                                        <div class="form-row" style="margin-top:12px;"><button type="button" id="btnSaveGeneral" class="btn-primary">Allgemein speichern</button></div>
+                                    </div>
+                                    <div id="shopConfigPanelPapers" class="shop-config-panel hidden">
+                                        <div id="shopPapersList" class="shop-config-list"></div>
+                                        <button type="button" id="btnAddPaper" class="btn-primary" style="margin-top:10px;">Papiersorte hinzufügen</button>
+                                        <div id="shopPaperFormContainer" class="template-form hidden" style="margin-top:16px;"></div>
+                                    </div>
+                                    <div id="shopConfigPanelProduction" class="shop-config-panel hidden">
+                                        <h3 class="shop-config-subtitle">Produktionszeiten</h3>
+                                        <div id="shopProdTimesList" class="shop-config-list"></div>
+                                        <button type="button" id="btnAddProdTime" class="btn-primary" style="margin-top:10px;">Produktionszeit hinzufügen</button>
+                                        <div id="shopProdTimeFormContainer" class="template-form hidden" style="margin-top:16px;"></div>
+                                        <h3 class="shop-config-subtitle" style="margin-top:24px;">Liefermethoden</h3>
+                                        <div id="shopDeliveryList" class="shop-config-list"></div>
+                                        <button type="button" id="btnAddDelivery" class="btn-primary" style="margin-top:10px;">Liefermethode hinzufügen</button>
+                                        <div id="shopDeliveryFormContainer" class="template-form hidden" style="margin-top:16px;"></div>
+                                    </div>
+                                    <div id="shopConfigPanelBindings" class="shop-config-panel hidden">
+                                        <div id="shopBindingsList" class="shop-config-list"></div>
+                                        <button type="button" id="btnAddBinding" class="btn-primary" style="margin-top:10px;">Bindung hinzufügen</button>
+                                        <div id="shopBindingFormContainer" class="template-form hidden" style="margin-top:16px;"></div>
+                                    </div>
+                                    <div id="shopConfigPanelExtras" class="shop-config-panel hidden">
+                                        <div id="shopExtrasList" class="shop-config-list"></div>
+                                        <button type="button" id="btnAddExtra" class="btn-primary" style="margin-top:10px;">Extra hinzufügen</button>
+                                        <div id="shopExtraFormContainer" class="template-form hidden" style="margin-top:16px;"></div>
+                                    </div>
+                                    <div id="shopConfigPanelColorpairs" class="shop-config-panel hidden">
+                                        <p class="settings-hint">Farbpalette in Supabase (Tabelle farbpaare). Der Buchdecken-Editor lädt Farben und Zuordnung nur noch aus Supabase; Farbfelder im SVG werden ignoriert.</p>
+                                        <div id="shopColorPairsList" class="shop-config-list"></div>
+                                        <button type="button" id="btnAddColorPair" class="btn-primary" style="margin-top:10px;">Farbe hinzufügen</button>
+                                        <div id="shopColorPairFormContainer" class="template-form hidden" style="margin-top:16px;"></div>
+                                    </div>
+                                    <div id="shopConfigPanelTemplates" class="shop-config-panel hidden">
+                                        <p class="settings-hint">SVG-Templates in Supabase (Storage + Metadaten). Gruppe z.&nbsp;B. hardcover_modern, hardcover_efalin, paperback – der Editor filtert danach. Für Upload muss in <strong>dashboard.config.json</strong> der Eintrag <strong>adminSecret</strong> gesetzt sein und mit dem Secret in Supabase übereinstimmen (Edge Functions → Secrets → ADMIN_SECRET).</p>
+                                        <details class="settings-hint" style="margin-top:6px;">
+                                            <summary>Konventionen für SVG-Templates (Felder &amp; IDs)</summary>
+                                            <div style="margin-top:4px;font-size:0.9em;">
+                                                <p><strong>Pflicht-Attribute im SVG</strong></p>
+                                                <ul>
+                                                    <li><code>data-label</code> an jedem <code>tpl-*</code>-Textfeld und jedem <code>tpl-logo-*</code>-Rechteck – definiert den Feldnamen im Kundenformular.</li>
+                                                    <li><code>colorselector="color1"</code> oder <code>colorselector="color2"</code> an allen Elementen, die über die Farbpaare gesteuert werden.</li>
+                                                    <li><code>data-multiline="true"</code> + <code>data-max-lines="N"</code> für mehrzeilige Textfelder (z.&nbsp;B. <code>tpl-topic</code>).</li>
+                                                </ul>
+                                                <p><strong>Standard-IDs</strong></p>
+                                                <ul>
+                                                    <li>Vorderseite: <code>tpl-title</code>, <code>tpl-subtitle</code>, <code>tpl-name</code>, <code>tpl-mat-nr</code>, <code>tpl-year</code>, <code>tpl-topic</code></li>
+                                                    <li>Buchrücken: <code>tpl-title-spine</code>, <code>tpl-name-spine</code>, <code>tpl-topic-spine</code></li>
+                                                    <li>Logoslots: <code>tpl-logo-Logo1</code>, <code>tpl-logo-Logo2</code> (weitere nach Bedarf möglich).</li>
+                                                </ul>
+                                            </div>
+                                        </details>
+                                        <div id="shopCoverTemplatesList" class="shop-config-list"></div>
+                                        <button type="button" id="btnUploadCoverTemplate" class="btn-primary" style="margin-top:10px;">Template hochladen</button>
+                                        <div id="shopCoverTemplateFormContainer" class="template-form hidden" style="margin-top:16px;"></div>
+                                    </div>
+                                    <div id="shopConfigPanelTemplatezuordnung" class="shop-config-panel hidden">
+                                        <p class="settings-hint">Pro Template Farbpaare (Farbschema) festlegen: Farbe 1 und Farbe 2 aus der Palette wählen, hinzufügen, löschen, Reihenfolge ändern. Nur diese Farbpaare erscheinen im Buchdecken-Editor für das jeweilige Template.</p>
+                                        <div id="shopTemplateZuordnungList" class="shop-config-list"></div>
+                                        <button type="button" id="btnAddTemplateZuordnung" class="btn-primary" style="margin-top:10px;">Template-Zuordnung anlegen/bearbeiten</button>
+                                        <div id="shopTemplateZuordnungFormContainer" class="template-form hidden" style="margin-top:16px;"></div>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="toolsView" class="tools-view hidden">
+            <header class="header">
+                <h1>Tools</h1>
+                <button type="button" id="btnToolsBack" class="btn-logout">← Zurück zum Dashboard</button>
+            </header>
+            <div id="toolsListWrap" class="tools-list-wrap">
+                <p class="settings-hint">Hilfsprogramme für Vorbereitung und Produktion (Buchdeckentemplates, Mockups usw.).</p>
+                <div class="tools-grid" id="toolsGrid">
+                    <a href="#" class="tool-card" id="toolCardSvgProductioner" data-tool="svg-productioner">
+                        <span class="tool-card-title">SVG Productioner</span>
+                        <span class="tool-card-desc">Schriften fest in SVG-Dateien einbetten (Google Fonts → Base64). Für druckfertige Buchdeckentemplates.</span>
+                    </a>
+                    <a href="#" class="tool-card" id="toolCardPreviewOverlayEditor" data-tool="preview-overlay-editor">
+                        <span class="tool-card-title">Preview-Overlay-Editor</span>
+                        <span class="tool-card-desc">Overlay-Bilder für Shop-Vorschau vorbereiten (Folie, Wire-O-Ringe): PNG laden, positionieren, skalieren, exportieren. Zuordnung zu Bindungen später im Bereich Shop-Konfiguration.</span>
+                    </a>
+                    <a href="#" class="tool-card" id="toolCardSvgTemplatePreflight" data-tool="svg-template-preflight">
+                        <span class="tool-card-title">SVG Template Preflight</span>
+                        <span class="tool-card-desc">Produktionstemplates prüfen: Größe, Boxen, Text- und Logo-Platzhalter, Farbpaare anzeigen. Enthält einen aufklappbaren Nomenklatur-Spickzettel für die Template-Erstellung in Inkscape.</span>
+                    </a>
+                    <a href="#" class="tool-card" id="toolCardSvgInkscapeToEditor" data-tool="svg-inkscape-to-editor">
+                        <span class="tool-card-title">Inkscape → Editor (Postprozessor)</span>
+                        <span class="tool-card-desc">SVG aus Inkscape laden (mit $$F1$$/$$S1$$-Markern, Ebenen, Codierfarben) → Konvertieren → Editor-taugliche SVG. Mit Mustertexten, -farben und -logos testen, ob alles korrekt zugeordnet wird.</span>
+                    </a>
+                </div>
+            </div>
+            <div id="toolsFrameWrap" class="tools-frame-wrap hidden">
+                <button type="button" id="btnToolBackToList" class="btn-logout" style="margin-bottom:10px;">← Zurück zu Tools</button>
+                <iframe id="toolsFrame" title="Tool-Inhalt" class="tools-iframe"></iframe>
+            </div>
         </div>
     </div>
 
-    <script type="module">
-        const STATUS_ORDER = ['Eingegangen', 'In Prüfung', 'Wartet auf Zahlung', 'Bezahlt', 'Bereit für Druck', 'Bereit für Bindung', 'Versand-/Abholbereit', 'Versendet', 'Abgeholt', 'Storniert', 'Archiviert'];
-        const STATUS_DROPDOWN = ['Eingegangen', 'In Prüfung', 'Bezahlt', 'Bereit für Druck', 'Bereit für Bindung', 'Versand-/Abholbereit', 'Versendet', 'Abgeholt', 'Storniert', 'Archiviert'];
-        const ASSIGNEES = ['Holger Schwob', 'Martin Rabold', 'Katja DeHaney', 'Lea Süß', 'Tim Rösner'];
-
-        let config = { supabaseUrl: '', anonKey: '', adminSecret: '' };
-
-        async function loadConfig() {
-            const r = await fetch('./dashboard.config.json?t=' + Date.now());
-            if (!r.ok) throw new Error('dashboard.config.json nicht gefunden.');
-            config = await r.json();
-            config.supabaseUrl = (config.supabaseUrl || '').replace(/\/$/, '');
-            let s = (config.adminSecret || '').replace(/[\r\n\t]/g, '').trim();
-            if (s.length > 42) s = s.slice(0, 42);
-            config.adminSecret = s;
-            if (!config.adminSecret) {
-                document.getElementById('authWarn').style.display = 'block';
-            }
-            config.dashboardPassword = (config.dashboardPassword || '').trim() || null;
-        }
-
-        function requireLogin() {
-            if (!config.dashboardPassword) return true;
-            if (sessionStorage.getItem('dashboardAuth') === 'true') return true;
-            document.getElementById('loginOverlay').style.display = 'flex';
-            document.getElementById('appContent').style.display = 'none';
-            return false;
-        }
-
-        function hideLoginAndShowApp() {
-            document.getElementById('loginOverlay').style.display = 'none';
-            document.getElementById('appContent').style.display = 'block';
-            if (config.dashboardPassword) document.getElementById('logoutWrap').style.display = 'inline-block';
-        }
-
-        function headers() {
-            const h = { 'Content-Type': 'application/json' };
-            if (config.anonKey) h['Authorization'] = 'Bearer ' + config.anonKey;
-            if (config.adminSecret) h['x-admin-secret'] = config.adminSecret;
-            return h;
-        }
-
-        async function listOrders() {
-            const status = document.getElementById('filterStatus').value;
-            const params = new URLSearchParams();
-            if (config.adminSecret) params.set('admin_secret', config.adminSecret);
-            if (status) params.set('status', status);
-            const qs = params.toString();
-            const url = config.supabaseUrl + '/functions/v1/list-orders' + (qs ? '?' + qs : '');
-            const res = await fetch(url, { method: 'GET', headers: headers() });
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) {
-                let msg = data.error || ('Liste konnte nicht geladen werden. (HTTP ' + res.status + ')');
-                if (res.status === 401) {
-                    const sent = config.adminSecret ? 'Es wurde ein Secret gesendet (Länge ' + config.adminSecret.length + '). ' : 'Kein adminSecret in der Config – bitte dashboard.config.json prüfen. ';
-                    msg += ' ' + sent + 'Supabase: Projekt öffnen → Edge Functions → Secrets. Dort ADMIN_SECRET eintragen (z. B. kurz: admin42). Prüfen mit: npx supabase secrets list (evtl. --project-ref <deine-project-ref>).';
-                }
-                throw new Error(msg);
-            }
-            return data.orders || [];
-        }
-
-        async function getOrderDetail(orderId) {
-            const res = await fetch(config.supabaseUrl + '/functions/v1/order-detail', {
-                method: 'POST',
-                headers: headers(),
-                body: JSON.stringify({ order_id: orderId }),
-            });
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) throw new Error(data.error || 'Details konnten nicht geladen werden.');
-            return data;
-        }
-
-        async function updateOrder(orderId, payload) {
-            const res = await fetch(config.supabaseUrl + '/functions/v1/update-order', {
-                method: 'POST',
-                headers: headers(),
-                body: JSON.stringify({ order_id: orderId, ...payload }),
-            });
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) throw new Error(data.error || 'Speichern fehlgeschlagen.');
-            return data;
-        }
-
-        async function sendOrderEmail(orderId, type, statusText) {
-            const res = await fetch(config.supabaseUrl + '/functions/v1/send-order-email', {
-                method: 'POST',
-                headers: headers(),
-                body: JSON.stringify({ order_id: orderId, type, status: statusText || undefined }),
-            });
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) throw new Error(data.error || (data.details || 'E-Mail-Versand fehlgeschlagen.'));
-            return data;
-        }
-
-        function formatDate(iso) {
-            if (!iso) return '–';
-            try {
-                const d = new Date(iso);
-                return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            } catch (_) { return iso; }
-        }
-
-        function escapeHtml(s) {
-            if (s == null || s === undefined) return '';
-            const t = document.createElement('span');
-            t.textContent = s;
-            return t.innerHTML;
-        }
-
-        function renderOrderRow(o) {
-            const tr = document.createElement('tr');
-            if ((o.status || 'Eingegangen') === 'Eingegangen') tr.classList.add('row-eingegangen');
-            const orderNum = escapeHtml(o.order_number);
-            const custName = escapeHtml(o.customer_name || '–');
-            const custEmail = escapeHtml(o.customer_email);
-            const statusVal = o.status || 'Eingegangen';
-            const assigneeVal = escapeHtml(o.assignee || '–');
-            const priceVal = o.total_price != null ? Number(o.total_price).toFixed(2) + ' €' : '–';
-            const dateVal = formatDate(o.created_at);
-            const mailtoHref = 'mailto:' + encodeURIComponent(o.customer_email) + '?subject=' + encodeURIComponent('Auftrag ' + (o.order_number || ''));
-            tr.innerHTML =
-                '<td tabindex="0" title="' + orderNum + '">' + orderNum + '</td>' +
-                '<td tabindex="0" title="' + custName + '">' + custName + '</td>' +
-                '<td><a href="' + mailtoHref + '" class="mailto-link" title="E-Mail schreiben (Betreff: Auftrag ' + escapeHtml(o.order_number || '') + ')">' + custEmail + '</a></td>' +
-                '<td><span class="status-badge" data-status="' + escapeHtml(statusVal) + '">' + escapeHtml(statusVal) + '</span>' + (o.is_express ? ' <span class="express-badge">Express</span>' : '') + '</td>' +
-                '<td tabindex="0" title="' + assigneeVal + '">' + assigneeVal + '</td>' +
-                '<td tabindex="0" title="' + priceVal + '">' + priceVal + '</td>' +
-                '<td tabindex="0" title="' + dateVal + '">' + dateVal + '</td>' +
-                '<td><button type="button" class="btn-link" data-order-id="' + escapeHtml(o.id) + '">Öffnen</button></td>';
-            tr.querySelector('.btn-link').addEventListener('click', () => openDetail(o.id));
-            return tr;
-        }
-
-        async function refreshList() {
-            document.getElementById('listLoading').style.display = 'block';
-            document.getElementById('tableWrap').style.display = 'none';
-            document.getElementById('emptyList').style.display = 'none';
-            try {
-                const orders = await listOrders();
-                lastOrders = orders;
-                const tbody = document.getElementById('ordersBody');
-                tbody.innerHTML = '';
-                orders.forEach(o => tbody.appendChild(renderOrderRow(o)));
-                document.getElementById('tableWrap').style.display = 'block';
-                if (orders.length === 0) document.getElementById('emptyList').style.display = 'block';
-                const newCount = orders.filter(o => (o.status || 'Eingegangen') === 'Eingegangen').length;
-                document.getElementById('btnNewOrders').style.display = newCount > 0 ? 'inline-block' : 'none';
-            } catch (e) {
-                alert(e.message);
-            } finally {
-                document.getElementById('listLoading').style.display = 'none';
-            }
-        }
-
-        let currentOrderId = null;
-        let currentDetail = null;
-        let lastOrders = [];
-
-        function showListView() {
-            document.getElementById('listView').classList.remove('hidden');
-            document.getElementById('detailPanel').classList.remove('visible');
-            document.getElementById('settingsView').classList.add('hidden');
-        }
-
-        async function closeDetailAndSave() {
-            if (!currentOrderId) {
-                showListView();
-                return;
-            }
-            const content = document.getElementById('detailContent');
-            const statusEl = content?.querySelector('#detailStatus');
-            if (!statusEl) {
-                showListView();
-                return;
-            }
-            const status = statusEl.value;
-            const assignee = content.querySelector('#detailAssignee')?.value || null;
-            const notes = content.querySelector('#detailNotes')?.value ?? null;
-            const statusChanged = currentDetail?.order && (currentDetail.order.status || 'Eingegangen') !== status;
-            try {
-                await updateOrder(currentOrderId, { status, assignee, notes });
-                if (currentDetail?.order) {
-                    currentDetail.order = { ...currentDetail.order, status, assignee, notes };
-                }
-                if (statusChanged && currentDetail?.order?.customer_email && confirm('Status wurde geändert. Status-E-Mail an den Kunden senden?')) {
-                    try {
-                        await sendOrderEmail(currentOrderId, 'status', status);
-                    } catch (_) {
-                        alert('E-Mail konnte nicht gesendet werden. Sie können die Status-E-Mail später im Auftrag erneut anstoßen.');
-                    }
-                }
-                showListView();
-                refreshList();
-            } catch (e) {
-                alert('Beim Speichern ist ein Fehler aufgetreten: ' + e.message);
-            }
-        }
-
-        function showDetailView() {
-            document.getElementById('listView').classList.add('hidden');
-            document.getElementById('detailPanel').classList.add('visible');
-            document.getElementById('settingsView').classList.add('hidden');
-        }
-
-        async function getEmailTemplates() {
-            const res = await fetch(config.supabaseUrl + '/functions/v1/email-templates', {
-                method: 'GET',
-                headers: headers(),
-            });
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) throw new Error(data.error || 'Templates konnten nicht geladen werden.');
-            return data.templates || [];
-        }
-
-        async function saveEmailTemplate(payload) {
-            let res;
-            try {
-                res = await fetch(config.supabaseUrl + '/functions/v1/email-templates', {
-                    method: 'PATCH',
-                    headers: headers(),
-                    body: JSON.stringify(payload),
-                });
-            } catch (err) {
-                throw new Error('Netzwerkfehler (Failed to fetch). Prüfen Sie die Supabase-URL in dashboard.config.json und ob die Function email-templates deployed ist.');
-            }
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) throw new Error(data.error || 'Speichern fehlgeschlagen.');
-            return data;
-        }
-
-        function renderTemplatesList(templates) {
-            const listEl = document.getElementById('settingsTemplatesList');
-            listEl.innerHTML = '';
-            templates.forEach(t => {
-                const row = document.createElement('div');
-                row.className = 'template-row';
-                const activeClass = t.active ? 'template-active' : 'template-inactive';
-                const activeText = t.active ? 'Aktiv' : 'Inaktiv';
-                row.innerHTML = '<span class="template-name">' + escapeHtml(t.name || t.template_key) + '</span><span class="' + activeClass + '">' + activeText + '</span>';
-                row.addEventListener('click', () => openTemplateEdit(t));
-                listEl.appendChild(row);
-            });
-        }
-
-        let currentEditingTemplate = null;
-
-        function openTemplateEdit(template) {
-            currentEditingTemplate = template;
-            document.getElementById('settingsTemplateKey').value = template.template_key || '';
-            document.getElementById('settingsTemplateActive').checked = !!template.active;
-            document.getElementById('settingsSubject').value = template.subject_template || '';
-            document.getElementById('settingsBodyPlain').value = template.body_plain || '';
-            document.getElementById('settingsBodyHtml').value = template.body_html || '';
-            document.getElementById('settingsTemplateFormTitle').textContent = 'Template: ' + (template.name || template.template_key);
-            document.getElementById('settingsTemplateForm').classList.remove('hidden');
-        }
-
-        function closeTemplateForm() {
-            currentEditingTemplate = null;
-            document.getElementById('settingsTemplateForm').classList.add('hidden');
-        }
-
-        async function showSettingsView() {
-            document.getElementById('listView').classList.add('hidden');
-            document.getElementById('detailPanel').classList.remove('visible');
-            document.getElementById('settingsView').classList.remove('hidden');
-            document.getElementById('settingsTemplatesList').innerHTML = '';
-            document.getElementById('settingsTemplateForm').classList.add('hidden');
-            document.getElementById('settingsTemplatesLoading').style.display = 'block';
-            try {
-                const templates = await getEmailTemplates();
-                renderTemplatesList(templates);
-            } catch (e) {
-                alert(e.message);
-            } finally {
-                document.getElementById('settingsTemplatesLoading').style.display = 'none';
-            }
-        }
-
-        async function openDetail(orderId) {
-            currentOrderId = orderId;
-            showDetailView();
-            const panel = document.getElementById('detailPanel');
-            const content = document.getElementById('detailContent');
-            const loading = document.getElementById('detailLoading');
-            content.style.display = 'none';
-            loading.style.display = 'block';
-            try {
-                const data = await getOrderDetail(orderId);
-                currentDetail = data;
-                content.innerHTML = renderDetail(data);
-                content.style.display = 'block';
-                bindDetailActions(content, data);
-            } catch (e) {
-                content.innerHTML = '<p class="error-msg">' + escapeHtml(e.message) + '</p>';
-                content.style.display = 'block';
-            } finally {
-                loading.style.display = 'none';
-            }
-        }
-
-        function renderDetail(data) {
-            const order = data.order || {};
-            const p = order.payload || {};
-            const inquiry = p.inquiryDetails || {};
-            const priceDetails = p.priceDetails || {};
-            const variants = priceDetails.variantsWithPrices || [];
-            const extras = priceDetails.extrasWithPrices || [];
-            const total = order.total_price != null ? Number(order.total_price) : (priceDetails.totalOrderPrice != null ? Number(priceDetails.totalOrderPrice) : 0);
-            const customerData = p.customerData || {};
-            const shippingData = p.shippingData || order.shipping_data || {};
-            const personalizations = inquiry.personalizations || {};
-            const production = inquiry.production || {};
-            const deliveryMethods = inquiry.productionAndDelivery?.deliveryMethods || [
-                { id: 'pickup', name: 'Selbstabholung', requiresAddress: false },
-                { id: 'standard_shipping', name: 'Standardversand (DE)', requiresAddress: true },
-            ];
-            const delivery = deliveryMethods.find(d => d.id === production.deliveryMethodId) || { name: '–', requiresAddress: false };
-            const downloadUrls = data.downloadUrls || {};
-
-            let html = '<div class="detail-grid">';
-
-            html += '<div class="detail-section"><h3>Auftrag & Status</h3>';
-            const isPaid = order.status === 'Bezahlt';
-            const isPaymentOpen = order.status === 'Wartet auf Zahlung';
-            if (isPaymentOpen || isPaid) {
-                html += '<div class="form-row"><button type="button" id="btnPaymentToggle" class="' + (isPaid ? 'btn-payment-paid' : 'btn-payment-open') + '">' + (isPaid ? 'BEZAHLT' : 'ZAHLUNG OFFEN') + '</button></div>';
-            }
-            html += '<p><strong>Auftragsnummer:</strong> ' + escapeHtml(order.order_number) + '</p>';
-            const statusOptions = order.status === 'Wartet auf Zahlung' ? [...STATUS_DROPDOWN, 'Wartet auf Zahlung'] : STATUS_DROPDOWN;
-            html += '<div class="form-row"><label>Status</label><select id="detailStatus">';
-            statusOptions.forEach(s => {
-                html += '<option value="' + escapeHtml(s) + '"' + (order.status === s ? ' selected' : '') + '>' + escapeHtml(s) + '</option>';
-            });
-            html += '</select></div>';
-            html += '<div class="form-row"><label>Bearbeiter</label><select id="detailAssignee"><option value="">–</option>';
-            ASSIGNEES.forEach(a => {
-                html += '<option value="' + escapeHtml(a) + '"' + (order.assignee === a ? ' selected' : '') + '>' + escapeHtml(a) + '</option>';
-            });
-            html += '</select></div>';
-            html += '<div class="form-row"><label>Notizen</label><textarea id="detailNotes">' + escapeHtml(order.notes || '') + '</textarea></div>';
-            const detailEmail = (customerData.customerEmail || customerData.email || order.customer_email || '').trim();
-            html += '<div class="form-row"><label>E-Mail an Kunden</label><div class="email-actions">';
-            html += '<button type="button" class="secondary btn-copy-email" data-email="' + escapeHtml(detailEmail) + '" title="E-Mail in Zwischenablage kopieren (Strg+V im Mailprogramm)">' + escapeHtml(detailEmail || '–') + ' 📋</button>';
-            html += '</div></div>';
-            const emailLog = order.email_sent_log;
-            const logEntries = Array.isArray(emailLog) ? emailLog : [];
-            html += '<div class="form-row" id="detailEmailLogSection"><label>Versendete E-Mails</label>';
-            if (logEntries.length > 0) {
-                html += '<ul class="email-sent-log">';
-                logEntries.forEach(function(entry) {
-                    const label = entry.type === 'received' ? 'Auftrag eingegangen' : ('Status: ' + (entry.status || '–'));
-                    const sentAt = entry.sent_at ? (function(d) { try { return d.toLocaleString('de-DE'); } catch (_) { return entry.sent_at; } })(new Date(entry.sent_at)) : '–';
-                    html += '<li>' + escapeHtml(label) + ' – ' + escapeHtml(sentAt) + '</li>';
-                });
-                html += '</ul>';
-            } else {
-                html += '<p class="text-muted">Bisher keine E-Mails an den Kunden versendet.</p>';
-            }
-            html += '</div>';
-            html += '</div>';
-
-            html += '<div class="detail-section"><h3>Kunde & Lieferung</h3>';
-            html += '<p><strong>Name:</strong> ' + escapeHtml(customerData.customerName || customerData.name || order.customer_name) + '</p>';
-            const detailCustomerEmail = customerData.customerEmail || customerData.email || order.customer_email || '';
-            const detailMailto = detailCustomerEmail ? ('mailto:' + encodeURIComponent(detailCustomerEmail) + '?subject=' + encodeURIComponent('Auftrag ' + (order.order_number || ''))) : '#';
-            html += '<p><strong>E-Mail:</strong> <a href="' + detailMailto + '" class="mailto-link" title="E-Mail an Kunde (Gmail mit Betreff Auftragsnummer)">' + escapeHtml(detailCustomerEmail || '–') + '</a></p>';
-            html += '<p><strong>Telefon:</strong> ' + escapeHtml(customerData.customerPhone || order.customer_phone || '–') + '</p>';
-            html += '<p><strong>Lieferart:</strong> ' + escapeHtml(delivery.name) + '</p>';
-            if (delivery.requiresAddress && (shippingData.shippingStreet || shippingData.shippingZip || shippingData.shippingCity)) {
-                html += '<p><strong>Adresse:</strong> ' + escapeHtml([shippingData.shippingStreet, shippingData.shippingZip, shippingData.shippingCity].filter(Boolean).join(', ')) + '</p>';
-            }
-            html += '</div>';
-            html += '</div>';
-
-            html += '<div class="detail-section"><h3>Bestellung (Übersicht)</h3>';
-            variants.forEach(v => {
-                const thumb = personalizations[v.id]?.editorData?.thumbnailDataUrl;
-                const thumbHtml = thumb ? '<img class="thumb" src="' + escapeHtml(thumb) + '" alt="">' : '<div class="thumb placeholder">–</div>';
-                const name = v.name != null ? v.name : 'Variante';
-                html += '<div class="cart-item">' + thumbHtml + '<div><strong>' + (v.quantity || 1) + ' × ' + escapeHtml(name) + '</strong><br>' + (v.totalPrice != null ? Number(v.totalPrice).toFixed(2) + ' €' : '') + '</div></div>';
-            });
-            extras.forEach(e => {
-                html += '<div class="cart-item"><div class="thumb placeholder">–</div><div><strong>' + (e.quantity || 1) + '× ' + escapeHtml(e.name || 'Extra') + '</strong><br>' + (e.totalPrice != null ? Number(e.totalPrice).toFixed(2) + ' €' : '') + '</div></div>';
-            });
-            html += '<p><strong>Gesamt: ' + total.toFixed(2) + ' €</strong></p></div>';
-
-            html += '<div class="detail-section"><h3>Produktions-Aktionen</h3><div class="actions-row">';
-            if (downloadUrls.mainPdf) {
-                html += '<a href="' + escapeHtml(downloadUrls.mainPdf) + '" target="_blank" rel="noopener" class="btn-primary">Druckdaten Buchblock (PDF)</a>';
-            } else {
-                html += '<span class="text-muted">Kein PDF gespeichert.</span>';
-            }
-            const svgKeys = Object.keys(downloadUrls).filter(k => k.startsWith('svg_'));
-            svgKeys.forEach(k => {
-                const label = k.replace(/^svg_/, '');
-                html += '<a href="' + escapeHtml(downloadUrls[k]) + '" target="_blank" rel="noopener" class="secondary" style="display:inline-block;">Buchdecke: ' + escapeHtml(label) + '</a>';
-            });
-            html += '<button type="button" class="secondary" id="btnShipping">Versandetiketten (demnächst)</button>';
-            html += '<button type="button" id="btnOrderSheet" class="btn-primary" style="margin-top:10px;">Auftragszettel drucken</button>';
-            html += '</div></div>';
-
-            return html;
-        }
-
-        function generateOrderSheetPdf(data) {
-            if (typeof pdfMake === 'undefined' || typeof pdfMake.createPdf !== 'function') {
-                alert('pdfMake ist nicht geladen. Auftragszettel kann nicht erstellt werden.');
-                return;
-            }
-            const order = data.order || {};
-            const p = order.payload || {};
-            const inquiry = p.inquiryDetails || {};
-            const priceDetails = p.priceDetails || {};
-            const variants = priceDetails.variantsWithPrices || [];
-            const extras = priceDetails.extrasWithPrices || [];
-            const total = order.total_price != null ? Number(order.total_price) : (Number(priceDetails.totalOrderPrice) || 0);
-            const customerData = p.customerData || {};
-            const shippingData = p.shippingData || order.shipping_data || {};
-            const personalizations = inquiry.personalizations || {};
-            const production = inquiry.production || {};
-            const deliveryMethods = inquiry.productionAndDelivery?.deliveryMethods || [
-                { id: 'pickup', name: 'Selbstabholung', requiresAddress: false },
-                { id: 'standard_shipping', name: 'Standardversand (DE)', requiresAddress: true },
-            ];
-            const delivery = deliveryMethods.find(d => d.id === production.deliveryMethodId) || { name: '–', requiresAddress: false };
-            const bookBlock = inquiry.bookBlock || {};
-            const created = order.created_at ? new Date(order.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '–';
-
-            const content = [];
-            const style = (fontSize, bold, color) => ({ fontSize: fontSize || 10, bold: !!bold, color: color || '#333' });
-
-            content.push({ text: 'AUFTRAGSZETTEL', style: 'title', margin: [0, 0, 0, 10] });
-            content.push({
-                columns: [
-                    { text: `Auftragsnummer: ${order.order_number || '–'}`, style: 'header' },
-                    { text: `Datum: ${created}`, style: 'header' },
-                    { text: `Status: ${order.status || '–'}  |  Bearbeiter: ${order.assignee || '–'}`, style: 'header' }
-                ],
-                margin: [0, 0, 0, 15]
-            });
-
-            content.push({ text: '1. KUNDE & LIEFERUNG', style: 'sectionTitle', margin: [0, 10, 0, 6] });
-            const custName = customerData.customerName || customerData.name || order.customer_name || '–';
-            const custEmail = customerData.customerEmail || customerData.email || order.customer_email || '–';
-            const custPhone = customerData.customerPhone || order.customer_phone || '–';
-            content.push({ text: `Name: ${custName}`, style: 'body' });
-            content.push({ text: `E-Mail: ${custEmail}`, style: 'body' });
-            content.push({ text: `Telefon: ${custPhone}`, style: 'body' });
-            content.push({ text: `Lieferart: ${delivery.name}`, style: 'body' });
-            if (delivery.requiresAddress && (shippingData.shippingStreet || shippingData.shippingZip || shippingData.shippingCity)) {
-                content.push({ text: `Adresse: ${[shippingData.shippingStreet, shippingData.shippingZip, shippingData.shippingCity].filter(Boolean).join(', ')}`, style: 'body', margin: [0, 0, 0, 8] });
-            } else {
-                content.push({ text: '', margin: [0, 0, 0, 8] });
-            }
-
-            content.push({ text: '2. BUCHBLOCK', style: 'sectionTitle', margin: [0, 5, 0, 6] });
-            const bb = bookBlock;
-            content.push({ text: `Seiten A4: ${bb.totalPages || '–'}  |  Druck: ${bb.printMode === 'double_sided' ? 'beidseitig' : 'einseitig'}  |  A3-Seiten: ${bb.hasA3Pages ? (bb.a3PagesCount || 0) : 0}`, style: 'body' });
-            const firstPageImg = bb.firstPagePreviewDataURL || bb.firstPagePreviewUrl;
-            if (firstPageImg) {
-                content.push({
-                    columns: [
-                        { width: '*', text: '' },
-                        { width: 120, stack: [{ text: 'Vorschau erste Seite:', fontSize: 8, italics: true }, { image: firstPageImg, width: 100, margin: [0, 4, 0, 0] }] },
-                        { width: '*', text: '' }
-                    ],
-                    margin: [0, 8, 0, 15]
-                });
-            }
-
-            content.push({ text: '3. BINDUNGSVARIANTEN & COVER', style: 'sectionTitle', margin: [0, 5, 0, 6] });
-            const variantRows = [[{ text: 'Pos.', bold: true }, { text: 'Variante', bold: true }, { text: 'Menge', bold: true }, { text: 'Preis', bold: true }, { text: 'Vorschau', bold: true }]];
-            variants.forEach((v, i) => {
-                const thumb = personalizations[v.id]?.editorData?.thumbnailDataUrl;
-                const thumbCell = thumb ? { image: thumb, width: 40, height: 53 } : { text: '–', fontSize: 9 };
-                variantRows.push([
-                    { text: String(i + 1) },
-                    { text: (v.name || 'Variante') + (v.quantity > 1 ? ' (×' + v.quantity + ')' : '') },
-                    { text: String(v.quantity || 1) },
-                    { text: (v.totalPrice != null ? Number(v.totalPrice).toFixed(2) + ' €' : '–') },
-                    thumbCell
-                ]);
-            });
-            content.push({
-                table: { headerRows: 1, widths: [30, '*', 45, 55, 55], body: variantRows },
-                layout: 'lightHorizontalLines',
-                margin: [0, 4, 0, 12]
-            });
-
-            if (extras.length > 0) {
-                content.push({ text: '4. EXTRAS', style: 'sectionTitle', margin: [0, 5, 0, 6] });
-                const extraRows = [['Pos.', 'Beschreibung', 'Menge', 'Preis'].map(t => ({ text: t, bold: true }))];
-                extras.forEach((e, i) => {
-                    extraRows.push([
-                        { text: 'E' + (i + 1) },
-                        { text: e.name || 'Extra' },
-                        { text: String(e.quantity || 1) },
-                        { text: (e.totalPrice != null ? Number(e.totalPrice).toFixed(2) + ' €' : '–') }
-                    ]);
-                });
-                content.push({
-                    table: { headerRows: 1, widths: [30, '*', 45, 55], body: extraRows },
-                    layout: 'lightHorizontalLines',
-                    margin: [0, 4, 0, 12]
-                });
-            }
-
-            content.push({ text: '5. GESAMTSUMME', style: 'sectionTitle', margin: [0, 5, 0, 6] });
-            content.push({ text: total.toFixed(2) + ' € (brutto)', fontSize: 12, bold: true, margin: [0, 0, 0, 10] });
-
-            if (order.notes && String(order.notes).trim()) {
-                content.push({ text: '6. NOTIZEN', style: 'sectionTitle', margin: [0, 5, 0, 6] });
-                content.push({ text: String(order.notes).trim(), style: 'body', margin: [0, 0, 0, 8] });
-            }
-
-            const docDef = {
-                pageSize: 'A4',
-                pageMargins: [40, 40, 40, 40],
-                content,
-                styles: {
-                    title: { fontSize: 18, bold: true, color: '#006699' },
-                    header: { fontSize: 10 },
-                    sectionTitle: { fontSize: 12, bold: true, color: '#006699' },
-                    body: { fontSize: 10 }
-                },
-                defaultStyle: { fontSize: 10 }
-            };
-            const fileName = `Auftragszettel_${(order.order_number || order.id || 'Auftrag').replace(/[^a-zA-Z0-9-]/g, '_')}.pdf`;
-            pdfMake.createPdf(docDef).download(fileName);
-        }
-
-        function bindDetailActions(content, data) {
-            const order = data.order || {};
-            const orderId = order.id;
-            content.querySelector('#btnPaymentToggle')?.addEventListener('click', async () => {
-                const isPaid = order.status === 'Bezahlt';
-                const msg = isPaid ? 'Zahlung noch offen? Ja / Nein' : 'Zahlung eingegangen? Ja / Nein';
-                const ja = confirm(msg + '\n\nKlicken Sie OK für Ja, Abbrechen für Nein.');
-                if (ja === false) return;
-                const newStatus = isPaid ? 'Wartet auf Zahlung' : 'Bezahlt';
-                try {
-                    await updateOrder(orderId, { status: newStatus });
-                    if (currentDetail?.order) currentDetail.order.status = newStatus;
-                    const statusSelect = content.querySelector('#detailStatus');
-                    if (statusSelect) {
-                        if (!statusSelect.querySelector('option[value="' + newStatus + '"]')) {
-                            const opt = document.createElement('option');
-                            opt.value = newStatus;
-                            opt.textContent = newStatus;
-                            statusSelect.appendChild(opt);
-                        }
-                        statusSelect.value = newStatus;
-                    }
-                    const btn = content.querySelector('#btnPaymentToggle');
-                    if (btn) {
-                        btn.textContent = newStatus === 'Bezahlt' ? 'BEZAHLT' : 'ZAHLUNG OFFEN';
-                        btn.className = newStatus === 'Bezahlt' ? 'btn-payment-paid' : 'btn-payment-open';
-                    }
-                    refreshList();
-                } catch (e) {
-                    alert(e.message);
-                }
-            });
-            content.querySelector('#btnOrderSheet')?.addEventListener('click', () => {
-                if (currentDetail) generateOrderSheetPdf(currentDetail);
-            });
-            content.querySelector('.btn-copy-email')?.addEventListener('click', async () => {
-                const btn = content.querySelector('.btn-copy-email');
-                const email = btn?.getAttribute('data-email') || '';
-                if (!email) return;
-                try {
-                    await navigator.clipboard.writeText(email);
-                    const oldText = btn.textContent;
-                    btn.textContent = 'E-Mail kopiert';
-                    setTimeout(() => { btn.textContent = oldText; }, 1500);
-                } catch (_) {
-                    alert('Kopieren fehlgeschlagen. Bitte E-Mail manuell übernehmen.');
-                }
-            });
-        }
-
-        document.getElementById('filterStatus').addEventListener('change', refreshList);
-        document.getElementById('btnRefresh').addEventListener('click', refreshList);
-        document.getElementById('btnNewOrders').addEventListener('click', () => {
-            document.getElementById('filterStatus').value = 'Eingegangen';
-            refreshList();
-        });
-        document.getElementById('detailClose').addEventListener('click', () => closeDetailAndSave());
-
-        document.getElementById('btnSettings').addEventListener('click', () => {
-            if (!config.adminSecret) { alert('Bitte adminSecret in dashboard.config.json eintragen.'); return; }
-            showSettingsView();
-        });
-        document.getElementById('btnSettingsBack').addEventListener('click', showListView);
-        document.getElementById('btnTemplateCancel').addEventListener('click', closeTemplateForm);
-        document.getElementById('btnTemplateSave').addEventListener('click', async () => {
-            if (!currentEditingTemplate) return;
-            const payload = {
-                template_key: currentEditingTemplate.template_key,
-                subject_template: document.getElementById('settingsSubject').value,
-                body_plain: document.getElementById('settingsBodyPlain').value,
-                body_html: document.getElementById('settingsBodyHtml').value,
-                active: document.getElementById('settingsTemplateActive').checked,
-            };
-            try {
-                await saveEmailTemplate(payload);
-                const templates = await getEmailTemplates();
-                renderTemplatesList(templates);
-                closeTemplateForm();
-            } catch (e) {
-                alert(e.message);
-            }
-        });
-
-        document.getElementById('loginForm')?.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const pw = document.getElementById('loginPassword')?.value || '';
-            const errEl = document.getElementById('loginError');
-            if (config.dashboardPassword && pw === config.dashboardPassword) {
-                sessionStorage.setItem('dashboardAuth', 'true');
-                errEl.style.display = 'none';
-                hideLoginAndShowApp();
-                if (config.adminSecret) refreshList();
-            } else {
-                errEl.textContent = 'Falsches Passwort.';
-                errEl.style.display = 'block';
-            }
-        });
-        document.getElementById('btnLogout')?.addEventListener('click', () => {
-            sessionStorage.removeItem('dashboardAuth');
-            location.reload();
-        });
-
-        setInterval(() => {
-            if (!document.getElementById('listView').classList.contains('hidden') && config.adminSecret) {
-                refreshList();
-            }
-        }, 2 * 60 * 1000);
-
-        (async () => {
-            await loadConfig();
-            if (requireLogin() === false) return;
-            hideLoginAndShowApp();
-            if (config.dashboardPassword) document.getElementById('logoutWrap').style.display = 'inline-block';
-            if (config.adminSecret) await refreshList();
-        })();
-    </script>
+    <script type="module" src="dashboard-main.js"></script>
 </body>
 </html>

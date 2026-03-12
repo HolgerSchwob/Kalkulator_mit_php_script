@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extension:inkscape-extension xmlns:extension="http://www.inkscape.org/namespace/inkscape/extension" xmlns="http://www.inkscape.org/namespace/inkscape/extension">
+  <name>Zuweisung anzeigen</name>
+  <id>org.kalkulator.personalization_show</id>
+  <param name="nur_anzeigen" type="bool" gui-text="Aktuelle Zuweisung anzeigen (keine Änderung)" gui-description="Zeigt sofort id, colorselector und Gruppe des ausgewählten Objekts.">true</param>
+  <effect needs-live-preview="false">
+    <object-type>all</object-type>
+    <effects-menu>
+      <submenu name="Buchdecken-Templates"/>
+    </effects-menu>
+  </effect>
+  <script>
+    <command location="inx" interpreter="python">personalization_helper.py</command>
+  </script>
+</extension:inkscape-extension>

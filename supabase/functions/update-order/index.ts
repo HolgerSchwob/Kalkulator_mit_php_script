@@ -1,6 +1,6 @@
 // Supabase Edge Function: UpdateOrder – für Production-Dashboard (Admin)
 // Header: x-admin-secret = ADMIN_SECRET
-// POST Body: { order_id: uuid, status?: string, assignee?: string, notes?: string }
+// POST Body: { order_id: uuid, status?: string, assignee?: string, notes?: string, local_synced_at?: string (ISO) }
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -48,6 +48,7 @@ Deno.serve(async (req) => {
     if (typeof body.status === 'string' && body.status.trim()) updates.status = body.status.trim()
     if (body.assignee !== undefined) updates.assignee = body.assignee === null || body.assignee === '' ? null : String(body.assignee)
     if (body.notes !== undefined) updates.notes = body.notes == null ? null : String(body.notes)
+    if (body.local_synced_at !== undefined) updates.local_synced_at = body.local_synced_at == null ? null : String(body.local_synced_at)
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!

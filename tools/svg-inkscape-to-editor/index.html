@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inkscape → Editor (Postprozessor)</title>
+    <style>
+        :root {
+            --bg: #0a0a0d;
+            --bg-elevated: #111114;
+            --surface: #16161a;
+            --surface-hover: #1c1c21;
+            --border: rgba(255,255,255,0.06);
+            --text: #f4f4f5;
+            --text-muted: #a1a1aa;
+            --accent: #06b6d4;
+            --accent-hover: #22d3ee;
+            --accent-dim: rgba(6, 182, 212, 0.15);
+            --success: #22c55e;
+            --success-bg: rgba(34, 197, 94, 0.15);
+            --warn: #eab308;
+            --warn-bg: rgba(234, 179, 8, 0.12);
+            --radius: 10px;
+            --radius-sm: 6px;
+        }
+        * { box-sizing: border-box; }
+        body { font-family: 'Roboto', system-ui, sans-serif; padding: 8px 12px; margin: 0 auto; max-width: 100%; background: var(--bg); color: var(--text); font-size: 11px; line-height: 1.35; }
+        h1 { margin: 0 0 2px 0; font-size: 1rem; }
+        .subtitle { color: var(--text-muted); margin-bottom: 6px; font-size: 0.85em; }
+        .section { background: var(--surface); padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); margin-bottom: 8px; }
+        .section h2 { margin: 0 0 6px 0; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+        .top-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+        .drop-zone { border: 2px dashed var(--border); padding: 12px 16px; text-align: center; border-radius: var(--radius-sm); cursor: pointer; color: var(--text-muted); flex: 1; min-width: 160px; }
+        .drop-zone:hover, .drop-zone.dragover { border-color: var(--accent); background: var(--accent-dim); color: var(--text); }
+        .hint { margin: 0; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; background: var(--bg-elevated); color: var(--text-muted); border: 1px solid var(--border); }
+        .hint.success { background: var(--success-bg); color: var(--success); border-color: var(--success); }
+        .hint.warn { background: var(--warn-bg); color: var(--warn); border-color: var(--warn); }
+        .compact-bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .compact-bar button { padding: 6px 10px; font-size: 0.75rem; border-radius: 4px; border: 1px solid var(--border); background: var(--surface-hover); color: var(--text); cursor: pointer; }
+        .compact-bar button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+        .compact-bar button:hover { border-color: var(--accent); background: var(--accent-dim); }
+        .svg-preview-wrap { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px; height: min(340px, calc(100vh - 280px)); max-height: 340px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .svg-preview-wrap svg { max-width: 100%; max-height: 100%; width: auto; height: auto; display: block; }
+        .test-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+        .test-btn { padding: 4px 8px; font-size: 0.75rem; border-radius: 4px; border: 1px solid var(--border); background: var(--surface-hover); color: var(--text); cursor: pointer; }
+        .test-btn:hover { border-color: var(--accent); background: var(--accent-dim); }
+        .test-btn.active { border-color: var(--accent); background: var(--accent-dim); }
+        .color-pair-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; padding: 4px 8px; border-radius: 4px; cursor: pointer; border: 1px solid transparent; }
+        .color-pair-row:hover { background: var(--surface-hover); border-color: var(--border); }
+        .color-pair-row.active { border-color: var(--accent); background: var(--accent-dim); }
+        .color-box { width: 24px; height: 24px; border-radius: 4px; border: 1px solid var(--border); flex-shrink: 0; }
+        .logo-item { display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 4px; cursor: pointer; border: 1px solid transparent; margin-bottom: 2px; }
+        .logo-item:hover { background: var(--surface-hover); border-color: var(--border); }
+        .logo-item.active { border-color: var(--accent); background: var(--accent-dim); }
+        .empty-state { color: var(--text-muted); font-style: italic; padding: 6px 0; font-size: 0.85rem; }
+        input[type="file"] { display: none; }
+        details summary { cursor: pointer; padding: 4px 8px; background: var(--bg-elevated); border-radius: 4px; border: 1px solid var(--border); font-size: 0.8rem; list-style: none; }
+        details summary::-webkit-details-marker { display: none; }
+        details summary::before { content: '▶ '; font-size: 0.65em; opacity: 0.7; }
+        details[open] summary::before { content: '▼ '; }
+        .note { font-size: 0.8rem; color: var(--text-muted); margin-top: 6px; padding: 6px 8px; background: var(--bg-elevated); border-radius: 4px; border: 1px solid var(--border); }
+        .workflow-details summary { cursor: pointer; padding: 6px 10px; background: var(--bg-elevated); border-radius: 4px; border: 1px solid var(--border); font-size: 0.85rem; list-style: none; }
+        .workflow-details summary::-webkit-details-marker { display: none; }
+        .workflow-details summary::before { content: '▶ '; font-size: 0.7em; opacity: 0.7; }
+        .workflow-details[open] summary::before { content: '▼ '; }
+    </style>
+</head>
+<body>
+    <div class="section">
+        <h1>Inkscape → Editor (Postprozessor)</h1>
+        <p class="subtitle">SVG aus Inkscape laden (mit $$F1$$/$$S1$$-Markern, Ebenen, Codierfarben) → Konvertieren → Editor-taugliche SVG mit IDs und Gruppen. Anschließend mit Musterdaten testen.</p>
+        <div class="top-bar">
+            <div class="drop-zone" id="dropZone">SVG ablegen oder klicken</div>
+            <input type="file" id="fileInput" accept=".svg,image/svg+xml">
+            <div class="compact-bar">
+                <button type="button" id="btnProcess" class="primary" disabled>Konvertieren</button>
+                <button type="button" id="btnDownload" disabled>Ergebnis herunterladen</button>
+            </div>
+        </div>
+        <p class="hint" id="hint">SVG-Datei wählen (aus Inkscape exportiert, mit $$F1$$ etc., Ebenen, Codierfarben 80/70/80 und 40/30/40).</p>
+        <details class="workflow-details" style="margin-top: 10px;">
+            <summary>Workflow: Von der Erstellung bis zur Production-SVG</summary>
+            <div class="note" style="white-space: pre-line;">
+<strong>Stufe 1 – Postprozessor (dieses Tool)</strong>
+• Inkscape: Template mit $$F1$$/$$S1$$-Markern, Ebenen und Codierfarben erstellen.
+• In Inkscape <strong>nur als „Inkscape SVG“ oder „Plain SVG“ speichern</strong> – <strong>nicht</strong> als „Optimiertes SVG“. Sonst gehen Ebenen und Metadaten verloren und der Postprozessor kann keine Gruppen zuweisen.
+• Hier: SVG laden → Konvertieren → Ergebnis herunterladen (z. B. …-editor.svg). Optional mit Musterdaten testen.
+
+<strong>Stufe 2 – Productioner (Schriften + Optimierung)</strong>
+• Die editor-SVG im Tool „SVG Productioner“ öffnen.
+• Schriften werden eingebettet und gleichzeitig unnötige Metadaten (inkscape:, sodipodi: etc.) entfernt.
+• Als Production-SVG speichern (druckfertig).
+
+<strong>Danach</strong>
+• Optional: SVG Template Preflight zur Prüfung (Boxen, Text-Platzhalter, Farben).
+• Production-SVG im Dashboard hochladen (Einstellungen → Templates).
+
+<strong>Wichtig:</strong> Optimierung/Bereinigung immer <strong>nach</strong> dem Postprozessor. Nie optimierte SVG aus Inkscape direkt in den Postprozessor laden.
+            </div>
+        </details>
+    </div>
+
+    <div id="resultWrap" class="section" style="display: none;">
+        <h2>Vorschau &amp; Test mit Musterdaten</h2>
+        <div id="previewWrap" class="svg-preview-wrap"></div>
+        <div class="section" style="margin-top: 8px;">
+            <h2>Mustertexte (anklicken zum Zuweisen)</h2>
+            <p class="subtitle" style="margin-bottom: 6px;">Ersetzt in der Vorschau die Text-Platzhalter durch Beispielinhalte – prüfen, ob alle Felder korrekt angesprochen werden.</p>
+            <div class="test-row" id="presetTextRow">
+                <button type="button" class="test-btn" data-preset="0">Muster 1 (Diplomarbeit)</button>
+                <button type="button" class="test-btn" data-preset="1">Muster 2 (Bachelor)</button>
+                <button type="button" class="test-btn" data-preset="2">Muster 3 (Master)</button>
+            </div>
+        </div>
+        <div class="section">
+            <h2>Musterfarben (anklicken zum Zuweisen)</h2>
+            <p class="subtitle" style="margin-bottom: 6px;">Setzt color1/color2 in der Vorschau auf Testfarben.</p>
+            <div id="colorPresetRow" class="test-row">
+                <div class="color-pair-row" data-c1="#1a237e" data-c2="#e65100" title="Musterfarben 1"><div class="color-box" style="background:#1a237e"></div><div class="color-box" style="background:#e65100"></div><span>Blau / Orange</span></div>
+                <div class="color-pair-row" data-c1="#2e7d32" data-c2="#f9a825" title="Musterfarben 2"><div class="color-box" style="background:#2e7d32"></div><div class="color-box" style="background:#f9a825"></div><span>Grün / Gold</span></div>
+                <div class="color-pair-row" data-c1="#6a1b9a" data-c2="#00838f" title="Musterfarben 3"><div class="color-box" style="background:#6a1b9a"></div><div class="color-box" style="background:#00838f"></div><span>Lila / Türkis</span></div>
+            </div>
+        </div>
+        <div class="section">
+            <h2>Logo-Platzhalter (anklicken zum Zuweisen)</h2>
+            <p class="subtitle" style="margin-bottom: 6px;">Musterfüllung für Logo-Rechtecke in der Vorschau – prüfen, ob Platzhalter erkannt werden.</p>
+            <div id="logoPresetRow">
+                <p class="empty-state" id="logoEmpty">Keine Logo-Platzhalter (tpl-logo-*) im SVG.</p>
+                <div id="logoList" style="display: none;"></div>
+            </div>
+        </div>
+        <details style="margin-top: 8px;">
+            <summary>Spickzettel Inkscape (Marker, Ebenen, Farben)</summary>
+            <div class="note">
+                <p><strong>Texte:</strong> In Inkscape am Textanfang tippen: $$F1$$ = Titel, $$F2$$ = Untertitel, $$F3$$ = Name, $$F4$$ = Matrikelnummer, $$F5$$ = Jahr, $$F6$$ = Thema, $$F7$$ = Thema mehrzeilig, $$F8$$–$$F10$$ = Untertitel Zeile 1–3. Buchrücken: $$S1$$ = Titel, $$S2$$ = Name, $$S3$$ = Thema.</p>
+                <p><strong>Ebenen:</strong> Ebenenname → Gruppe: „Coverfront“/„Vorderseite“/„Front“/„U1“ → tpl-group-u1; „Coverback“/„Rückseite“/„U4“ → tpl-group-u4; „Spine“/„Buchrücken“/„Rücken“ → tpl-group-spine.</p>
+                <p><strong>Farben:</strong> RGB 80/70/80 (#504650) = color1, RGB 40/30/40 (#281e28) = color2. Diese Füllung in Inkscape verwenden, dann werden sie automatisch zugeordnet.</p>
+            </div>
+        </details>
+        <details style="margin-top: 4px;">
+            <summary>Skalierungsboxen (tpl-*_bbox)</summary>
+            <div class="note">
+                Für automatische Schriftanpassung im Editor können in Inkscape unsichtbare Rechtecke mit ID <code>tpl-TEXTID_bbox</code> angelegt werden (z.&nbsp;B. <code>tpl-title_bbox</code>, <code>tpl-topic_bbox</code>). Der Postprozessor erzeugt diese nicht automatisch – bei Bedarf in Inkscape manuell hinzufügen.
+            </div>
+        </details>
+    </div>
+
+    <script>
+(function () {
+    const TEXT_MARKER_TO_ID = {
+        '$$F1$$':  { id: 'tpl-title',            label: 'Titel der Arbeit' },
+        '$$F2$$':  { id: 'tpl-subtitle',         label: 'Art der Arbeit' },
+        '$$F3$$':  { id: 'tpl-name',             label: 'Name' },
+        '$$F4$$':  { id: 'tpl-mat-nr',           label: 'Matrikelnummer' },
+        '$$F5$$':  { id: 'tpl-year',             label: 'Jahr' },
+        '$$F6$$':  { id: 'tpl-topic',            label: 'Thema / Fach' },
+        '$$F7$$':  { id: 'tpl-topic',            label: 'Thema / Fach', multiline: true, maxLines: '4' },
+        '$$F8$$':  { id: 'tpl-subtitle-line1',   label: 'Untertitel Zeile 1' },
+        '$$F9$$':  { id: 'tpl-subtitle-line2',   label: 'Untertitel Zeile 2' },
+        '$$F10$$': { id: 'tpl-subtitle-line3',   label: 'Untertitel Zeile 3' },
+        '$$S1$$':  { id: 'tpl-title-spine',      label: 'Titel (Buchrücken)' },
+        '$$S2$$':  { id: 'tpl-name-spine',       label: 'Name (Buchrücken)' },
+        '$$S3$$':  { id: 'tpl-topic-spine',      label: 'Thema (Buchrücken)' }
+    };
+    const LAYER_LABELS = {
+        u1: ['coverfront', 'vorderseite', 'front', 'u1', 'deckel vorn'],
+        u4: ['coverback', 'rückseite', 'back', 'u4', 'deckel hinten'],
+        spine: ['spine', 'buchrücken', 'rücken', 'rückentext']
+    };
+    const LAYER_TO_GROUP = { u1: 'tpl-group-u1', u4: 'tpl-group-u4', spine: 'tpl-group-spine' };
+    const COLOR1_RGB = [80, 70, 80];
+    const COLOR2_RGB = [40, 30, 40];
+    const COLOR_TOLERANCE = 3;
+
+    const SAMPLE_PRESETS = [
+        { tpl_title: 'Diplomarbeit', tpl_subtitle: 'Untertitel Muster', tpl_name: 'Max Mustermann', tpl_topic: 'Thema der Arbeit', tpl_subtitle_line1: 'Zeile 1', tpl_subtitle_line2: 'Zeile 2', tpl_subtitle_line3: 'Zeile 3', tpl_title_spine: 'Diplomarbeit', tpl_name_spine: 'Mustermann', tpl_topic_spine: 'Thema' },
+        { tpl_title: 'Bachelorarbeit', tpl_subtitle: 'Fachbereich XY', tpl_name: 'Anna Schmidt', tpl_topic: 'Empirische Studie', tpl_subtitle_line1: 'Untertitel 1', tpl_subtitle_line2: 'Untertitel 2', tpl_subtitle_line3: '', tpl_title_spine: 'Bachelor', tpl_name_spine: 'Schmidt', tpl_topic_spine: 'Studie' },
+        { tpl_title: 'Masterthesis', tpl_subtitle: '2024', tpl_name: 'Dr. John Doe', tpl_topic: 'Literaturanalyse', tpl_subtitle_line1: 'Line 1', tpl_subtitle_line2: 'Line 2', tpl_subtitle_line3: 'Line 3', tpl_title_spine: 'Master', tpl_name_spine: 'Doe', tpl_topic_spine: 'Analyse' }
+    ];
+
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const hint = document.getElementById('hint');
+    const btnProcess = document.getElementById('btnProcess');
+    const btnDownload = document.getElementById('btnDownload');
+    const resultWrap = document.getElementById('resultWrap');
+    const previewWrap = document.getElementById('previewWrap');
+    const presetTextRow = document.getElementById('presetTextRow');
+    const colorPresetRow = document.getElementById('colorPresetRow');
+    const logoEmpty = document.getElementById('logoEmpty');
+    const logoList = document.getElementById('logoList');
+
+    let lastFileName = '';
+    let lastRawSvg = '';
+    let lastProcessedSvg = '';
+    let processedDoc = null;
+    let currentTextPreset = -1;
+    let currentColorPreset = null;
+    let logoFillPreset = null;
+
+    window.addEventListener('message', function (e) {
+        if (e.data && e.data.type === 'dashboard-tool-config') { /* optional: Supabase etc. */ }
+    });
+
+    function parseSvg(svgText) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(svgText, 'image/svg+xml');
+        const err = doc.querySelector('parsererror');
+        if (err) return { error: err.textContent };
+        const svg = doc.documentElement;
+        if (!svg || svg.nodeName.toLowerCase() !== 'svg') return { error: 'Kein SVG-Wurzelelement.' };
+        return { doc, svg };
+    }
+
+    function getLayerLabel(g) {
+        const label = g.getAttribute('inkscape:label') || g.getAttribute('sodipodi:label') || g.getAttribute('aria-label') || '';
+        return label.trim().toLowerCase().replace(/\s+/g, ' ');
+    }
+
+    function processLayers(doc) {
+        const svg = doc.documentElement;
+        const groups = doc.querySelectorAll('g');
+        groups.forEach(g => {
+            const groupmode = g.getAttribute('inkscape:groupmode') || g.getAttribute('sodipodi:groupmode') || g.getAttribute('groupmode') || '';
+            if (groupmode.toLowerCase() !== 'layer') return;
+            const label = getLayerLabel(g);
+            if (!label) return;
+            for (const [key, names] of Object.entries(LAYER_LABELS)) {
+                if (names.some(n => label.includes(n))) {
+                    g.setAttribute('id', LAYER_TO_GROUP[key]);
+                    break;
+                }
+            }
+        });
+    }
+
+    function getTextContent(textEl) {
+        return textEl.textContent || '';
+    }
+
+    function setTextContent(textEl, text) {
+        const tspan = textEl.querySelector('tspan');
+        if (tspan) {
+            tspan.textContent = text;
+            textEl.querySelectorAll('tspan').forEach((ts, i) => { if (i > 0) ts.textContent = ''; });
+        } else {
+            const child = textEl.firstChild;
+            if (child && child.nodeType === Node.TEXT_NODE) child.textContent = text;
+            else textEl.textContent = text;
+        }
+    }
+
+    function processTextMarkers(doc) {
+        const svg = doc.documentElement;
+        const textEls = svg.querySelectorAll('text');
+        textEls.forEach(textEl => {
+            let content = getTextContent(textEl);
+            for (const [marker, config] of Object.entries(TEXT_MARKER_TO_ID)) {
+                if (content.indexOf(marker) === 0) {
+                    textEl.setAttribute('id', config.id);
+                    setTextContent(textEl, content.slice(marker.length).trim());
+                    if (config.multiline) {
+                        textEl.setAttribute('data-multiline', 'true');
+                        textEl.setAttribute('data-max-lines', config.maxLines || '4');
+                    }
+                    const existingLabel = (textEl.getAttribute('data-label') || '').trim();
+                    if (!existingLabel && config.label) {
+                        textEl.setAttribute('data-label', config.label);
+                    }
+                    break;
+                }
+            }
+        });
+    }
+
+    function parseRgb(str) {
+        if (!str) return null;
+        str = str.trim();
+        const hex = str.match(/^#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})$/);
+        if (hex) return [parseInt(hex[1], 16), parseInt(hex[2], 16), parseInt(hex[3], 16)];
+        const rgb = str.match(/rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/);
+        if (rgb) return [parseInt(rgb[1], 10), parseInt(rgb[2], 10), parseInt(rgb[3], 10)];
+        return null;
+    }
+
+    function matchColor(rgb, ref, tol) {
+        if (!rgb || rgb.length < 3) return false;
+        return Math.abs(rgb[0] - ref[0]) <= tol && Math.abs(rgb[1] - ref[1]) <= tol && Math.abs(rgb[2] - ref[2]) <= tol;
+    }
+
+    function getFillOrStroke(el) {
+        let fill = el.getAttribute('fill') || '';
+        if (!fill && el.getAttribute('style')) {
+            const m = el.getAttribute('style').match(/fill\s*:\s*([^;]+)/);
+            fill = m ? m[1].trim() : '';
+        }
+        if (fill && fill !== 'none' && fill.indexOf('url(') !== 0) return { type: 'fill', value: fill };
+        let stroke = el.getAttribute('stroke') || '';
+        if (!stroke && el.getAttribute('style')) {
+            const m = el.getAttribute('style').match(/stroke\s*:\s*([^;]+)/);
+            stroke = m ? m[1].trim() : '';
+        }
+        if (stroke && stroke !== 'none' && stroke.indexOf('url(') !== 0) return { type: 'stroke', value: stroke };
+        return null;
+    }
+
+    function processColors(doc) {
+        const svg = doc.documentElement;
+        const walk = (el) => {
+            const cs = getFillOrStroke(el);
+            if (cs) {
+                const rgb = parseRgb(cs.value);
+                if (rgb) {
+                    if (matchColor(rgb, COLOR1_RGB, COLOR_TOLERANCE)) el.setAttribute('colorselector', 'color1');
+                    else if (matchColor(rgb, COLOR2_RGB, COLOR_TOLERANCE)) el.setAttribute('colorselector', 'color2');
+                }
+            }
+            Array.from(el.children).forEach(walk);
+        };
+        walk(svg);
+    }
+
+    function processSvg(svgText) {
+        const parsed = parseSvg(svgText);
+        if (parsed.error) return { error: parsed.error };
+        const { doc } = parsed;
+        processLayers(doc);
+        processTextMarkers(doc);
+        processColors(doc);
+        const serializer = new XMLSerializer();
+        const out = serializer.serializeToString(doc.documentElement);
+        return { svg: out, doc };
+    }
+
+    function applySampleTextsToDoc(doc, presetIndex) {
+        if (presetIndex < 0 || presetIndex >= SAMPLE_PRESETS.length) return;
+        const preset = SAMPLE_PRESETS[presetIndex];
+        const map = {
+            'tpl-title': preset.tpl_title,
+            'tpl-subtitle': preset.tpl_subtitle,
+            'tpl-name': preset.tpl_name,
+            'tpl-topic': preset.tpl_topic,
+            'tpl-subtitle-line1': preset.tpl_subtitle_line1,
+            'tpl-subtitle-line2': preset.tpl_subtitle_line2,
+            'tpl-subtitle-line3': preset.tpl_subtitle_line3,
+            'tpl-title-spine': preset.tpl_title_spine,
+            'tpl-name-spine': preset.tpl_name_spine,
+            'tpl-topic-spine': preset.tpl_topic_spine
+        };
+        const svg = doc.documentElement;
+        svg.querySelectorAll('text[id]').forEach(textEl => {
+            const id = textEl.getAttribute('id');
+            const text = map[id];
+            if (text) setTextContent(textEl, text);
+        });
+    }
+
+    function applySampleColorsToDoc(doc, c1, c2) {
+        if (!c1 || !c2) return;
+        const svg = doc.documentElement;
+        const setFill = (el, color) => {
+            el.setAttribute('fill', color);
+            const style = el.getAttribute('style') || '';
+            const newStyle = style.replace(/fill\s*:\s*[^;]+/gi, '').replace(/;\s*;/g, ';').replace(/^;|;$/g, '');
+            el.setAttribute('style', (newStyle ? newStyle + '; ' : '') + 'fill: ' + color);
+        };
+        svg.querySelectorAll('[colorselector="color1"]').forEach(el => setFill(el, c1));
+        svg.querySelectorAll('[colorselector="color2"]').forEach(el => setFill(el, c2));
+    }
+
+    function applyLogoFillToDoc(doc, fillStyle) {
+        if (!fillStyle) return;
+        const svg = doc.documentElement;
+        const logos = svg.querySelectorAll('rect[id^="tpl-logo"]');
+        logos.forEach(rect => {
+            if (fillStyle === 'gray') rect.setAttribute('fill', '#9e9e9e');
+            else if (fillStyle === 'pattern') rect.setAttribute('fill', 'url(#checker)');
+            else rect.removeAttribute('fill');
+        });
+        if (fillStyle === 'pattern') {
+            let defs = svg.querySelector('defs');
+            if (!defs) { defs = doc.createElementNS('http://www.w3.org/2000/svg', 'defs'); svg.insertBefore(defs, svg.firstChild); }
+            if (!svg.querySelector('#checker')) {
+                const pattern = doc.createElementNS('http://www.w3.org/2000/svg', 'pattern');
+                pattern.setAttribute('id', 'checker');
+                pattern.setAttribute('width', '8');
+                pattern.setAttribute('height', '8');
+                pattern.setAttribute('patternUnits', 'userSpaceOnUse');
+                const r1 = doc.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                r1.setAttribute('width', '4'); r1.setAttribute('height', '4'); r1.setAttribute('fill', '#ddd');
+                const r2 = doc.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                r2.setAttribute('x', '4'); r2.setAttribute('y', '4'); r2.setAttribute('width', '4'); r2.setAttribute('height', '4'); r2.setAttribute('fill', '#ddd');
+                pattern.appendChild(r1); pattern.appendChild(r2);
+                defs.appendChild(pattern);
+            }
+        }
+    }
+
+    function buildPreviewSvg() {
+        if (!lastProcessedSvg) return null;
+        const parsed = parseSvg(lastProcessedSvg);
+        if (parsed.error) return null;
+        const doc = parsed.doc;
+        const clone = doc.documentElement.cloneNode(true);
+        const cloneDoc = doc.implementation.createDocument('http://www.w3.org/2000/svg', 'svg', null);
+        cloneDoc.replaceChild(cloneDoc.importNode(clone, true), cloneDoc.documentElement);
+        const doc2 = cloneDoc;
+        const svgEl = doc2.documentElement;
+        if (currentTextPreset >= 0) applySampleTextsToDoc(doc2, currentTextPreset);
+        if (currentColorPreset) applySampleColorsToDoc(doc2, currentColorPreset.c1, currentColorPreset.c2);
+        if (logoFillPreset) applyLogoFillToDoc(doc2, logoFillPreset);
+        svgEl.removeAttribute('width');
+        svgEl.removeAttribute('height');
+        svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+        return new XMLSerializer().serializeToString(svgEl);
+    }
+
+    function renderPreview() {
+        const svgStr = buildPreviewSvg();
+        previewWrap.innerHTML = '';
+        if (!svgStr) return;
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(svgStr, 'image/svg+xml');
+        const svg = doc.documentElement;
+        previewWrap.appendChild(previewWrap.ownerDocument.importNode(svg, true));
+    }
+
+    function collectLogos(doc) {
+        const svg = doc.documentElement;
+        const rects = Array.from(svg.querySelectorAll('rect[id^="tpl-logo"]'));
+        return rects.map(r => ({ id: r.getAttribute('id') || '' }));
+    }
+
+    function updateResultUI(doc) {
+        const logos = collectLogos(doc);
+        logoEmpty.style.display = logos.length ? 'none' : 'block';
+        logoList.style.display = logos.length ? 'block' : 'none';
+        logoList.innerHTML = '';
+        if (logos.length) {
+            ['none', 'gray', 'pattern'].forEach((key, i) => {
+                const label = key === 'none' ? 'Kein Muster' : key === 'gray' ? 'Muster Grau' : 'Muster Schachbrett';
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'test-btn' + (logoFillPreset === key ? ' active' : '');
+                btn.textContent = label;
+                btn.dataset.fill = key;
+                btn.addEventListener('click', () => {
+                    logoFillPreset = key;
+                    logoList.querySelectorAll('.test-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    renderPreview();
+                });
+                logoList.appendChild(btn);
+            });
+        }
+    }
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        if (e.dataTransfer.files.length) loadFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', e => { if (e.target.files.length) loadFile(e.target.files[0]); });
+
+    function loadFile(file) {
+        lastFileName = file.name || 'template.svg';
+        lastRawSvg = '';
+        lastProcessedSvg = '';
+        const reader = new FileReader();
+        reader.onload = () => {
+            lastRawSvg = reader.result;
+            btnProcess.disabled = false;
+            hint.textContent = 'Datei geladen: ' + file.name + '. Auf „Konvertieren“ klicken.';
+            hint.className = 'hint success';
+        };
+        reader.readAsText(file);
+    }
+
+    btnProcess.addEventListener('click', () => {
+        if (!lastRawSvg) return;
+        const result = processSvg(lastRawSvg);
+        if (result.error) {
+            hint.textContent = 'Fehler: ' + result.error;
+            hint.className = 'hint warn';
+            return;
+        }
+        lastProcessedSvg = result.svg;
+        processedDoc = result.doc;
+        resultWrap.style.display = 'block';
+        currentTextPreset = -1;
+        currentColorPreset = null;
+        logoFillPreset = null;
+        presetTextRow.querySelectorAll('.test-btn').forEach(b => b.classList.remove('active'));
+        colorPresetRow.querySelectorAll('.color-pair-row').forEach(r => r.classList.remove('active'));
+        updateResultUI(processedDoc);
+        renderPreview();
+        btnDownload.disabled = false;
+        hint.textContent = 'Konvertierung fertig. Vorschau unten. Mit Mustertexten/Farben/Logos testen, dann „Ergebnis herunterladen“.';
+        hint.className = 'hint success';
+    });
+
+    btnDownload.addEventListener('click', () => {
+        if (!lastProcessedSvg) return;
+        const blob = new Blob([lastProcessedSvg], { type: 'image/svg+xml' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = lastFileName.toLowerCase().endsWith('.svg') ? lastFileName.replace(/\.svg$/i, '-editor.svg') : 'template-editor.svg';
+        a.click();
+        URL.revokeObjectURL(a.href);
+    });
+
+    presetTextRow.querySelectorAll('.test-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const preset = parseInt(btn.dataset.preset, 10);
+            currentTextPreset = currentTextPreset === preset ? -1 : preset;
+            presetTextRow.querySelectorAll('.test-btn').forEach(b => b.classList.remove('active'));
+            if (currentTextPreset >= 0) presetTextRow.querySelector('.test-btn[data-preset="' + currentTextPreset + '"]').classList.add('active');
+            renderPreview();
+        });
+    });
+
+    colorPresetRow.querySelectorAll('.color-pair-row').forEach(row => {
+        row.addEventListener('click', () => {
+            const c1 = row.dataset.c1;
+            const c2 = row.dataset.c2;
+            const same = currentColorPreset && currentColorPreset.c1 === c1;
+            currentColorPreset = same ? null : { c1, c2 };
+            colorPresetRow.querySelectorAll('.color-pair-row').forEach(r => r.classList.remove('active'));
+            if (currentColorPreset) row.classList.add('active');
+            renderPreview();
+        });
+    });
+})();
+    </script>
+</body>
+</html>

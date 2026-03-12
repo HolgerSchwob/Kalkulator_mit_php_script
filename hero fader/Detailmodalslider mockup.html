@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>bamadi – Bindungs-Modal Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:#1A3A5C; --navy-deep:#0F2338; --gold:#E8A000; --gold-soft:#F5C44A;
+  --off:#F7F6F3; --g100:#EFEFED; --g300:#CECCC8; --g500:#8C8A86; --g800:#2E2C2A;
+  --white:#fff;
+  --serif:'DM Serif Display',Georgia,serif;
+  --sans:'Instrument Sans',system-ui,sans-serif;
+  --ease:cubic-bezier(0.22,1,0.36,1);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--sans);background:var(--off);color:var(--g800);-webkit-font-smoothing:antialiased}
+
+/* ─── PAGE CONTEXT ─── */
+.page{padding:60px 40px;max-width:1200px;margin:0 auto}
+.eyebrow{display:inline-flex;align-items:center;gap:10px;margin-bottom:16px}
+.eyebrow::before{content:'';width:24px;height:2px;background:var(--gold)}
+.eyebrow span{font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+.page-h{font-family:var(--serif);font-size:clamp(28px,4vw,48px);color:var(--navy);margin-bottom:14px;line-height:1.08}
+.page-sub{font-size:15px;color:var(--g500);line-height:1.65;max-width:540px;margin-bottom:48px}
+
+/* ─── CARDS GRID ─── */
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.card{background:var(--white);border:1px solid var(--g100);border-radius:10px;overflow:hidden;cursor:pointer;transition:transform .3s var(--ease),box-shadow .3s,border-color .3s;position:relative}
+.card:hover{transform:translateY(-5px);box-shadow:0 16px 48px rgba(0,0,0,.1);border-color:var(--gold)}
+.card-vis{height:200px;display:flex;align-items:center;justify-content:center;position:relative}
+.card-book{width:72px;height:105px;border-radius:2px 5px 5px 2px;box-shadow:-3px 0 6px rgba(0,0,0,.35),4px 4px 14px rgba(0,0,0,.4);position:relative}
+.card-book::before{content:'';position:absolute;left:0;top:0;bottom:0;width:9px;background:rgba(0,0,0,.25);border-radius:2px 0 0 2px}
+.card-book::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.15) 0%,transparent 40%,rgba(0,0,0,.1) 100%);border-radius:inherit}
+.card-badge{position:absolute;top:12px;right:12px;background:var(--gold);color:var(--navy-deep);font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:3px}
+.card-body{padding:20px 22px 22px}
+.card-body h3{font-family:var(--serif);font-size:19px;color:var(--navy);margin-bottom:6px;font-weight:400}
+.card-body p{font-size:12px;color:var(--g500);line-height:1.55;margin-bottom:14px}
+.card-detail{font-size:10px;font-weight:700;letter-spacing:.09em;color:var(--gold);text-transform:uppercase;margin-bottom:12px}
+.card-price{font-size:14px;font-weight:600;color:var(--navy)}
+.card-price span{color:var(--g500);font-weight:400}
+.card-hint{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--g300);margin-top:14px;transition:color .2s}
+.card:hover .card-hint{color:var(--gold)}
+.card-hint svg{transition:transform .2s}
+.card:hover .card-hint svg{transform:translateX(3px)}
+
+/* ─── MODAL OVERLAY ─── */
+.overlay{
+  position:fixed;inset:0;z-index:200;
+  background:rgba(10,22,38,.75);
+  backdrop-filter:blur(8px);
+  display:flex;align-items:center;justify-content:center;
+  padding:24px 72px; /* mehr seitlicher Platz für Pfeile */
+  opacity:0;pointer-events:none;
+  transition:opacity .35s var(--ease);
+}
+.overlay.open{opacity:1;pointer-events:auto}
+
+/* ─── MODAL BOX ─── */
+.modal{
+  background:var(--white);
+  border-radius:14px;
+  width:100%;max-width:820px;
+  max-height:90vh;
+  overflow:hidden;
+  position:relative;
+  transform:scale(.94) translateY(16px);
+  transition:transform .4s var(--ease);
+  display:flex;flex-direction:column;
+}
+.overlay.open .modal{transform:scale(1) translateY(0)}
+
+/* Close */
+.modal-close{
+  position:absolute;top:16px;right:16px;z-index:10;
+  width:34px;height:34px;border-radius:50%;
+  background:rgba(0,0,0,.08);border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;color:var(--g500);transition:background .2s,color .2s;
+}
+.modal-close:hover{background:rgba(0,0,0,.14);color:var(--g800)}
+
+/* ─── INTERNAL SLIDER ─── */
+.modal-slides{
+  position:relative;
+  overflow:visible; /* seitliche Pfeile dürfen herausragen */
+  flex:1;
+}
+.slides-track{
+  display:flex;
+  height:100%;
+  transition:transform .5s var(--ease);
+  overflow:hidden; /* content bleibt sauber */
+  border-radius:0; /* overlay nimmt border-radius vom modal */
+}
+.slide{
+  min-width:100%;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  height:100%;
+}
+
+/* Slide visuals */
+.slide-visual{
+  position:relative;
+  display:flex;align-items:center;justify-content:center;
+  padding:48px;
+  overflow:hidden;
+}
+.slide-visual::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,.12) 0%,transparent 50%);
+  pointer-events:none;
+}
+
+/* Slide text */
+.slide-text{
+  padding:44px 40px;
+  display:flex;flex-direction:column;
+  justify-content:center;
+  overflow-y:auto;
+}
+.slide-eyebrow{font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:12px}
+.slide-h{font-family:var(--serif);font-size:clamp(20px,2.5vw,30px);color:var(--navy);margin-bottom:14px;font-weight:400;line-height:1.15}
+.slide-p{font-size:13.5px;color:var(--g500);line-height:1.7;margin-bottom:20px}
+
+/* Key facts */
+.facts{display:flex;flex-direction:column;gap:10px;margin-bottom:24px}
+.fact{display:flex;align-items:flex-start;gap:10px;font-size:13px}
+.fact-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0;margin-top:5px}
+.fact strong{color:var(--navy);font-weight:600}
+.fact span{color:var(--g500)}
+
+/* Detail tags */
+.tags{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:24px}
+.tag{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--navy);background:var(--off);border:1px solid var(--g100);padding:5px 11px;border-radius:20px}
+.tag.highlight{background:rgba(232,160,0,.1);border-color:rgba(232,160,0,.3);color:var(--gold)}
+
+/* CTA in modal */
+.slide-cta{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--navy);color:var(--white);
+  font-size:13px;font-weight:600;padding:13px 22px;
+  border-radius:4px;border:none;cursor:pointer;
+  transition:background .2s,transform .15s;
+  align-self:flex-start;
+}
+.slide-cta:hover{background:var(--navy-deep);transform:translateY(-1px)}
+
+/* Book visual large */
+.book-lg{
+  width:160px;height:228px;
+  border-radius:3px 8px 8px 3px;
+  box-shadow:-6px 0 12px rgba(0,0,0,.4),6px 8px 32px rgba(0,0,0,.45),0 24px 60px rgba(0,0,0,.3);
+  position:relative;
+  transform:perspective(900px) rotateY(-18deg) rotateX(3deg);
+}
+.book-lg::before{content:'';position:absolute;left:0;top:0;bottom:0;width:18px;background:rgba(0,0,0,.28);border-radius:3px 0 0 3px}
+.book-lg::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.18) 0%,transparent 40%,rgba(0,0,0,.12) 100%);border-radius:inherit}
+.book-lg-inner{position:absolute;inset:0;padding:24px 20px 20px 30px;display:flex;flex-direction:column;z-index:1}
+.book-lg-tag{font-size:7px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin-bottom:8px;opacity:.7}
+.book-lg-rule{width:22px;height:1.5px;margin-bottom:11px;opacity:.6}
+.book-lg-title{font-family:var(--serif);font-size:11px;line-height:1.45;flex:1}
+.book-lg-author{font-size:8px;opacity:.4;letter-spacing:.05em}
+.book-pages-lg{position:absolute;right:-5px;top:4px;bottom:4px;width:5px;background:repeating-linear-gradient(to bottom,#e8e6e0 0,#e8e6e0 1px,#d4d2cc 1px,#d4d2cc 2px);border-radius:0 2px 2px 0}
+
+/* Macro visual placeholder */
+.macro-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
+.macro{border-radius:8px;overflow:hidden;aspect-ratio:1;position:relative;display:flex;align-items:center;justify-content:center}
+.macro-label{position:absolute;bottom:0;left:0;right:0;padding:8px 10px;background:linear-gradient(transparent,rgba(0,0,0,.55));font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.8)}
+
+/* ─── MODAL NAV ─── */
+.modal-nav{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 24px;
+  border-top:1px solid var(--g100);
+  background:var(--white);
+  flex-shrink:0;
+}
+.nav-dots{display:flex;gap:7px}
+.nav-dot{width:7px;height:7px;border-radius:50%;background:var(--g100);cursor:pointer;transition:background .25s,transform .25s}
+.nav-dot.active{background:var(--gold);transform:scale(1.25)}
+.slide-counter{font-size:12px;color:var(--g500);font-weight:500}
+
+/* ─── SEITLICHE PFEILE ─── */
+.side-arr{
+  position:absolute;top:50%;transform:translateY(-50%);
+  z-index:20;
+  width:48px;height:72px;
+  border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:opacity .2s,transform .2s var(--ease);
+  background:none;
+  padding:0;
+}
+.side-arr svg{
+  display:block;
+  filter:drop-shadow(0 2px 8px rgba(0,0,0,.35));
+  transition:transform .2s var(--ease);
+}
+.side-arr--prev{ left: -24px; }
+.side-arr--next{ right: -24px; }
+.side-arr--prev:hover svg{ transform:translateX(-3px); }
+.side-arr--next:hover svg{ transform:translateX(3px); }
+.side-arr:disabled{ opacity:.2; cursor:default; pointer-events:none; }
+.side-arr:disabled svg{ filter:none; }
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:700px){
+  .cards{grid-template-columns:repeat(2,1fr)}
+  .slide{grid-template-columns:1fr}
+  .slide-visual{height:220px;padding:32px}
+  .modal{max-height:95vh}
+}
+@media(max-width:480px){
+  .cards{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="eyebrow"><span>Bindungsarten</span></div>
+  <h2 class="page-h">Dein Buch. Richtig gebunden.</h2>
+  <p class="page-sub">Jede Arbeit wird auf 120 g/m² säurefreiem Papier gedruckt — archivierbar nach DIN, kein Durchscheinen, kein Vergilben. Und das Buch liegt flach auf dem Tisch.</p>
+
+  <div class="cards" id="cards">
+
+    <!-- Card 1: Hardcover Modern -->
+    <div class="card" onclick="openModal(0)">
+      <div class="card-vis" style="background:linear-gradient(145deg,#1A3A5C,#244d78)">
+        <div class="card-book" style="background:linear-gradient(to right,#0e2440,#1A3A5C)"></div>
+        <div class="card-badge">Beliebt</div>
+      </div>
+      <div class="card-body">
+        <h3>Hardcover Modern</h3>
+        <p>Vollfarbcover, Fächerklebebindung mit Kaltleim — liegt komplett flach auf dem Tisch.</p>
+        <div class="card-detail">Lay-flat · Vollfarbcover · 120 g/m²</div>
+        <div class="card-price">ab 34,90 € <span>inkl. MwSt.</span></div>
+        <div class="card-hint">
+          Details ansehen
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: Hardcover Klassik -->
+    <div class="card" onclick="openModal(1)">
+      <div class="card-vis" style="background:linear-gradient(145deg,#1e3d28,#264d32)">
+        <div class="card-book" style="background:linear-gradient(to right,#112218,#1e3d28)"></div>
+        <div class="card-badge">Klassiker</div>
+      </div>
+      <div class="card-body">
+        <h3>Hardcover Klassik</h3>
+        <p>Efalin-Leineneinband in mehreren Farben. Zeitlos, ohne Aufdrucke. Innen dieselbe Lay-flat-Bindung.</p>
+        <div class="card-detail">Lay-flat · Efalin-Einband · 120 g/m²</div>
+        <div class="card-price">ab 38,50 € <span>inkl. MwSt.</span></div>
+        <div class="card-hint">
+          Details ansehen
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: Paperback -->
+    <div class="card" onclick="openModal(2)">
+      <div class="card-vis" style="background:linear-gradient(145deg,#3d1e14,#5a2e1e)">
+        <div class="card-book" style="background:linear-gradient(to right,#2e1510,#5a2e1e)"></div>
+      </div>
+      <div class="card-body">
+        <h3>Paperback Folie</h3>
+        <p>Klebebindung mit laminiertem Umschlag. Leicht, robust, günstig — ideal für Pflichtexemplare.</p>
+        <div class="card-detail">Laminierter Umschlag · 90 g/m²</div>
+        <div class="card-price">ab 14,90 € <span>inkl. MwSt.</span></div>
+        <div class="card-hint">
+          Details ansehen
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 4: Ringbindung -->
+    <div class="card" onclick="openModal(3)">
+      <div class="card-vis" style="background:linear-gradient(145deg,#1e1e2d,#2a2a3a)">
+        <div class="card-book" style="background:linear-gradient(to right,#14141e,#2a2a3a)"></div>
+      </div>
+      <div class="card-body">
+        <h3>Ringbindung</h3>
+        <p>Spiralbindung mit transparentem Deckblatt. Liegt komplett flach — praktisch für Werkstücke.</p>
+        <div class="card-detail">Spiralbindung · Transparent-Cover</div>
+        <div class="card-price">ab 12,90 € <span>inkl. MwSt.</span></div>
+        <div class="card-hint">
+          Details ansehen
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ─── MODAL ─── -->
+<div class="overlay" id="overlay" onclick="closeOnBg(event)">
+  <div class="modal" id="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+
+    <div class="modal-slides">
+      <!-- Seitliche Pfeile -->
+      <button class="side-arr side-arr--prev" id="btnPrev" onclick="prevSlide()" aria-label="Zurück">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="20" fill="rgba(255,255,255,0.92)"/>
+          <path d="M23 13L16 20L23 27" stroke="#1A3A5C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <button class="side-arr side-arr--next" id="btnNext" onclick="nextSlide()" aria-label="Weiter">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="20" fill="rgba(255,255,255,0.92)"/>
+          <path d="M17 13L24 20L17 27" stroke="#1A3A5C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
+      <div class="slides-track" id="track">
+        <!-- Slides werden per JS gefüllt -->
+      </div>
+    </div>
+
+    <div class="modal-nav">
+      <div class="nav-dots" id="navDots"></div>
+      <span class="slide-counter" id="slideCounter">1 / 3</span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Daten pro Bindungsart ──────────────────────────────────────────
+const bindings = [
+
+  // 0 — Hardcover Modern
+  {
+    slides: [
+      // Slide 1: Übersicht
+      {
+        visual: `
+          <div class="book-lg" style="background:linear-gradient(155deg,#1A3A5C,#244d78)">
+            <div class="book-lg-inner">
+              <div class="book-lg-tag" style="color:#E8A000">Masterarbeit · 2026</div>
+              <div class="book-lg-rule" style="background:#E8A000"></div>
+              <div class="book-lg-title" style="color:rgba(255,255,255,.9)">Nachhaltige Mobilität im urbanen Kontext</div>
+              <div class="book-lg-author" style="color:#fff">M. Hoffmann · TU Darmstadt</div>
+            </div>
+            <div class="book-pages-lg"></div>
+          </div>`,
+        bg: 'linear-gradient(145deg,#1A3A5C,#0F2338)',
+        eyebrow: 'Hardcover Modern · Übersicht',
+        title: 'Vollfarbcover, präzise gebunden.',
+        body: 'Der Klassiker unter den Hardcovern — dein eigenes Design auf dem Einband, in satten Farben gedruckt. Innen 120 g/m² säurefreies Archivpapier, außen ein Cover das nach etwas aussieht.',
+        facts: [
+          {strong:'Lay-flat-Bindung:', text:'Fächerklebebindung mit flexiblem Kaltleim — das Buch liegt ohne Druck vollflächig auf dem Tisch.'},
+          {strong:'120 g/m² säurefrei:', text:'Archivierbar nach DIN. Kein Durchscheinen, kein Vergilben, auch nach Jahren.'},
+          {strong:'Vollfarbdruck:', text:'Dein Cover in Echtfarbe gedruckt — Fotos, Grafiken, Farbflächen ohne Einschränkung.'},
+        ],
+        tags: ['Lay-flat','Vollfarbcover','50–600 Seiten','ab 34,90 €'],
+        highlightTag: 'Beliebt',
+      },
+      // Slide 2: Technik & Handwerk
+      {
+        visual: `
+          <div class="macro-grid">
+            <div class="macro" style="background:linear-gradient(145deg,#1A3A5C,#0d2035)">
+              <div style="width:60%;height:70%;background:linear-gradient(to right,rgba(0,0,0,.4),transparent);border-radius:4px;position:relative">
+                <div style="position:absolute;left:0;top:0;bottom:0;width:12px;background:rgba(0,0,0,.5);border-radius:4px 0 0 4px"></div>
+                <div style="position:absolute;inset:0;background:repeating-linear-gradient(to right,rgba(255,255,255,.04) 0,rgba(255,255,255,.04) 1px,transparent 1px,transparent 4px)"></div>
+              </div>
+              <div class="macro-label">Fächerklebebindung</div>
+            </div>
+            <div class="macro" style="background:linear-gradient(145deg,#2a1810,#4a2818)">
+              <div style="width:55%;height:18px;background:linear-gradient(to right,#c8a878,#e8c898,#c8a878);border-radius:2px;box-shadow:0 2px 8px rgba(0,0,0,.4)"></div>
+              <div class="macro-label">Kapitalband</div>
+            </div>
+            <div class="macro" style="background:linear-gradient(145deg,#1e1e2e,#2e2e3e)">
+              <div style="width:60%;height:80%;border:2px solid rgba(255,255,255,.15);border-radius:4px 12px 12px 4px;position:relative;overflow:hidden">
+                <div style="position:absolute;inset:0;background:repeating-linear-gradient(to bottom,rgba(255,255,255,.03) 0,rgba(255,255,255,.03) 1px,transparent 1px,transparent 4px)"></div>
+              </div>
+              <div class="macro-label">Gerundeter Rücken</div>
+            </div>
+            <div class="macro" style="background:linear-gradient(145deg,#0e2030,#1a3050)">
+              <div style="display:flex;flex-direction:column;gap:3px;width:55%">
+                <div style="height:3px;background:linear-gradient(to right,rgba(255,255,255,.6),rgba(255,255,255,.15));border-radius:2px"></div>
+                <div style="height:3px;background:linear-gradient(to right,rgba(255,255,255,.5),rgba(255,255,255,.12));border-radius:2px"></div>
+                <div style="height:3px;background:linear-gradient(to right,rgba(255,255,255,.4),rgba(255,255,255,.1));border-radius:2px"></div>
+              </div>
+              <div class="macro-label">120 g/m² Archivpapier</div>
+            </div>
+          </div>`,
+        bg: '#F7F6F3',
+        eyebrow: 'Verarbeitung & Technik',
+        title: 'Handwerk, das man sieht.',
+        body: 'Fächerklebebindung mit Kaltleim — jede Seite wird einzeln angesetzt, kein Klumpen im Rücken. Das Buch liegt tatsächlich flach, auch nach dem 100. Aufschlagen. Mit Kapitalband und gerundetem Rücken.',
+        facts: [
+          {strong:'Kaltleim-Fächerbindung:', text:'Flexibler als Hotmelt — der Rücken bricht nicht, auch bei dünnem Papier.'},
+          {strong:'Kapitalband:', text:'Gewebtes Kopf- und Fußband — kleines Detail, das den Unterschied macht.'},
+          {strong:'Gerundeter Rücken:', text:'Optional: der Buchrücken wird leicht gewölbt — wirkt wie ein verlegtes Buch.'},
+        ],
+        tags: ['Kaltleim','Kapitalband','Runder Rücken','Inhouse Fulda'],
+      },
+      // Slide 3: Eignung
+      {
+        visual: `
+          <div style="display:flex;flex-direction:column;gap:14px;width:100%;padding:8px 0">
+            <div style="background:rgba(232,160,0,.1);border:1px solid rgba(232,160,0,.25);border-radius:8px;padding:16px 18px">
+              <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#E8A000;margin-bottom:6px">Ideal für</div>
+              <div style="font-size:13px;color:#1A3A5C;line-height:1.55">Master- & Bachelorarbeiten mit individuellem Cover. Seitenzahl 50–500. Immer wenn das Buch optisch etwas hermachen soll.</div>
+            </div>
+            <div style="background:rgba(26,58,92,.06);border:1px solid rgba(26,58,92,.1);border-radius:8px;padding:16px 18px">
+              <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#1A3A5C;margin-bottom:6px">Seitenzahl</div>
+              <div style="font-size:13px;color:#8C8A86;line-height:1.55">50 bis ca. 600 Seiten. Unter 50 Seiten wirkt der Rücken zu schmal — dann Paperback empfohlen.</div>
+            </div>
+            <div style="background:rgba(26,58,92,.06);border:1px solid rgba(26,58,92,.1);border-radius:8px;padding:16px 18px">
+              <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#1A3A5C;margin-bottom:6px">Verglichen mit Klassik</div>
+              <div style="font-size:13px;color:#8C8A86;line-height:1.55">Modern = Vollfarbcover, individuell gestaltbar. Klassik = edler Leineneinband, ohne Cover-Aufdruck. Beide haben die gleiche Lay-flat-Innenbindung.</div>
+            </div>
+          </div>`,
+        bg: '#fff',
+        eyebrow: 'Eignung & Empfehlung',
+        title: 'Wann ist das die richtige Wahl?',
+        body: '',
+        facts: [],
+        tags: [],
+        cta: true,
+      },
+    ]
+  },
+
+  // 1 — Hardcover Klassik
+  {
+    slides: [
+      {
+        visual: `
+          <div class="book-lg" style="background:linear-gradient(160deg,#1e3d28,#264d32)">
+            <div class="book-lg-inner">
+              <div class="book-lg-tag" style="color:rgba(255,255,255,.5)">Dissertation</div>
+              <div class="book-lg-rule" style="background:rgba(255,255,255,.25)"></div>
+              <div class="book-lg-title" style="color:rgba(255,255,255,.85);font-size:10.5px">Epigenetische Regulation der Stressantwort</div>
+              <div class="book-lg-author" style="color:#fff">Dr. S. Weber · Uni Marburg</div>
+            </div>
+            <div class="book-pages-lg"></div>
+          </div>`,
+        bg: 'linear-gradient(145deg,#1e3d28,#112218)',
+        eyebrow: 'Hardcover Klassik · Übersicht',
+        title: 'Zeitlos. Ohne Schnörkel.',
+        body: 'Efalin-Leinengewebe ohne Cover-Aufdruck. Der Einband spricht durch Material und Haptik — nicht durch Farbe. Verfügbar in Dunkelgrün, Bordeaux, Schwarz, Dunkelblau und weiteren Farben.',
+        facts: [
+          {strong:'Efalin-Leineneinband:', text:'Geprägtes Leinengewebe — wertige Haptik, kratzfest, klassisch.'},
+          {strong:'Blindprägung möglich:', text:'Titel und Name können geprägt werden — dauerhaft, ohne Aufdruck.'},
+          {strong:'Gleiche Innenbindung:', text:'Fächerklebebindung mit Kaltleim — identische Lay-flat-Qualität wie beim Modern.'},
+        ],
+        tags: ['Lay-flat','Efalin-Leineneinband','Blindprägung möglich','ab 38,50 €'],
+        highlightTag: 'Klassiker',
+      },
+      {
+        visual: `
+          <div class="macro-grid">
+            <div class="macro" style="background:linear-gradient(145deg,#1e3d28,#112218)">
+              <div style="width:65%;height:75%;background:repeating-linear-gradient(45deg,rgba(255,255,255,.04) 0,rgba(255,255,255,.04) 1px,transparent 1px,transparent 4px);border-radius:4px;border:1px solid rgba(255,255,255,.1)"></div>
+              <div class="macro-label">Efalin-Textur</div>
+            </div>
+            <div class="macro" style="background:linear-gradient(145deg,#4a1520,#2a0d12)">
+              <div style="width:60%;height:70%;background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0,rgba(255,255,255,.05) 1px,transparent 1px,transparent 4px);border-radius:4px;border:1px solid rgba(255,255,255,.1)"></div>
+              <div class="macro-label">Bordeaux Variante</div>
+            </div>
+            <div class="macro" style="background:linear-gradient(145deg,#111,#222)">
+              <div style="width:60%;height:70%;background:repeating-linear-gradient(45deg,rgba(255,255,255,.04) 0,rgba(255,255,255,.04) 1px,transparent 1px,transparent 4px);border-radius:4px;border:1px solid rgba(255,255,255,.1)"></div>
+              <div class="macro-label">Schwarz Variante</div>
+            </div>
+            <div class="macro" style="background:linear-gradient(145deg,#2a1810,#4a2818)">
+              <div style="width:55%;height:18px;background:linear-gradient(to right,#c8a878,#e8c898,#c8a878);border-radius:2px"></div>
+              <div class="macro-label">Kapitalband</div>
+            </div>
+          </div>`,
+        bg: '#F7F6F3',
+        eyebrow: 'Material & Farben',
+        title: 'Efalin in vier Farben.',
+        body: 'Das Leinengewebe ist in Dunkelgrün, Bordeaux, Schwarz und Dunkelblau erhältlich. Jede Variante hat denselben Charakter: ruhig, wertig, zeitlos — und liegt trotzdem flach auf dem Tisch.',
+        facts: [
+          {strong:'Dunkelgrün:', text:'Klassisch akademisch — am häufigsten gewählt für Dissertationen.'},
+          {strong:'Bordeaux:', text:'Warm und distinktiv — fällt auf, ohne aufdringlich zu sein.'},
+          {strong:'Schwarz:', text:'Maximal neutral — wirkt hochwertig auf jedem Tisch.'},
+        ],
+        tags: ['Dunkelgrün','Bordeaux','Schwarz','Dunkelblau'],
+      },
+      {
+        visual: `
+          <div style="display:flex;flex-direction:column;gap:14px;width:100%;padding:8px 0">
+            <div style="background:rgba(232,160,0,.1);border:1px solid rgba(232,160,0,.25);border-radius:8px;padding:16px 18px">
+              <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#E8A000;margin-bottom:6px">Ideal für</div>
+              <div style="font-size:13px;color:#1A3A5C;line-height:1.55">Dissertationen und Masterarbeiten, die durch Material statt durch buntes Cover überzeugen sollen. Pflichtabgaben, Institutsbibliotheken.</div>
+            </div>
+            <div style="background:rgba(26,58,92,.06);border:1px solid rgba(26,58,92,.1);border-radius:8px;padding:16px 18px">
+              <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#1A3A5C;margin-bottom:6px">Modern vs. Klassik</div>
+              <div style="font-size:13px;color:#8C8A86;line-height:1.55">Klassik = edler Einband ohne Aufdruck, Gestaltung durch Material. Modern = dein individuelles Farbcover. Beide Lay-flat, beide 120 g/m².</div>
+            </div>
+          </div>`,
+        bg: '#fff',
+        eyebrow: 'Eignung & Empfehlung',
+        title: 'Wann ist Klassik die richtige Wahl?',
+        body: '',
+        facts: [],
+        tags: [],
+        cta: true,
+      },
+    ]
+  },
+
+  // 2 — Paperback Folie
+  {
+    slides: [
+      {
+        visual: `
+          <div class="book-lg" style="background:linear-gradient(155deg,#3d1e14,#5a2e1e)">
+            <div class="book-lg-inner">
+              <div class="book-lg-tag" style="color:rgba(255,200,180,.5)">Bachelorarbeit</div>
+              <div class="book-lg-rule" style="background:rgba(255,200,180,.3)"></div>
+              <div class="book-lg-title" style="color:rgba(255,255,255,.85);font-size:11px">Nachhaltige Lieferketten im E-Commerce</div>
+              <div class="book-lg-author" style="color:#fff">T. Braun · FH Frankfurt</div>
+            </div>
+            <div class="book-pages-lg"></div>
+          </div>`,
+        bg: 'linear-gradient(145deg,#3d1e14,#2a1510)',
+        eyebrow: 'Paperback Folie · Übersicht',
+        title: 'Praktisch, robust, günstig.',
+        body: 'Klebebindung mit laminiertem Umschlag — der Standard für Pflichtexemplare. Leicht, stapelbar, und mit Folie laminiert damit der Umschlag nicht zerknickt. Ideal wenn mehrere Exemplare gefragt sind.',
+        facts: [
+          {strong:'Laminierter Umschlag:', text:'Matt oder glänzend — schützt vor Feuchtigkeit und Abrieb.'},
+          {strong:'Klebebindung:', text:'Hotmelt-Klebebindung, bewährt für 30–400 Seiten.'},
+          {strong:'90 g/m² Inhaltspapier:', text:'Leichter als beim Hardcover — hält das Gesamtgewicht schlank.'},
+        ],
+        tags: ['Laminierter Umschlag','Klebebindung','30–400 Seiten','ab 14,90 €'],
+      },
+      {
+        visual: `
+          <div style="display:flex;flex-direction:column;gap:14px;width:100%;padding:8px 0">
+            <div style="background:rgba(232,160,0,.1);border:1px solid rgba(232,160,0,.25);border-radius:8px;padding:16px 18px">
+              <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#E8A000;margin-bottom:6px">Ideal für</div>
+              <div style="font-size:13px;color:#1A3A5C;line-height:1.55">Pflichtexemplare und Zweitexemplare. Wenn die Arbeit abgegeben wird aber nicht im Regal stehen soll. Mehrere Stücke zum günstigen Preis.</div>
+            </div>
+            <div style="background:rgba(26,58,92,.06);border:1px solid rgba(26,58,92,.1);border-radius:8px;padding:16px 18px">
+              <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#1A3A5C;margin-bottom:6px">Paperback vs. Hardcover</div>
+              <div style="font-size:13px;color:#8C8A86;line-height:1.55">Paperback liegt nicht flach — wer das möchte, wählt Hardcover Modern. Paperback ist schlanker, leichter, günstiger — gut für Bibliotheksexemplare.</div>
+            </div>
+          </div>`,
+        bg: '#fff',
+        eyebrow: 'Eignung & Empfehlung',
+        title: 'Wann ist Paperback sinnvoll?',
+        body: '',
+        facts: [],
+        tags: [],
+        cta: true,
+      },
+    ]
+  },
+
+  // 3 — Ringbindung
+  {
+    slides: [
+      {
+        visual: `
+          <div class="book-lg" style="background:linear-gradient(160deg,#1e1e2d,#2a2a3a)">
+            <div class="book-lg-inner">
+              <div class="book-lg-tag" style="color:rgba(150,200,255,.5)">Seminararbeit</div>
+              <div class="book-lg-rule" style="background:rgba(150,200,255,.3)"></div>
+              <div class="book-lg-title" style="color:rgba(255,255,255,.85);font-size:11px">Analyse digitaler Geschäftsmodelle im SaaS-Kontext</div>
+              <div class="book-lg-author" style="color:#fff">K. Fischer · WHU</div>
+            </div>
+            <div class="book-pages-lg"></div>
+          </div>`,
+        bg: 'linear-gradient(145deg,#1e1e2d,#111118)',
+        eyebrow: 'Ringbindung · Übersicht',
+        title: 'Liegt flach. Bleibt offen.',
+        body: 'Spiralbindung mit transparentem Deckblatt und schwarzem Rückdeckel. Das Buch schlägt 360° auf — liegt komplett flach auf dem Tisch, lässt sich einhändig halten. Ideal für Präsentationen und Werkstücke.',
+        facts: [
+          {strong:'360° aufklappbar:', text:'Liegt vollständig flach — perfekt zum Durchblättern und Präsentieren.'},
+          {strong:'Transparentes Deckblatt:', text:'Titelseite bleibt sichtbar ohne extra Covergestaltung.'},
+          {strong:'Drahtkamd oder Plastik:', text:'Metallspirale (silber/schwarz) oder weiße Plastikspirale wählbar.'},
+        ],
+        tags: ['360° Lay-flat','Transparent-Cover','Drahtkamm','ab 12,90 €'],
+      },
+      {
+        visual: `
+          <div style="display:flex;flex-direction:column;gap:14px;width:100%;padding:8px 0">
+            <div style="background:rgba(232,160,0,.1);border:1px solid rgba(232,160,0,.25);border-radius:8px;padding:16px 18px">
+              <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#E8A000;margin-bottom:6px">Ideal für</div>
+              <div style="font-size:13px;color:#1A3A5C;line-height:1.55">Seminararbeiten, Werkstücke, Präsentationsunterlagen. Wenn das Dokument am Tisch liegen soll während man spricht.</div>
+            </div>
+            <div style="background:rgba(26,58,92,.06);border:1px solid rgba(26,58,92,.1);border-radius:8px;padding:16px 18px">
+              <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#1A3A5C;margin-bottom:6px">Ringbindung vs. Hardcover</div>
+              <div style="font-size:13px;color:#8C8A86;line-height:1.55">Ringbindung eignet sich nicht als Abgabeexemplar für Hochschulbibliotheken — dafür Hardcover wählen. Aber für Präsentation und Archiv unschlagbar praktisch.</div>
+            </div>
+          </div>`,
+        bg: '#fff',
+        eyebrow: 'Eignung & Empfehlung',
+        title: 'Wann ist Ringbindung sinnvoll?',
+        body: '',
+        facts: [],
+        tags: [],
+        cta: true,
+      },
+    ]
+  },
+];
+
+// ── State ──────────────────────────────────────────────────────────
+let activeBinding = 0;
+let activeSlide   = 0;
+
+function openModal(bindingIdx) {
+  activeBinding = bindingIdx;
+  activeSlide   = 0;
+  renderModal();
+  document.getElementById('overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function closeOnBg(e) {
+  if (e.target === document.getElementById('overlay')) closeModal();
+}
+
+function renderModal() {
+  const binding = bindings[activeBinding];
+  const slides  = binding.slides;
+  const track   = document.getElementById('track');
+  const dots    = document.getElementById('navDots');
+
+  // Build slides HTML
+  track.innerHTML = slides.map((s, i) => `
+    <div class="slide">
+      <div class="slide-visual" style="background:${s.bg || '#1A3A5C'}">
+        ${s.visual}
+      </div>
+      <div class="slide-text">
+        <div class="slide-eyebrow">${s.eyebrow}</div>
+        <h2 class="slide-h">${s.title}</h2>
+        ${s.body ? `<p class="slide-p">${s.body}</p>` : ''}
+        ${s.facts.length ? `
+          <div class="facts">
+            ${s.facts.map(f => `
+              <div class="fact">
+                <div class="fact-dot"></div>
+                <div><strong>${f.strong}</strong> <span>${f.text}</span></div>
+              </div>`).join('')}
+          </div>` : ''}
+        ${s.tags.length ? `
+          <div class="tags">
+            ${s.tags.map(t => `<div class="tag${s.highlightTag===t?' highlight':''}">${t}</div>`).join('')}
+          </div>` : ''}
+        ${s.cta ? `<button class="slide-cta" onclick="closeModal()">Jetzt konfigurieren →</button>` : ''}
+      </div>
+    </div>
+  `).join('');
+
+  // Build dots
+  dots.innerHTML = slides.map((_, i) =>
+    `<div class="nav-dot${i===0?' active':''}" onclick="goToSlide(${i})"></div>`
+  ).join('');
+
+  goToSlide(0);
+}
+
+function goToSlide(n) {
+  const binding = bindings[activeBinding];
+  const count   = binding.slides.length;
+  activeSlide   = Math.max(0, Math.min(n, count - 1));
+
+  document.getElementById('track').style.transform = `translateX(-${activeSlide * 100}%)`;
+  document.querySelectorAll('.nav-dot').forEach((d, i) =>
+    d.classList.toggle('active', i === activeSlide));
+  document.getElementById('slideCounter').textContent = `${activeSlide + 1} / ${count}`;
+  document.getElementById('btnPrev').disabled = activeSlide === 0;
+  document.getElementById('btnNext').disabled = activeSlide === count - 1;
+}
+
+function prevSlide() { goToSlide(activeSlide - 1); }
+function nextSlide() { goToSlide(activeSlide + 1); }
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('overlay').classList.contains('open')) return;
+  if (e.key === 'Escape')    closeModal();
+  if (e.key === 'ArrowLeft') prevSlide();
+  if (e.key === 'ArrowRight')nextSlide();
+});
+
+// Touch swipe
+let touchStartX = 0;
+document.getElementById('track').addEventListener('touchstart', e => {
+  touchStartX = e.touches[0].clientX;
+}, {passive:true});
+document.getElementById('track').addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(dx) > 40) dx < 0 ? nextSlide() : prevSlide();
+});
+</script>
+</body>
+</html>
