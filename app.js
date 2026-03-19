@@ -8,6 +8,7 @@
   var closeBtn = document.querySelector('.kalkulator-overlay-close');
   var calcUrl = 'kalkulator/index.html';
   var modalOverlayCount = 0;
+  var lastActiveElement = null;
 
   function updateCloseButtonVisibility() {
     if (closeBtn) closeBtn.style.display = modalOverlayCount > 0 ? 'none' : '';
@@ -33,16 +34,28 @@
       })
     }).catch(()=>{});
     // #endregion agent log
+    lastActiveElement = document.activeElement;
     modalOverlayCount = 0;
     updateCloseButtonVisibility();
     iframe.src = calcUrl;
     overlay.classList.add('is-open');
     overlay.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
+    if (closeBtn && typeof closeBtn.focus === 'function') {
+      closeBtn.focus();
+    }
   }
 
   function closeKalkulatorOverlay() {
     if (!overlay || !iframe) return;
+    if (closeBtn && typeof closeBtn.blur === 'function') {
+      closeBtn.blur();
+    }
+    if (lastActiveElement && typeof lastActiveElement.focus === 'function') {
+      try {
+        lastActiveElement.focus();
+      } catch (e) {}
+    }
     overlay.classList.remove('is-open');
     overlay.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
@@ -244,7 +257,6 @@ console.log('[bamadi] HeroSlider-IIFE fertig');
   var tabs = document.querySelectorAll('.legal-tab');
   var panes = document.querySelectorAll('.legal-pane');
   var closeBtn = document.querySelector('.legal-modal-close');
-  var kalkOverlay = document.getElementById('kalkulator-overlay');
 
   function switchTab(tabName) {
     tabs.forEach(function(t){
@@ -260,7 +272,6 @@ console.log('[bamadi] HeroSlider-IIFE fertig');
   }
 
   function openLegal(tabName) {
-    if (kalkOverlay && kalkOverlay.classList.contains('is-open')) return;
     tabName = tabName || 'impressum';
     switchTab(tabName);
     overlay.classList.add('is-open');
@@ -292,7 +303,6 @@ console.log('[bamadi] HeroSlider-IIFE fertig');
     var a = e.target.closest('a[href="#impressum"], a[href="#datenschutz"], a[href="#agb"], a[href="#widerruf"]');
     if (a) {
       e.preventDefault();
-      if (kalkOverlay && kalkOverlay.classList.contains('is-open')) return;
       var tab = a.getAttribute('href').replace('#', '');
       openLegal(tab);
       history.replaceState(null, '', '#' + tab);
@@ -317,6 +327,22 @@ console.log('[bamadi] HeroSlider-IIFE fertig');
   });
 
   var legalTabs = ['impressum', 'datenschutz', 'agb', 'widerruf'];
+
+  window.addEventListener('message', function(e) {
+    if (!e.data || e.data.type !== 'bamadi-open-legal') return;
+    var tab = e.data.tab || 'impressum';
+    if (legalTabs.indexOf(tab) === -1) tab = 'impressum';
+    openLegal(tab);
+    history.replaceState(null, '', '#' + tab);
+  });
+
+  window.openLegalTab = function(tabName) {
+    var tab = tabName || 'impressum';
+    if (legalTabs.indexOf(tab) === -1) tab = 'impressum';
+    openLegal(tab);
+    history.replaceState(null, '', '#' + tab);
+  };
+
   var hash = window.location.hash.replace('#', '');
   if (legalTabs.indexOf(hash) !== -1) openLegal(hash);
 })();

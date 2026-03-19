@@ -8,622 +8,16 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-<style>
-:root {
-  --navy:#1A3A5C; --navy-deep:#0F2338; --navy-mid:#244d78;
-  --gold:#E8A000; --gold-soft:#F5C44A; --gold-pale:rgba(232,160,0,0.1);
-  --off:#F7F6F3; --g100:#EFEFED; --g300:#CECCC8; --g500:#8C8A86; --g800:#2E2C2A;
-  --white:#fff; --green:#22c55e;
-  --serif:'DM Serif Display',Georgia,serif;
-  --sans:'Instrument Sans',system-ui,sans-serif;
-  --ease:cubic-bezier(0.22,1,0.36,1);
-}
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-html{scroll-behavior:smooth;scroll-padding-top:76px}
-body{font-family:var(--sans);background:var(--white);color:var(--g800);overflow-x:hidden;-webkit-font-smoothing:antialiased}
-a{color:inherit;text-decoration:none}
-.container{max-width:1160px;margin:0 auto;padding:0 40px}
 
-/* NAV — nur #nav (Haupt-Navigation), damit nav.legal-tabs im Modal nicht fixed/z-index erbt */
-nav#nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:20px 40px;transition:background .3s,box-shadow .3s}
-nav#nav.scrolled{background:rgba(255,255,255,.96);backdrop-filter:blur(16px);box-shadow:0 1px 0 var(--g100)}
-.nav-logo{font-family:var(--serif);font-size:26px;letter-spacing:.04em;color:var(--white);transition:color .3s}
-nav#nav.scrolled .nav-logo{color:var(--navy)}
-.nav-logo .acc{color:var(--gold)}
-.nav-links{display:flex;gap:28px;list-style:none}
-.nav-links a{font-size:13px;font-weight:500;color:rgba(255,255,255,.7);transition:color .2s}
-nav#nav.scrolled .nav-links a{color:var(--g800)}
-.nav-links a:hover{color:var(--gold)}
-.nav-status-link{color:rgba(255,255,255,.55);font-size:.875rem;text-decoration:none;transition:color .15s}
-.nav-status-link:hover{color:#fff}
-nav#nav.scrolled .nav-status-link{color:var(--g500)}
-nav#nav.scrolled .nav-status-link:hover{color:var(--navy)}
-.nav-cta{background:var(--gold)!important;color:var(--navy-deep)!important;padding:9px 20px!important;border-radius:4px;font-weight:600!important}
-.nav-toggle{display:none;align-items:center;justify-content:center;width:44px;height:44px;background:transparent;border:1px solid rgba(255,255,255,.3);border-radius:6px;color:var(--white);cursor:pointer;padding:0;position:relative;z-index:101}
-nav#nav.scrolled .nav-toggle{border-color:var(--g300);color:var(--navy)}
-.nav-toggle svg{width:22px;height:22px}
-.nav-toggle[aria-expanded="true"] .nav-toggle-open{display:none}
-.nav-toggle[aria-expanded="true"] .nav-toggle-close{display:block}
-.nav-toggle-close{display:none}
+<link rel="stylesheet" href="landing.css">
 
-/* Erste Ansicht: Hero + Trust-Bar */
-.first-view{display:flex;flex-direction:column;min-height:0}
-.first-view #hero{
-  min-height:calc(100vh - 76px);
-  background:var(--navy-deep);
-  display:flex;
-  align-items:center;
-  position:relative;
-  overflow:visible;
-  padding-bottom:40px;
-}
-.first-view #trust-bar{flex-shrink:0}
-
-/* HERO */
-#hero::before{content:'';position:absolute;right:0;top:0;width:55%;height:100%;background:linear-gradient(to right,rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.02) 1px,transparent 1px);background-size:64px 64px;pointer-events:none}
-.first-view #hero::after{
-  content:'';
-  position:absolute;
-  left:0;
-  right:0;
-  bottom:-1px;
-  height:40px;
-  background:linear-gradient(to bottom,var(--navy-deep),rgba(15,35,56,0));
-  pointer-events:none;
-}
-.hero-glow{position:absolute;top:-200px;right:-100px;width:800px;height:800px;background:radial-gradient(ellipse,rgba(232,160,0,.07) 0%,transparent 65%);pointer-events:none}
-.hero-inner{position:relative;z-index:2;display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;padding:32px 40px 40px;max-width:1160px;margin:0 auto;width:100%}
-
-/* Countdown kompakt innerhalb der Hero-Content-Spalte */
-.cd-wrap{position:static;display:inline-flex;align-items:center;gap:10px;flex-wrap:wrap;background:rgba(232,160,0,.08);border:1px solid rgba(232,160,0,.25);border-radius:999px;padding:4px 10px;margin-bottom:16px}
-.cd-lbl{font-size:.7rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.6);white-space:nowrap}
-.cd-time{font-family:var(--serif);font-size:.9rem;color:var(--gold);letter-spacing:.08em;line-height:1;min-width:auto}
-.cd-note{font-size:.7rem;color:rgba(255,255,255,.5);line-height:1.4}
-
-.hero-h1{font-family:var(--serif);font-size:clamp(2rem,3.8vw,3.4rem);line-height:1.05;color:var(--white);margin-bottom:14px}
-.hero-h1 em{font-style:italic;color:var(--gold)}
-.hero-sub{font-size:15px;line-height:1.6;color:rgba(255,255,255,.55);margin-bottom:24px;max-width:420px}
-.hero-btns{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
-.btn-primary{display:inline-flex;align-items:center;gap:8px;background:var(--gold);color:var(--navy-deep);font-size:14px;font-weight:600;padding:15px 28px;border-radius:4px;transition:background .2s,transform .15s;border:none;cursor:pointer}
-.btn-primary:hover{background:var(--gold-soft);transform:translateY(-2px)}
-.btn-ghost{display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.6);font-size:13px;font-weight:500;border-bottom:1px solid rgba(255,255,255,.2);padding-bottom:2px;transition:color .2s}
-.btn-ghost:hover{color:var(--white)}
-.hero-checks{display:flex;flex-direction:column;gap:6px;margin-top:20px}
-.hero-check{display:flex;align-items:center;gap:9px;font-size:12px;color:rgba(255,255,255,.4);font-weight:500}
-.hero-check svg{color:var(--gold);flex-shrink:0}
-
-/* Hero Book Slider */
-.hero-visual{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  max-height:calc(100vh - 120px);
-  overflow:visible;
-  align-self:center;
-}
-.slider-wrap{position:relative;width:100%;max-width:440px;height:520px;overflow:visible}
-.book-slide{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transition:opacity 1.2s cubic-bezier(0.4,0,0.2,1);pointer-events:none}
-.book-slide.active{opacity:1;pointer-events:auto}
-.book{
-  position:relative;
-  width:230px;
-  height:320px;
-  max-height:420px;
-  transform-style:preserve-3d;
-  transform:perspective(1200px) rotateY(-22deg) rotateX(4deg);
-  filter:drop-shadow(-20px 30px 50px rgba(0,0,0,.65));
-  transition:transform .5s cubic-bezier(0.22,1,0.36,1);
-}
-.book:hover{transform:perspective(1200px) rotateY(-12deg) rotateX(2deg) translateY(-6px)}
-.book-cover{position:absolute;inset:0;border-radius:2px 6px 6px 2px;overflow:hidden}
-.book-spine{position:absolute;left:-28px;top:0;bottom:0;width:28px;border-radius:2px 0 0 2px;transform:rotateY(90deg);transform-origin:right center}
-.book-pages{position:absolute;right:-6px;top:3px;bottom:3px;width:6px;background:repeating-linear-gradient(to bottom,#e8e6e0 0px,#e8e6e0 1px,#d4d2cc 1px,#d4d2cc 2px);border-radius:0 2px 2px 0}
-.book-cover::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.18) 0%,transparent 40%,rgba(0,0,0,.12) 100%);border-radius:inherit}
-.cover-inner{position:absolute;inset:0;padding:28px 24px 24px;display:flex;flex-direction:column;z-index:1}
-.cover-tag{font-size:8px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin-bottom:10px;opacity:.75}
-.cover-rule{width:28px;height:1.5px;margin-bottom:14px;opacity:.6}
-.cover-title{font-family:var(--serif);font-size:13.5px;line-height:1.45;flex:1}
-.cover-author{font-size:9px;letter-spacing:.07em;opacity:.45;margin-top:auto}
-.book-badge{
-  position:absolute;
-  top:-8px;
-  right:-12px;
-  background:var(--gold);
-  color:var(--navy-deep);
-  font-size:9px;
-  font-weight:800;
-  letter-spacing:.12em;
-  text-transform:uppercase;
-  padding:5px 12px;
-  border-radius:3px;
-  z-index:10;
-  box-shadow:0 4px 16px rgba(232,160,0,.4);
-  overflow-clip-margin:8px;
-}
-.slide-label{position:absolute;left:50%;bottom:64px;transform:translateX(-50%);text-align:center;transition:opacity .6s;background:var(--gold);color:var(--navy-deep);padding:8px 18px;border-radius:999px;max-width:260px;box-shadow:0 8px 30px rgba(0,0,0,.4);display:flex;flex-direction:column;gap:2px}
-.slide-label-name{font-family:var(--serif);font-size:14px;color:var(--navy-deep);margin-bottom:0;line-height:1.3}
-.slide-label-detail{font-size:10px;color:rgba(15,35,56,.8);letter-spacing:.08em;text-transform:uppercase}
-.dots{position:absolute;bottom:-44px;left:50%;transform:translateX(-50%);display:flex;gap:8px}
-.dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.2);cursor:pointer;transition:background .3s,transform .3s}
-.dot.active{background:var(--gold);transform:scale(1.3)}
-.progress-bar{position:absolute;bottom:0;left:0;right:0;height:2px;background:rgba(255,255,255,.07);overflow:hidden}
-.progress-fill{height:100%;background:var(--gold);width:0%;transition:width linear}
-/* Kurze Streifen — kein Snap-Punkt, kein min-height */
-#trust-bar{min-height:unset;display:block}
-/* TRUST BAR */
-#trust-bar{
-  background:var(--navy-deep);
-  border-bottom:1px solid rgba(255,255,255,.04);
-  position:sticky;
-  top:76px;
-  z-index:10;
-  margin-top:-8px;
-}
-.tb-inner{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:1rem 0;flex-wrap:wrap}
-.tb-item{flex:1;min-width:0;display:flex;align-items:center;gap:13px;padding:12px 28px;border-right:1px solid rgba(255,255,255,.06)}
-.tb-item:last-child{border-right:none}
-.tb-icon{width:40px;height:40px;border-radius:50%;background:rgba(10,22,38,1);border:1.5px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;color:var(--gold);flex-shrink:0}
-.tb-lbl{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:2px}
-.tb-val{font-family:var(--serif);font-size:16px;color:#fff;line-height:1.2;white-space:nowrap}
-
-/* SECTIONS */
-section{padding:5rem 0;display:flex;flex-direction:column;justify-content:center}
-.view-section{
-  min-height:auto;
-  padding:5rem 0;
-  box-sizing:border-box;
-  display:flex;
-  flex-direction:column;
-  overflow:visible;
-  opacity:0;
-  transform:translateY(20px);
-  transition:opacity .55s ease,transform .55s ease;
-}
-.view-section.is-visible{
-  opacity:1;
-  transform:translateY(0);
-}
-.view-section .container{display:flex;flex-direction:column;justify-content:flex-start}
-.view-section .container>*:last-child{margin-bottom:0}
-#material.view-section .container{justify-content:center}
-#cta.view-section .container{justify-content:space-between;flex-direction:row}
-.eyebrow{display:inline-flex;align-items:center;gap:11px;margin-bottom:16px}
-.eyebrow::before{content:'';display:block;width:26px;height:2px;background:var(--gold)}
-.eyebrow span{font-size:0.75rem;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold)}
-.h-lg{font-family:var(--serif);font-size:clamp(1.75rem,4vw,2.75rem);line-height:1.08;font-weight:400}
-.h-md{font-family:var(--serif);font-size:clamp(1.75rem,4vw,2.75rem);line-height:1.15;font-weight:400}
-.sec-intro{max-width:520px;margin-bottom:60px}
-.sec-intro p{font-size:16px;color:var(--g500);line-height:1.65;margin-top:14px}
-#how .sec-intro{margin-bottom:2rem;padding-bottom:1rem}
-#produkte .sec-intro{margin-bottom:1.5rem}
-
-/* HOW IT WORKS */
-#how,#produkte,#usp,
-#material,#vertrauen,#faq,#cta{
-  padding-top:72px;
-  scroll-margin-top:80px;
-}
-#how{background:var(--white)}
-.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:var(--g100);border:1px solid var(--g100);border-radius:4px;overflow:hidden}
-.step{background:var(--white);padding:48px 40px;position:relative;transition:background .3s}
-.step:hover{background:var(--off)}
-.step-n{font-family:var(--serif);font-size:64px;color:var(--g100);line-height:1;margin-bottom:16px;display:block;transition:color .3s}
-.step:hover .step-n{color:rgba(232,160,0,.1)}
-.step-icon{width:42px;height:42px;background:var(--navy);border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;color:var(--gold)}
-.step h3{font-family:var(--serif);font-size:20px;color:var(--navy);margin-bottom:9px;font-weight:400}
-.step p{font-size:0.875rem;line-height:1.65;color:var(--g500)}
-.step:not(:last-child)::after{content:'→';position:absolute;top:50%;right:-16px;transform:translateY(-50%);width:32px;height:32px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--navy-deep);font-weight:700;z-index:2;line-height:32px;text-align:center}
-
-/* PRODUKTE */
-#produkte{background:var(--off);padding-bottom:7rem}
-.prod-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
-.prod-card{background:var(--white);border:1px solid var(--g100);border-radius:8px;overflow:hidden;transition:transform .3s var(--ease),box-shadow .3s,border-color .3s;cursor:pointer}
-.prod-card:hover{transform:translateY(-5px);box-shadow:0 14px 40px rgba(0,0,0,.09);border-color:var(--gold)}
-.prod-vis{height:176px;display:flex;align-items:center;justify-content:center;position:relative}
-.pv1{background:linear-gradient(145deg,#1A3A5C,#244d78)}
-.pv2{background:linear-gradient(145deg,#274a35,#1e3828)}
-.pv3{background:linear-gradient(145deg,#5a2e1e,#3d1e14)}
-.pv4{background:linear-gradient(145deg,#2a2a3a,#1e1e2d)}
-.pb{width:64px;height:96px;border-radius:2px 5px 5px 2px;box-shadow:-3px 0 6px rgba(0,0,0,.4),3px 3px 13px rgba(0,0,0,.4);position:relative}
-.pb::before{content:'';position:absolute;left:0;top:0;bottom:0;width:8px;background:rgba(0,0,0,.28);border-radius:2px 0 0 2px}
-.pb1{background:linear-gradient(to right,#0e2440,#1A3A5C)}
-.pb2{background:linear-gradient(to right,#192d1e,#274a35)}
-.pb3{background:linear-gradient(to right,#2e1510,#5a2e1e)}
-.pb4{background:linear-gradient(to right,#14141e,#2a2a3a)}
-.p-bdg{position:absolute;top:9px;right:9px;background:var(--gold);color:var(--navy-deep);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:3px}
-.prod-body{padding:20px}
-.prod-body h3{font-family:var(--serif);font-size:18px;color:var(--navy);margin-bottom:5px;font-weight:400}
-.prod-body p{font-size:12px;color:var(--g500);line-height:1.55;margin-bottom:12px}
-.prod-price{font-size:13px;font-weight:600;color:var(--navy)}
-.prod-price span{color:var(--g500);font-weight:400}
-.prod-detail{font-size:11px;font-weight:600;letter-spacing:.08em;color:var(--gold);text-transform:uppercase;margin-bottom:10px}
-
-/* MATERIAL STRIP */
-#material{background:var(--navy);min-height:auto;padding:4rem 0}
-.mat-inner{display:flex;justify-content:center;align-items:flex-start;gap:3rem}
-.mat-item{flex:1 1 0;max-width:320px;display:flex;align-items:center;gap:16px;padding:16px 0;min-width:0}
-.mat-div{flex:0 0 1px;width:1px;background:rgba(255,255,255,.08);margin:0;align-self:stretch}
-.mat-icon,.mat-icon-svg{width:32px;height:32px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
-.mat-icon{font-size:24px}
-.mat-icon-svg svg{width:32px;height:32px;color:var(--gold)}
-.mat-title{font-family:var(--serif);font-size:17px;color:var(--white);margin-bottom:4px}
-.mat-sub{font-size:13px;color:rgba(255,255,255,.45);line-height:1.5}
-
-/* USP */
-#usp{background:var(--white)}
-.usp-layout{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:start}
-.usp-vis{max-width:480px;width:100%;position:relative}
-.usp-list{display:flex;flex-direction:column}
-.usp-item{display:flex;gap:20px;padding:26px 0;border-bottom:1px solid var(--g100);transition:padding-left .3s var(--ease)}
-.usp-item:last-child{border-bottom:none}
-.usp-item:first-child{padding-top:0}
-.usp-item:hover{padding-left:5px}
-.usp-n{font-family:var(--serif);font-size:12px;color:var(--gold);padding-top:3px;min-width:20px}
-.usp-item h3{font-family:var(--serif);font-size:20px;color:var(--navy);margin-bottom:6px;font-weight:400}
-.usp-item p{font-size:14px;color:var(--g500);line-height:1.65}
-/* Status card */
-.usp-vis{position:relative;height:460px}
-.sc{position:absolute;inset:0;background:var(--navy-deep);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;padding:32px}
-.sc::before{content:'';position:absolute;inset:0;background:linear-gradient(to right,rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.02) 1px,transparent 1px);background-size:34px 34px;pointer-events:none}
-.sc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;position:relative;z-index:1}
-.sc-title{font-family:var(--serif);font-size:15px;color:var(--white)}
-.live{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green)}
-.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:lp 1.5s ease-in-out infinite}
-@keyframes lp{0%,100%{opacity:1}50%{opacity:.25}}
-.sc-sub{font-size:10px;color:rgba(255,255,255,.26);margin-bottom:24px;position:relative;z-index:1}
-.sc-rows{display:flex;flex-direction:column;gap:13px;position:relative;z-index:1}
-.sc-row{display:flex;align-items:center;gap:12px}
-.scd{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px}
-.done{background:rgba(34,197,94,.14);color:var(--green)}
-.now{background:var(--gold);color:var(--navy-deep);font-weight:700}
-.later{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.22)}
-.sc-lbl{font-size:13px;font-weight:500}
-.lbl-done{color:rgba(255,255,255,.45)}
-.lbl-now{color:var(--white);font-weight:600}
-.lbl-later{color:rgba(255,255,255,.2)}
-.sc-t{margin-left:auto;font-size:10px;color:rgba(255,255,255,.2)}
-.sc-t.tnow{color:var(--gold-soft)}
-.sc-ov{position:absolute;bottom:-1.5rem;right:-1rem;z-index:10;background:var(--white);border-radius:9px;padding:16px 20px;box-shadow:0 14px 42px rgba(0,0,0,.14);border:1px solid var(--g100);min-width:158px}
-.ov-lbl{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--g500);margin-bottom:5px}
-.ov-big{font-family:var(--serif);font-size:26px;color:var(--navy);line-height:1}
-.ov-sub{font-size:11px;color:var(--g500);margin-top:3px}
-.sc-track-link{display:block;margin-top:1.5rem;color:var(--gold);font-size:.875rem;font-weight:600;text-decoration:none;transition:opacity .15s}
-.sc-track-link:hover{opacity:.85}
-
-/* VERTRAUEN */
-.vt-grid{display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:start}
-.sig-grid{align-self:start}
-.vt-text .h-md{color:var(--navy);margin-bottom:18px}
-.vt-text p{font-size:15px;color:var(--g500);line-height:1.7;margin-bottom:13px}
-.vt-text p strong{color:var(--navy);font-weight:600}
-.vt-link{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--navy);border-bottom:2px solid var(--gold);padding-bottom:2px;transition:color .2s;margin-top:4px}
-.vt-link:hover{color:var(--gold)}
-.sig-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.sig{background:var(--white);border:1px solid var(--g100);border-radius:8px;padding:22px;transition:box-shadow .3s}
-.sig:hover{box-shadow:0 8px 26px rgba(0,0,0,.07)}
-.sig-icon{font-size:20px;margin-bottom:10px}
-.sig h4{font-family:var(--serif);font-size:16px;color:var(--navy);margin-bottom:5px;font-weight:400}
-.sig p{font-size:12px;color:var(--g500);line-height:1.55}
-.usp-divider{border:0;border-top:1px solid var(--g100);margin:3rem 0}
-
-/* FAQ */
-#faq{background:var(--white);padding:80px 0 4rem}
-.faq-wrap{display:grid;grid-template-columns:1fr 2fr;gap:72px;align-items:flex-start}
-.faq-side .h-md{color:var(--navy);margin-bottom:14px}
-.faq-side p{font-size:14px;color:var(--g500);line-height:1.65;margin-bottom:24px}
-.faq-mail{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--navy);border-bottom:2px solid var(--gold);padding-bottom:2px;transition:color .2s}
-.faq-mail:hover{color:var(--gold)}
-.faq-item{border-bottom:1px solid var(--g100)}
-.faq-q{width:100%;background:none;border:none;display:flex;align-items:center;justify-content:space-between;padding:20px 0;cursor:pointer;text-align:left;font-family:var(--sans);font-size:14px;font-weight:500;color:var(--g800);transition:color .2s;gap:14px}
-.faq-q:hover,.faq-q.open{color:var(--navy)}
-.faq-icon{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--g300);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:17px;color:var(--g500);transition:transform .3s,border-color .3s;line-height:1}
-.faq-q.open .faq-icon{transform:rotate(45deg);border-color:var(--gold);color:var(--navy)}
-.faq-a{font-size:14px;line-height:1.7;color:var(--g500);max-height:0;overflow:hidden;transition:max-height .4s cubic-bezier(0.65,0,0.35,1),padding .3s}
-.faq-a.open{max-height:240px;padding-bottom:20px}
-
-/* CTA BAND */
-#cta{
-  background:var(--gold);
-  padding:5rem 4rem;
-  min-height:auto;
-  display:block;
-  position:relative;
-  overflow:hidden;
-}
-#cta .container{display:flex;align-items:center;justify-content:space-between;gap:2rem}
-.cta-inner{display:flex;align-items:center;justify-content:space-between;gap:36px;width:100%;max-width:1160px;margin:0 auto}
-.cta-inner h2{font-family:var(--serif);font-size:clamp(1.75rem,4vw,2.75rem);color:#0F2338;margin-bottom:8px;font-weight:400}
-.cta-inner p{font-size:15px;color:rgba(15,35,56,0.75)}
-.btn-dark{display:inline-flex;align-items:center;gap:9px;background:var(--navy-deep);color:var(--white);font-size:14px;font-weight:600;padding:16px 30px;border-radius:4px;white-space:nowrap;transition:background .2s,transform .15s;box-shadow:0 4px 16px rgba(0,0,0,0.2)}
-#cta .btn-dark{flex-shrink:0}
-.btn-dark:hover{background:var(--navy-mid);transform:translateY(-2px)}
-
-/* FOOTER */
-footer{background:var(--navy-deep);padding:56px 0 32px;padding-bottom:calc(32px + env(safe-area-inset-bottom))}
-.ft-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:44px;margin-bottom:44px}
-.ft-logo{font-family:var(--serif);font-size:26px;letter-spacing:.04em;color:var(--white);display:block;margin-bottom:12px}
-.ft-logo .acc{color:var(--gold)}
-.ft-tag{font-size:13px;color:rgba(255,255,255,.34);line-height:1.65;max-width:230px;margin-bottom:18px}
-.ft-addr{font-size:11px;color:rgba(255,255,255,.24);line-height:1.85}
-.ft-col h4{font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:16px}
-.ft-links{list-style:none;display:flex;flex-direction:column;gap:10px}
-.ft-links a{font-size:13px;color:rgba(255,255,255,.45);transition:color .2s}
-.ft-links a:hover{color:var(--gold)}
-.ft-bottom{border-top:1px solid rgba(255,255,255,.07);padding-top:24px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
-.ft-copy{font-size:11px;color:rgba(255,255,255,.18)}
-.ft-socials{display:flex;gap:18px}
-.ft-socials a{font-size:11px;color:rgba(255,255,255,.18);transition:color .2s}
-.ft-socials a:hover{color:rgba(255,255,255,.4)}
-
-/* Kalkulator Fullscreen-Overlay */
-#kalkulator-overlay{display:none;position:fixed;inset:0;z-index:999;background:#0F2338}
-#kalkulator-overlay.is-open{display:block}
-.kalkulator-iframe-wrap{position:absolute;inset:0;overflow:hidden}
-#kalkulator-iframe{width:100%;height:100%;border:0;display:block}
-@media(max-width:768px){
-  .kalkulator-iframe-wrap{overflow:auto}
-  #kalkulator-iframe{width:117.65%;height:117.65%;transform:scale(0.85);transform-origin:0 0}
-}
-.kalkulator-overlay-close{position:fixed;top:16px;right:20px;z-index:1000;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:20px;cursor:pointer;padding:0;line-height:1;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background .2s,opacity .2s}
-.kalkulator-overlay-close:hover{background:rgba(0,0,0,.7);opacity:1}
-
-/* RESPONSIVE */
-@media(max-width:960px){
-  .hero-inner{grid-template-columns:1fr}
-  .hero-visual{display:none}
-  .tb-inner{flex-wrap:wrap}
-  .tb-item{flex:0 0 50%;border-bottom:1px solid rgba(255,255,255,.06)}
-  .tb-item:nth-child(2n){border-right:none}
-  .tb-item:nth-last-child(-n+2){border-bottom:none}
-  .steps{grid-template-columns:1fr}
-  .step:not(:last-child)::after{display:none}
-  .prod-grid{grid-template-columns:repeat(2,1fr)}
-  .mat-inner{flex-direction:column}
-  .mat-item{flex:none;max-width:none}
-  .mat-div{width:100%;height:1px;margin:0}
-  .usp-layout{grid-template-columns:1fr}
-  .usp-vis{max-width:360px;margin:0 auto}
-  .vt-grid{grid-template-columns:1fr}
-  .faq-wrap{grid-template-columns:1fr}
-  .ft-grid{grid-template-columns:1fr 1fr}
-  nav{padding:16px 24px}
-  .container{padding:0 24px}
-  section{padding:4rem 0}
-  .hero-inner{padding:110px 24px 72px}
-}
-@media(max-height:680px){
-  .hero-inner{grid-template-columns:1fr}
-  .hero-visual{display:none}
-}
-
-/* Nav: Ausklappmenü ab mittlerer Breite */
-@media(max-width:800px){
-  nav#nav{background:rgba(15,35,56,.97);backdrop-filter:blur(12px);box-shadow:0 1px 0 rgba(255,255,255,.06)}
-  nav#nav.scrolled{background:rgba(255,255,255,.98);box-shadow:0 1px 0 var(--g100)}
-  .nav-toggle{display:flex;background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.25);color:#fff}
-  nav#nav.scrolled .nav-toggle{background:rgba(0,0,0,.06);border-color:var(--g300);color:var(--navy)}
-  .nav-links{position:fixed;top:0;right:0;width:min(320px,100%);height:auto;max-height:calc(100vh - 24px);background-color:#0F2338;background:#0F2338;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:0;padding:80px 24px 24px;list-style:none;box-shadow:-4px 0 24px rgba(0,0,0,.35);transform:translateX(100%);opacity:0;visibility:hidden;transition:transform .25s var(--ease),opacity .2s,visibility .2s;z-index:99;overflow-y:auto;overflow-x:hidden}
-  .nav-links::before{content:'';position:absolute;inset:0;background:#0F2338;z-index:-1;border-radius:0 0 0 8px}
-  nav#nav.is-open .nav-links{transform:translateX(0);opacity:1;visibility:visible;background-color:#0F2338;background:#0F2338}
-  .nav-backdrop{background:rgba(0,0,0,.55)}
-  .nav-links a{display:block;padding:16px 0;font-size:17px;font-weight:500;color:#fff!important;border-bottom:1px solid rgba(255,255,255,.15);position:relative;z-index:1;line-height:1.3}
-  .nav-links a:hover,.nav-links a:focus{color:var(--gold)!important}
-  .nav-links a:visited{color:#fff!important}
-  nav#nav.scrolled .nav-links a{color:#fff!important}
-  nav#nav.scrolled .nav-links a:hover{color:var(--gold)!important}
-  .nav-links .nav-cta{color:#0F2338!important;font-weight:600}
-  .nav-links .nav-cta:hover{color:#0F2338!important}
-  .nav-cta{margin-top:8px;text-align:center;border-radius:6px}
-  nav#nav.is-open .nav-backdrop{opacity:1;visibility:visible}
-}
-.nav-backdrop{display:none;position:fixed;inset:0;z-index:98;opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}
-@media(max-width:800px){
-  .nav-backdrop{display:block}
-}
-@media(max-width:768px){
-  .first-view #hero{min-height:100vh;min-height:100svh}
-  #cta .cta-inner{flex-direction:column;text-align:center}
-  #cta .btn-dark{width:100%;justify-content:center}
-}
-@media(max-width:640px){
-  #cta .container{flex-direction:column;text-align:center}
-  #cta .btn-dark{width:100%;justify-content:center}
-}
-@media(max-width:520px){
-  .prod-grid{grid-template-columns:1fr}
-  /* Trust-Bar bleibt 2-spaltig, wird kompakter */
-  .tb-item{flex:0 0 50%;padding:8px 12px;gap:8px}
-  .tb-item:nth-child(2n){border-right:none}
-  .tb-item:nth-last-child(-n+2){border-bottom:none}
-  .tb-icon{width:32px;height:32px}
-  .tb-icon svg{width:14px;height:14px}
-  .tb-lbl{font-size:9px}
-  .tb-val{font-size:13px}
-  .sig-grid{grid-template-columns:1fr}
-  .ft-grid{grid-template-columns:1fr}
-}
-
-/* Legal Modal */
-#legal-overlay{position:fixed;inset:0;background:rgba(15,35,56,0.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:900;display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;pointer-events:none;transition:opacity .2s ease}
-#legal-overlay.is-open{opacity:1;pointer-events:all}
-.legal-modal{background:#fff;border-radius:12px;width:100%;max-width:800px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,0.3);transform:translateY(16px);transition:transform .2s ease}
-#legal-overlay.is-open .legal-modal{transform:translateY(0)}
-.legal-modal-header{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem 0;border-bottom:none;box-shadow:0 1px 0 var(--g100),0 4px 12px rgba(0,0,0,0.06);position:sticky;top:0;background:#fff;z-index:1;border-radius:12px 12px 0 0;gap:1rem}
-.legal-tabs{display:flex;gap:0;overflow-x:auto;scrollbar-width:none;position:static;z-index:auto}
-.legal-tabs::-webkit-scrollbar{display:none}
-.legal-tab{background:none;border:none;border-bottom:2px solid transparent;padding:.75rem 1.25rem;font-size:.875rem;font-weight:500;color:var(--g500);cursor:pointer;white-space:nowrap;transition:color .15s,border-color .15s;font-family:var(--sans)}
-.legal-tab:hover{color:var(--navy)}
-.legal-tab.active{color:var(--navy);border-bottom-color:var(--gold);font-weight:600}
-.legal-modal-close{background:none;border:none;color:var(--g500);cursor:pointer;padding:.5rem;line-height:1;border-radius:6px;flex-shrink:0;transition:color .15s,background .15s;display:flex;align-items:center;justify-content:center}
-.legal-modal-close:hover{color:var(--navy);background:var(--g100)}
-.legal-modal-close svg{display:block}
-.legal-modal-body{overflow-y:auto;padding:2rem 2.5rem 2.5rem;flex:1}
-.legal-pane{display:none}
-.legal-pane.active{display:block}
-.legal-pane h2{font-size:1.5rem;color:var(--navy-deep);margin-bottom:1.5rem;font-family:var(--serif);font-weight:400}
-.legal-pane h3{font-size:1rem;font-weight:700;color:var(--navy);margin:1.5rem 0 .5rem;font-family:var(--sans)}
-.legal-pane h4{font-size:.95rem;font-weight:700;color:var(--navy);margin:1rem 0 .4rem;font-family:var(--sans)}
-.legal-pane p,.legal-pane li{font-size:.9rem;line-height:1.7;color:var(--g800);font-family:var(--sans)}
-.legal-pane ul{padding-left:1.25rem;margin:.5rem 0}
-.legal-pane a{color:var(--gold);text-decoration:underline}
-.legal-pane table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.85rem}
-.legal-pane th,.legal-pane td{border:1px solid var(--g100);padding:.5rem .75rem;text-align:left}
-.legal-pane th{background:var(--off);font-weight:600;color:var(--navy)}
-.legal-pane hr{margin:1.5rem 0;border:0;border-top:1px solid var(--g100)}
-.legal-section{margin-bottom:1rem}
-.legal-meta{color:var(--g500);font-size:.85rem;margin-bottom:1rem}
-.legal-highlight{background:var(--gold-pale);border-left:4px solid var(--gold);padding:1rem 1.25rem;margin:1rem 0;border-radius:0 6px 6px 0}
-.legal-formular{background:#fff;border:1px solid var(--g100);padding:1.25rem 1.5rem;border-radius:4px;font-size:.9rem;line-height:1.9}
-@media(max-width:600px){
-  .legal-modal-body{padding:1.5rem}
-  .legal-tab{padding:.75rem .875rem;font-size:.8rem}
-}
-
-/* Bindungs-Modal */
-.overlay{
-  position:fixed;inset:0;z-index:200;
-  background:rgba(10,22,38,.75);
-  backdrop-filter:blur(8px);
-  display:flex;align-items:center;justify-content:center;
-  padding:24px 72px;
-  opacity:0;pointer-events:none;
-  transition:opacity .35s var(--ease);
-}
-.overlay.open{opacity:1;pointer-events:auto}
-.modal{
-  background:var(--white);
-  border-radius:14px;
-  width:100%;max-width:820px;
-  max-height:90vh;
-  overflow:hidden;
-  position:relative;
-  transform:scale(.94) translateY(16px);
-  transition:transform .4s var(--ease);
-  display:flex;flex-direction:column;
-}
-.overlay.open .modal{transform:scale(1) translateY(0)}
-.modal-close{
-  position:absolute;top:16px;right:16px;z-index:10;
-  width:34px;height:34px;border-radius:50%;
-  background:rgba(0,0,0,.08);border:none;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-  font-size:18px;color:var(--g500);transition:background .2s,color .2s;
-}
-.modal-close:hover{background:rgba(0,0,0,.14);color:var(--g800)}
-.modal-slides{
-  position:relative;
-  overflow:visible;
-  flex:1;
-}
-.slides-track{
-  display:flex;
-  height:100%;
-  transition:transform .5s var(--ease);
-  overflow:hidden;
-}
-.slide{
-  min-width:100%;
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  height:100%;
-}
-.slide-visual{
-  position:relative;
-  display:flex;align-items:center;justify-content:center;
-  padding:48px;
-  overflow:hidden;
-}
-.slide-visual::after{
-  content:'';position:absolute;inset:0;
-  background:linear-gradient(135deg,rgba(255,255,255,.12) 0%,transparent 50%);
-  pointer-events:none;
-}
-.slide-text{
-  padding:44px 40px;
-  display:flex;flex-direction:column;
-  justify-content:center;
-  overflow-y:auto;
-}
-.slide-eyebrow{font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:12px}
-.slide-h{font-family:var(--serif);font-size:clamp(20px,2.5vw,30px);color:var(--navy);margin-bottom:14px;font-weight:400;line-height:1.15}
-.slide-p{font-size:13.5px;color:var(--g500);line-height:1.7;margin-bottom:20px}
-.facts{display:flex;flex-direction:column;gap:10px;margin-bottom:24px}
-.fact{display:flex;align-items:flex-start;gap:10px;font-size:13px}
-.fact-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0;margin-top:5px}
-.fact strong{color:var(--navy);font-weight:600}
-.fact span{color:var(--g500)}
-.tags{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:24px}
-.tag{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--navy);background:var(--off);border:1px solid var(--g100);padding:5px 11px;border-radius:20px}
-.tag.highlight{background:rgba(232,160,0,.1);border-color:rgba(232,160,0,.3);color:var(--gold)}
-.slide-cta{
-  display:inline-flex;align-items:center;gap:8px;
-  background:var(--navy);color:var(--white);
-  font-size:13px;font-weight:600;padding:13px 22px;
-  border-radius:4px;border:none;cursor:pointer;
-  transition:background .2s,transform .15s;
-  align-self:flex-start;
-}
-.slide-cta:hover{background:var(--navy-deep);transform:translateY(-1px)}
-.book-lg{
-  width:160px;height:228px;
-  border-radius:3px 8px 8px 3px;
-  box-shadow:-6px 0 12px rgba(0,0,0,.4),6px 8px 32px rgba(0,0,0,.45),0 24px 60px rgba(0,0,0,.3);
-  position:relative;
-  transform:perspective(900px) rotateY(-18deg) rotateX(3deg);
-}
-.book-lg::before{content:'';position:absolute;left:0;top:0;bottom:0;width:18px;background:rgba(0,0,0,.28);border-radius:3px 0 0 3px}
-.book-lg::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.18) 0%,transparent 40%,rgba(0,0,0,.12) 100%);border-radius:inherit}
-.book-lg-inner{position:absolute;inset:0;padding:24px 20px 20px 30px;display:flex;flex-direction:column;z-index:1}
-.book-lg-tag{font-size:7px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin-bottom:8px;opacity:.7}
-.book-lg-rule{width:22px;height:1.5px;margin-bottom:11px;opacity:.6}
-.book-lg-title{font-family:var(--serif);font-size:11px;line-height:1.45;flex:1}
-.book-lg-author{font-size:8px;opacity:.4;letter-spacing:.05em}
-.book-pages-lg{position:absolute;right:-5px;top:4px;bottom:4px;width:5px;background:repeating-linear-gradient(to bottom,#e8e6e0 0,#e8e6e0 1px,#d4d2cc 1px,#d4d2cc 2px);border-radius:0 2px 2px 0}
-.macro-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
-.macro{border-radius:8px;overflow:hidden;aspect-ratio:1;position:relative;display:flex;align-items:center;justify-content:center}
-.macro-label{position:absolute;bottom:0;left:0;right:0;padding:8px 10px;background:linear-gradient(transparent,rgba(0,0,0,.55));font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.8)}
-.modal-nav{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:16px 24px;
-  border-top:1px solid var(--g100);
-  background:var(--white);
-  flex-shrink:0;
-}
-.nav-dots{display:flex;gap:7px}
-.nav-dot{width:7px;height:7px;border-radius:50%;background:var(--g100);cursor:pointer;transition:background .25s,transform .25s}
-.nav-dot.active{background:var(--gold);transform:scale(1.25)}
-.slide-counter{font-size:12px;color:var(--g500);font-weight:500}
-.side-arr{
-  position:absolute;top:50%;transform:translateY(-50%);
-  z-index:20;
-  width:48px;height:72px;
-  border:none;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-  transition:opacity .2s,transform .2s var(--ease);
-  background:none;
-  padding:0;
-}
-.side-arr svg{
-  display:block;
-  filter:drop-shadow(0 2px 8px rgba(0,0,0,.35));
-  transition:transform .2s var(--ease);
-}
-.side-arr--prev{ left:-24px }
-.side-arr--next{ right:-24px }
-.side-arr--prev:hover svg{ transform:translateX(-3px) }
-.side-arr--next:hover svg{ transform:translateX(3px) }
-.side-arr:disabled{ opacity:.2; cursor:default; pointer-events:none }
-.side-arr:disabled svg{ filter:none }
-@media(max-width:700px){
-  .slide{grid-template-columns:1fr}
-  .slide-visual{height:220px;padding:32px}
-  .modal{max-height:95vh}
-}
-</style>
 </head>
 <body>
+<!-- ========== LANDING PAGE (One-Pager) ==========
+  Struktur: 1) Nav 2) Modals (Kalkulator, Bindungs-Modal, Legal) 3) first-view (Hero+Trust-Bar) 4) Sektionen 5) Footer
+  Logik: app.js | Kalkulator/Editor: kalkulator/* (unverändert) -->
 
+<!-- 1. Haupt-Navigation (fixed) -->
 <nav id="nav">
   <a href="/" class="nav-logo">bamad<span class="acc">i</span></a>
   <button type="button" class="nav-toggle" aria-label="Menü öffnen" aria-expanded="false" aria-controls="nav-menu">
@@ -637,10 +31,11 @@ footer{background:var(--navy-deep);padding:56px 0 32px;padding-bottom:calc(32px 
     <li><a href="#usp">Warum bamadi</a></li>
     <li><a href="#faq">FAQ</a></li>
     <li><a href="auftrag.html" class="nav-status-link">Auftragsstatus</a></li>
-    <li><a href="#produkte" class="nav-cta">Jetzt konfigurieren</a></li>
+    <li class="nav-cta-item"><a href="#produkte" class="nav-cta">Jetzt konfigurieren</a></li>
   </ul>
 </nav>
 
+<!-- 2. Kalkulator Fullscreen-Overlay (öffnet kalkulator/index.html im iframe, Steuerung in app.js) -->
 <div id="kalkulator-overlay" aria-hidden="true">
   <div class="kalkulator-iframe-wrap">
     <iframe id="kalkulator-iframe" title="Kalkulator"></iframe>
@@ -648,6 +43,7 @@ footer{background:var(--navy-deep);padding:56px 0 32px;padding-bottom:calc(32px 
   <button type="button" class="kalkulator-overlay-close" aria-label="Overlay schließen">✕</button>
 </div>
 
+<!-- 3. Bindungs-Modal (Produktdetails-Slides, öffnet bei Klick auf Produktkarte) -->
 <div class="overlay" id="overlay" onclick="closeOnBg(event)">
   <div class="modal" id="modal">
     <button class="modal-close" onclick="closeModal()">✕</button>
@@ -673,43 +69,34 @@ footer{background:var(--navy-deep);padding:56px 0 32px;padding-bottom:calc(32px 
   </div>
 </div>
 
+<!-- 4. Hauptinhalt: Hero + Trust-Bar (first-view) -->
 <div class="first-view">
-<!-- HERO -->
+<!-- Hero (Headline, CTA, Buch-Slider) -->
 <section id="hero">
   <div class="hero-glow"></div>
   <div class="hero-inner">
-    <div>
-      <div class="cd-wrap">
-        <div class="cd-lbl">Heute bestellen, morgen bei dir —</div>
-        <div class="cd-time" id="cdTimer">––:––</div>
-        <div class="cd-note">noch bis 14:00 Uhr</div>
-      </div>
-      <h1 class="hero-h1">Deine Abschlussarbeit.<br>Gedruckt wie sie es<br><em>verdient.</em></h1>
-      <p class="hero-sub">Konfiguriere, lade hoch, fertig — in unter 5 Minuten. Preis sofort sichtbar, keine Registrierung, Express-Lieferung deutschlandweit.</p>
-      <div class="hero-btns">
-        <a href="#produkte" class="btn-primary">
-          Preis berechnen
-          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+    <div class="hero-content">
+      <h1 class="hero-h1">Deine Abschlussarbeit. Gedruckt wie sie es <em>verdient.</em></h1>
+      <p class="hero-sub">Konfiguriere, lade hoch, fertig — in unter 5 Minuten. Preis sofort sichtbar, keine Registrierung.</p>
+      <div class="hero-cta">
+        <a href="#produkte" class="btn-primary btn-primary--hero">
+          Jetzt konfigurieren
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
         </a>
-        <a href="#how" class="btn-ghost">Wie es funktioniert</a>
       </div>
-      <div class="hero-checks">
-        <div class="hero-check">
-          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-          Preis sofort sichtbar — einfach konfigurieren, direkt bestellen
-        </div>
-        <div class="hero-check">
-          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-          Handgebunden in Fulda — Mitte Deutschlands
-        </div>
-        <div class="hero-check">
-          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-          Auftragsstatus live — vom Druck bis zur Haustür
+      <div class="hero-google-rating">
+        <div class="google-badge google-badge--hero">
+          <span class="google-g">G</span>
+          <div class="badge-content">
+            <span class="rating-number">4.9 / 5</span>
+            <div class="stars">★★★★★</div>
+            <a href="https://maps.app.goo.gl/6JX51vi3HBjYaaeLA" target="_blank" class="review-count">Google-Bewertung · 120+ Rezensionen</a>
+          </div>
         </div>
       </div>
     </div>
     <div class="hero-visual">
-      <div style="position:relative;padding-bottom:56px">
+      <div class="hero-slider-wrap">
         <div class="slider-wrap" id="heroSlider">
           <div class="book-slide active">
             <div class="book">
@@ -830,33 +217,54 @@ footer{background:var(--navy-deep);padding:56px 0 32px;padding-bottom:calc(32px 
   </div>
 </section>
 
-<!-- TRUST BAR -->
+<!-- TRUST LINE -->
 <div id="trust-bar">
   <div class="container">
     <div class="tb-inner">
-      <div class="tb-item">
-        <div class="tb-icon"><svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></div>
-        <div><div class="tb-lbl">Lieferung</div><div class="tb-val">Express in 24h</div></div>
-      </div>
-      <div class="tb-item">
-        <div class="tb-icon"><svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
-        <div><div class="tb-lbl">Preistransparenz</div><div class="tb-val">Sofort, ohne Konto</div></div>
-      </div>
-      <div class="tb-item">
-        <div class="tb-icon"><svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div>
-        <div><div class="tb-lbl">Produktion</div><div class="tb-val">Fulda, Deutschland</div></div>
-      </div>
-      <div class="tb-item">
-        <div class="tb-icon"><svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg></div>
-        <div><div class="tb-lbl">Zahlung</div><div class="tb-val">Visa · Mastercard · PayPal</div></div>
-      </div>
+      <span class="tb-point">Seit 1994</span>
+      <span class="tb-sep">·</span>
+      <span class="tb-point">Persönliche Betreuung</span>
+      <span class="tb-sep">·</span>
+      <span class="tb-point">Express in 24h</span>
     </div>
   </div>
 </div>
 </div>
 
-<!-- PRODUKTE -->
-<section id="produkte">
+<!-- ========== Sektionen (scroll) ========== -->
+<!-- How it works (3 Schritte) -->
+<section id="how" class="view-section">
+  <div class="container">
+    <div class="sec-intro">
+    <div class="eyebrow"><span>So funktioniert's</span></div>
+      <h2 class="h-lg" style="color:var(--navy)">Vom PDF zum Paket — in Minuten.</h2>
+      <p>Einfach konfigurieren, hochladen, bestellen. Ohne Telefonat, ohne Wartezeit.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <span class="step-n">01</span>
+        <div class="step-icon"><svg width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg></div>
+        <h3>Konfigurieren</h3>
+        <p>Seitenanzahl, Papier, Bindung, Extras — der Endpreis inkl. MwSt. aktualisiert sich mit jedem Klick. Was du siehst, zahlst du.</p>
+      </div>
+      <div class="step">
+        <span class="step-n">02</span>
+        <div class="step-icon"><svg width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg></div>
+        <h3>Hochladen & Bezahlen</h3>
+        <p>PDF sicher hochladen, per Karte oder PayPal bezahlen — sofort bestätigt, Rechnung automatisch per E-Mail.</p>
+      </div>
+      <div class="step">
+        <span class="step-n">03</span>
+        <div class="step-icon"><svg width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div>
+        <h3>Wir drucken. Du lehnst dich zurück.</h3>
+        <p>Dein Auftrag läuft live bei uns auf dem Schirm. Du siehst zu, wir binden — bis das Paket bei DHL aufgegeben ist.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Produkte / Bindungsarten (Karten öffnen Bindungs-Modal) -->
+<section id="produkte" class="view-section">
   <div class="container">
     <div class="sec-intro">
       <div class="eyebrow"><span>Bindungsarten</span></div>
@@ -904,69 +312,7 @@ footer{background:var(--navy-deep);padding:56px 0 32px;padding-bottom:calc(32px 
   </div>
 </section>
 
-<!-- MATERIAL STRIP -->
-<div id="material" class="view-section">
-  <div class="container">
-    <div class="mat-inner">
-      <div class="mat-item">
-        <div class="mat-icon">📄</div>
-        <div>
-          <div class="mat-title">120 g/m² säurefrei</div>
-          <div class="mat-sub">Archivierbar nach DIN — kein Vergilben, kein Durchscheinen</div>
-        </div>
-      </div>
-      <div class="mat-div"></div>
-      <div class="mat-item">
-        <div class="mat-icon">📖</div>
-        <div>
-          <div class="mat-title">Lay-flat-Bindung</div>
-          <div class="mat-sub">Fächerklebebindung mit Kaltleim — liegt komplett flach auf</div>
-        </div>
-      </div>
-      <div class="mat-div"></div>
-      <div class="mat-item">
-        <div class="mat-icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></div>
-        <div>
-          <div class="mat-title">Digitaldruck in Spitzenqualität</div>
-          <div class="mat-sub">Scharfe Texte, satte Farben — auch bei feinen Grafiken und Tabellen</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- HOW IT WORKS -->
-<section id="how" class="view-section">
-  <div class="container">
-    <div class="sec-intro">
-    <div class="eyebrow"><span>So funktioniert's</span></div>
-      <h2 class="h-lg" style="color:var(--navy)">Vom PDF zum Paket — in Minuten.</h2>
-      <p>Einfach konfigurieren, hochladen, bestellen. Ohne Telefonat, ohne Wartezeit.</p>
-    </div>
-    <div class="steps">
-      <div class="step">
-        <span class="step-n">01</span>
-        <div class="step-icon"><svg width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg></div>
-        <h3>Konfigurieren</h3>
-        <p>Seitenanzahl, Papier, Bindung, Extras — der Endpreis inkl. MwSt. aktualisiert sich mit jedem Klick. Was du siehst, zahlst du.</p>
-      </div>
-      <div class="step">
-        <span class="step-n">02</span>
-        <div class="step-icon"><svg width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg></div>
-        <h3>Hochladen & Bezahlen</h3>
-        <p>PDF sicher hochladen, per Karte oder PayPal bezahlen — sofort bestätigt, Rechnung automatisch per E-Mail.</p>
-      </div>
-      <div class="step">
-        <span class="step-n">03</span>
-        <div class="step-icon"><svg width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div>
-        <h3>Wir drucken. Du lehnst dich zurück.</h3>
-        <p>Dein Auftrag läuft live bei uns auf dem Schirm. Du siehst zu, wir binden — bis das Paket bei DHL aufgegeben ist.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- USP -->
+<!-- USP + Buchbinderei/Vertrauen -->
 <section id="usp" class="view-section">
   <div class="container">
     <div class="usp-layout">
@@ -981,24 +327,32 @@ footer{background:var(--navy-deep);padding:56px 0 32px;padding-bottom:calc(32px 
         </div>
       </div>
       <div class="usp-vis">
-        <div class="sc">
-          <div class="sc-top"><div class="sc-title">Auftragsstatus</div><div class="live"><span class="live-dot"></span>Live</div></div>
-          <div class="sc-sub">#BA-2406-047 · Hardcover Modern · 120 Seiten</div>
-          <div class="sc-rows">
-            <div class="sc-row"><div class="scd done">✓</div><span class="sc-lbl lbl-done">Bezahlung eingegangen</span><span class="sc-t">09:14</span></div>
-            <div class="sc-row"><div class="scd done">✓</div><span class="sc-lbl lbl-done">PDF geprüft</span><span class="sc-t">09:31</span></div>
-            <div class="sc-row"><div class="scd done">✓</div><span class="sc-lbl lbl-done">Bereit für Druck</span><span class="sc-t">10:02</span></div>
-            <div class="sc-row"><div class="scd now">▶</div><span class="sc-lbl lbl-now">Wird gedruckt & gebunden</span><span class="sc-t tnow">jetzt</span></div>
-            <div class="sc-row"><div class="scd later">○</div><span class="sc-lbl lbl-later">Versandbereit</span><span class="sc-t">~13:30</span></div>
-            <div class="sc-row"><div class="scd later">○</div><span class="sc-lbl lbl-later">Übergabe an DHL Express</span><span class="sc-t">~14:00</span></div>
+        <div class="usp-right-row">
+          <div class="usp-vis-status">
+            <div class="sc">
+              <div class="sc-top"><div class="sc-title">Auftragsstatus</div><div class="live"><span class="live-dot"></span>Live</div></div>
+              <div class="sc-sub">#BA-2406-047 · Hardcover Modern · 120 Seiten</div>
+              <div class="sc-rows">
+                <div class="sc-row"><div class="scd done">✓</div><span class="sc-lbl lbl-done">Bezahlung eingegangen</span><span class="sc-t">09:14</span></div>
+                <div class="sc-row"><div class="scd done">✓</div><span class="sc-lbl lbl-done">PDF geprüft</span><span class="sc-t">09:31</span></div>
+                <div class="sc-row"><div class="scd done">✓</div><span class="sc-lbl lbl-done">Bereit für Druck</span><span class="sc-t">10:02</span></div>
+                <div class="sc-row"><div class="scd now">▶</div><span class="sc-lbl lbl-now">Wird gedruckt & gebunden</span><span class="sc-t tnow">jetzt</span></div>
+                <div class="sc-row"><div class="scd later">○</div><span class="sc-lbl lbl-later">Versandbereit</span><span class="sc-t">~13:30</span></div>
+                <div class="sc-row"><div class="scd later">○</div><span class="sc-lbl lbl-later">Übergabe an DHL Express</span><span class="sc-t">~14:00</span></div>
+              </div>
+            </div>
+            <div class="sc-ov">
+              <div class="ov-lbl">Gedruckt in</div>
+              <div class="ov-big">Fulda</div>
+              <div class="ov-sub">Mitten in Deutschland</div>
+            </div>
+            <a href="auftrag.html" class="sc-track-link">→ Eigenen Auftrag verfolgen</a>
           </div>
+          <figure class="usp-photo">
+            <img src="media/bild2.png" alt="Team in der Druckerei von bamadi">
+            <figcaption class="usp-photo-caption">Team hinter bamadi</figcaption>
+          </figure>
         </div>
-        <div class="sc-ov">
-          <div class="ov-lbl">Gedruckt in</div>
-          <div class="ov-big">Fulda</div>
-          <div class="ov-sub">Mitten in Deutschland</div>
-        </div>
-        <a href="auftrag.html" class="sc-track-link">→ Eigenen Auftrag verfolgen</a>
       </div>
     </div>
     <hr class="usp-divider">
@@ -1013,17 +367,17 @@ footer{background:var(--navy-deep);padding:56px 0 32px;padding-bottom:calc(32px 
           <span class="__cf_email__" data-cfemail="553d3439393a1537343834313c7b3130">[email&#160;protected]</span>
         </a>
       </div>
-      <div class="sig-grid">
-        <div class="sig"><div class="sig-icon">📍</div><h4>Fulda — Mitte Deutschlands</h4><p>Kurze DHL-Wege in alle Richtungen. Express erreicht jede Hochschule am nächsten Morgen.</p></div>
-        <div class="sig"><div class="sig-icon">🏠</div><h4>Familienbetrieb seit 1994</h4><p>Inhabergeführt von Holger Schwob, IHK-Ausbildungsbetrieb. Persönliche Verantwortung für jede Bestellung.</p></div>
-        <div class="sig"><div class="sig-icon">🧵</div><h4>Echtes Buchbinderhandwerk</h4><p>Fadenheftung, Fächerklebebindung, Warmleimbindung — klassische Techniken, die halten.</p></div>
-        <div class="sig"><div class="sig-icon">✋</div><h4>Qualitätsversprechen</h4><p>Druckfehler auf unserer Seite? Wir produzieren kostenlos nach — ohne Diskussion.</p></div>
+      <div class="vt-side">
+        <figure class="vt-photo">
+          <img src="media/bild1.png" alt="Buchbinder bei der Arbeit in der Werkstatt in Fulda">
+          <figcaption class="vt-photo-caption">Echte Buchbinderei in Fulda</figcaption>
+        </figure>
       </div>
     </div>
   </div>
 </section>
 
-<!-- FAQ -->
+<!-- FAQ (Akordeon) -->
 <section id="faq" class="view-section">
   <div class="container">
     <div class="faq-wrap">
@@ -1070,7 +424,7 @@ footer{background:var(--navy-deep);padding:56px 0 32px;padding-bottom:calc(32px 
   </div>
 </section>
 
-<!-- CTA -->
+<!-- CTA-Band (Jetzt konfigurieren) -->
 <section id="cta" class="view-section">
   <div class="container">
     <div class="cta-inner">
@@ -1086,7 +440,7 @@ footer{background:var(--navy-deep);padding:56px 0 32px;padding-bottom:calc(32px 
   </div>
 </section>
 
-<!-- FOOTER -->
+<!-- ========== Footer ========== -->
 <footer>
   <div class="container">
     <div class="ft-grid">
@@ -1099,8 +453,8 @@ footer{background:var(--navy-deep);padding:56px 0 32px;padding-bottom:calc(32px 
           <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="3b535a5757547b595a565a5f52155f5e">[email&#160;protected]</a> · +49 661 480047-0
         </div>
       </div>
-      <div class="ft-col"><h4>Produkt</h4><ul class="ft-links"><li><a href="#produkte">Kalkulator</a></li><li><a href="#produkte">Bindungsarten</a></li><li><a href="#">Express-Lieferung</a></li><li><a href="auftrag.html">Auftragsstatus</a></li></ul></div>
-      <div class="ft-col"><h4>Service</h4><ul class="ft-links"><li><a href="#">Über bamadi</a></li><li><a href="#how">So funktionierts</a></li><li><a href="#faq">FAQ</a></li><li><a href="#">PDF vorbereiten</a></li></ul></div>
+      <div class="ft-col"><h4>Produkt</h4><ul class="ft-links"><li><a href="#kalkulator">Kalkulator</a></li><li><a href="#produkte">Bindungsarten</a></li><li><a href="#faq">Express-Lieferung</a></li><li><a href="auftrag.html">Auftragsstatus</a></li></ul></div>
+      <div class="ft-col"><h4>Service</h4><ul class="ft-links"><li><a href="#usp">Über bamadi</a></li><li><a href="#how">So funktioniert's</a></li><li><a href="#faq">FAQ</a></li><li><a href="#faq">PDF vorbereiten</a></li></ul></div>
       <div class="ft-col"><h4>Rechtliches</h4><ul class="ft-links"><li><a href="#impressum">Impressum</a></li><li><a href="#datenschutz">Datenschutz</a></li><li><a href="#agb">AGB</a></li><li><a href="#widerruf">Widerruf</a></li></ul></div>
     </div>
     <div class="ft-bottom">
@@ -1110,6 +464,7 @@ footer{background:var(--navy-deep);padding:56px 0 32px;padding-bottom:calc(32px 
   </div>
 </footer>
 
+<!-- 5. Legal-Modal (Impressum, Datenschutz, AGB, Widerruf — Tabs) -->
 <div id="legal-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="legal-modal-title">
   <div class="legal-modal">
     <div class="legal-modal-header">
