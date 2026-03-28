@@ -80,12 +80,20 @@ function encodeHeaderValue(value: string): string {
 
 function replacePlaceholders(
   str: string,
-  vars: { order_number: string; customer_name: string; status: string }
+  vars: {
+    order_number: string
+    customer_name: string
+    customer_email: string
+    status: string
+    review_url: string
+  }
 ): string {
   return str
     .replace(/\{\{order_number\}\}/g, vars.order_number)
     .replace(/\{\{customer_name\}\}/g, vars.customer_name)
+    .replace(/\{\{customer_email\}\}/g, vars.customer_email)
     .replace(/\{\{status\}\}/g, vars.status)
+    .replace(/\{\{review_url\}\}/g, vars.review_url)
 }
 
 function buildMimeMessage(to: string, subject: string, bodyText: string): string {
@@ -154,9 +162,20 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body = (await req.json().catch(() => ({}))) as { order_id?: string; type?: string; status?: string }
+    const body = (await req.json().catch(() => ({}))) as {
+      order_id?: string
+      type?: string
+      status?: string
+      allow_resend?: boolean
+    }
     const orderId = body.order_id
-    const type = (body.type === 'status' ? 'status' : 'received') as 'received' | 'status'
+    const type = (
+      body.type === 'review_request'
+        ? 'review_request'
+        : body.type === 'status'
+          ? 'status'
+          : 'received'
+    ) as 'received' | 'status' | 'review_request'
     if (!orderId) {
       return new Response(
         JSON.stringify({ error: 'order_id erforderlich.' }),
@@ -170,7 +189,7 @@ Deno.serve(async (req) => {
 
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('id, order_number, customer_email, customer_name, status')
+      .select('id, order_number, customer_email, customer_name, status, email_sent_log')
       .eq('id', orderId)
       .single()
 
@@ -191,9 +210,35 @@ Deno.serve(async (req) => {
 
     const orderNum = order.order_number || orderId
     const customerName = (order.customer_name || '').trim()
+    const customerEmail = (order.customer_email || '').trim()
     const statusText = (body.status || order.status || '').trim() || 'aktualisiert'
-    const templateKey = type === 'received' ? 'Eingegangen' : statusText
-    const vars = { order_number: orderNum, customer_name: customerName, status: statusText }
+    const reviewUrl = (Deno.env.get('REVIEW_PAGE_URL') ?? '').trim()
+    const templateKey =
+      type === 'received' ? 'Eingegangen' : type === 'review_request' ? 'Bewertungsanfrage' : statusText
+    const vars = {
+      order_number: orderNum,
+      customer_name: customerName,
+      customer_email: customerEmail,
+      status: statusText,
+      review_url: reviewUrl,
+    }
+
+    if (type === 'review_request') {
+      const log = Array.isArray(order.email_sent_log) ? order.email_sent_log : []
+      const allowResend = body.allow_resend === true
+      if (!allowResend && log.some((e: { type?: string }) => e?.type === 'review_request')) {
+        return new Response(
+          JSON.stringify({ error: 'Bewertungsanfrage wurde für diesen Auftrag bereits versendet.' }),
+          { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      if (!['Versendet', 'Abgeholt'].includes((order.status || '').trim())) {
+        return new Response(
+          JSON.stringify({ error: 'Bewertungsanfrage nur für Status Versendet oder Abgeholt möglich.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    }
 
     let subject: string
     let bodyText: string
@@ -208,6 +253,16 @@ Deno.serve(async (req) => {
     const useTemplate =
       template?.active &&
       (template.subject_template?.trim() || template.body_plain?.trim() || template.body_html?.trim())
+
+    if (type === 'review_request' && !useTemplate) {
+      return new Response(
+        JSON.stringify({
+          error:
+            'Template „Bewertungsanfrage“ ist nicht aktiv oder leer. Bitte unter Einstellungen aktivieren und Text hinterlegen.',
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     if (useTemplate && template) {
       subject = replacePlaceholders(template.subject_template?.trim() || `Auftrag ${orderNum}`, vars)
@@ -267,8 +322,13 @@ Deno.serve(async (req) => {
 
     try {
       const logEntry = {
-        type,
-        status: type === 'received' ? 'Eingegangen' : statusText,
+        type: type === 'review_request' ? 'review_request' : type,
+        status:
+          type === 'received'
+            ? 'Eingegangen'
+            : type === 'review_request'
+              ? 'Bewertungsanfrage'
+              : statusText,
         sent_at: new Date().toISOString(),
       }
       const { data: existing } = await supabase

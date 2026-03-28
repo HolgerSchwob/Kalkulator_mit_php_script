@@ -16,24 +16,6 @@
 
   function openKalkulatorOverlay() {
     if (!overlay || !iframe) return;
-    // #region agent log
-    fetch('http://127.0.0.1:7367/ingest/6b096abe-f6e2-4304-8e37-96d1c209c901',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','X-Debug-Session-Id':'be28d0'},
-      body:JSON.stringify({
-        sessionId:'be28d0',
-        runId:'pre-fix',
-        hypothesisId:'H1',
-        location:'app.js:openKalkulatorOverlay',
-        message:'openKalkulatorOverlay called',
-        data:{
-          overlayHasClass:isOpen = overlay.classList.contains('is-open'),
-          url:window.location.href
-        },
-        timestamp:Date.now()
-      })
-    }).catch(()=>{});
-    // #endregion agent log
     lastActiveElement = document.activeElement;
     modalOverlayCount = 0;
     updateCloseButtonVisibility();
@@ -106,28 +88,9 @@
     if (!a || !a.getAttribute('href')) return;
     var href = a.getAttribute('href');
     var isKalkulatorHref = href.indexOf('kalkulator') !== -1;
-    var isProdukteCta = (href === '#produkte' || href.endsWith('#produkte')) && (a.classList.contains('nav-cta') || a.classList.contains('btn-primary') || a.classList.contains('btn-dark'));
+    var isProdukteCta = (href === '#produkte' || href.endsWith('#produkte') || href === '#bindungen' || href.endsWith('#bindungen')) && (a.classList.contains('nav-cta') || a.classList.contains('btn-primary') || a.classList.contains('btn-dark'));
     if (isKalkulatorHref || isProdukteCta) {
       console.log('[bamadi] Klick auf Kalkulator-Link, öffne Overlay');
-      // #region agent log
-      fetch('http://127.0.0.1:7367/ingest/6b096abe-f6e2-4304-8e37-96d1c209c901',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','X-Debug-Session-Id':'be28d0'},
-        body:JSON.stringify({
-          sessionId:'be28d0',
-          runId:'pre-fix',
-          hypothesisId:'H2',
-          location:'app.js:kalkulator-click',
-          message:'Kalkulator link click detected',
-          data:{
-            href:a.getAttribute('href'),
-            tag:e.target.tagName,
-            overlayPresent:!!overlay
-          },
-          timestamp:Date.now()
-        })
-      }).catch(()=>{});
-      // #endregion agent log
       e.preventDefault();
       e.stopPropagation();
       openKalkulatorOverlay();
@@ -430,7 +393,8 @@ window.closeOnBg = function(e) {
 console.log('[bamadi] openModal, closeModal, closeOnBg auf window gesetzt');
 
 function renderModal() {
-  const binding = bindings[activeBinding];
+  const list = window.bindings || bindings;
+  const binding = list[activeBinding];
   const slides  = binding.slides;
   const track   = document.getElementById('track');
   const dots    = document.getElementById('navDots');
@@ -457,7 +421,8 @@ function renderModal() {
 }
 
 function goToSlide(n) {
-  const binding = bindings[activeBinding];
+  const list = window.bindings || bindings;
+  const binding = list[activeBinding];
   const count   = binding.slides.length;
   activeSlide   = Math.max(0, Math.min(n, count - 1));
   const track = document.getElementById('track');
@@ -507,24 +472,6 @@ document.addEventListener('keydown', function(e){
       var idx = parseInt(card.getAttribute('data-binding'), 10);
       console.log('[bamadi] Klick auf .prod-card, data-binding=', idx, 'openModal=', typeof window.openModal);
       if (!isNaN(idx) && typeof window.openModal === 'function') {
-        // #region agent log
-        fetch('http://127.0.0.1:7367/ingest/6b096abe-f6e2-4304-8e37-96d1c209c901',{
-          method:'POST',
-          headers:{'Content-Type':'application/json','X-Debug-Session-Id':'be28d0'},
-          body:JSON.stringify({
-            sessionId:'be28d0',
-            runId:'pre-fix',
-            hypothesisId:'H3',
-            location:'app.js:prod-card-click',
-            message:'Prod-card click detected',
-            data:{
-              bindingIndex:idx,
-              overlayOpen:document.getElementById('overlay') && document.getElementById('overlay').classList.contains('open')
-            },
-            timestamp:Date.now()
-          })
-        }).catch(()=>{});
-        // #endregion agent log
         e.preventDefault();
         e.stopPropagation();
         window.openModal(idx);
@@ -540,33 +487,6 @@ document.addEventListener('keydown', function(e){
 // das Scrollen blockiert wurde, stellen wir den Ausgangszustand wieder her.
 document.addEventListener('DOMContentLoaded', function(){
   try {
-    // #region agent log
-    (function(){
-      var footer = document.querySelector('footer');
-      var kalkOv   = document.getElementById('kalkulator-overlay');
-      var legalOv  = document.getElementById('legal-overlay');
-      var bindOv   = document.getElementById('overlay');
-      fetch('http://127.0.0.1:7367/ingest/6b096abe-f6e2-4304-8e37-96d1c209c901',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','X-Debug-Session-Id':'be28d0'},
-        body:JSON.stringify({
-          sessionId:'be28d0',
-          runId:'pre-fix',
-          hypothesisId:'H4',
-          location:'app.js:DOMContentLoaded',
-          message:'DOM loaded, initial overlay/footer state',
-          data:{
-            url:window.location.href,
-            footerPresent:!!footer,
-            kalkulatorOpen:kalkOv && kalkOv.classList.contains('is-open'),
-            legalOpen:legalOv && legalOv.classList.contains('is-open'),
-            bindModalOpen:bindOv && bindOv.classList.contains('open')
-          },
-          timestamp:Date.now()
-        })
-      }).catch(()=>{});
-    })();
-    // #endregion agent log
     // Body wieder scrollbar machen
     document.body.style.overflow = '';
     // Alle Overlays sicher schließen

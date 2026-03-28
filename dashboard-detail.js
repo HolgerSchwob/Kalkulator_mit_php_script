@@ -152,12 +152,17 @@ function renderDetail(data) {
     const emailLog = order.email_sent_log;
     const logEntries = Array.isArray(emailLog) ? emailLog : [];
     const hasReceivedEmail = logEntries.some(function(e) { return e.type === 'received'; });
+    const hasReviewEmail = logEntries.some(function(e) { return e.type === 'review_request'; });
+    const canSendReview = detailEmail && (order.status === 'Versendet' || order.status === 'Abgeholt');
     const orderNotesFromCustomer = (customerData.customerNotes != null && String(customerData.customerNotes).trim()) ? String(customerData.customerNotes).trim() : (order.notes != null && String(order.notes).trim()) ? String(order.notes).trim() : '';
     const detailCustomerEmail = customerData.customerEmail || customerData.email || order.customer_email || '';
     const detailMailto = detailCustomerEmail ? ('mailto:' + encodeURIComponent(detailCustomerEmail) + '?subject=' + encodeURIComponent('Auftrag ' + (order.order_number || ''))) : '#';
     const customerName = customerData.customerName || customerData.name || order.customer_name || '–';
     const emailLogTitle = logEntries.length > 0 ? logEntries.map(function(entry) {
-        const label = entry.type === 'received' ? 'Auftrag eingegangen' : ('Status: ' + (entry.status || '–'));
+        let label;
+        if (entry.type === 'received') label = 'Auftrag eingegangen';
+        else if (entry.type === 'review_request') label = 'Bewertungsanfrage';
+        else label = 'Status: ' + (entry.status || '–');
         const sentAt = entry.sent_at ? (function(d) { try { return d.toLocaleString('de-DE'); } catch (_) { return entry.sent_at; } })(new Date(entry.sent_at)) : '–';
         return label + ' – ' + sentAt;
     }).join('\n') : 'Bisher keine E-Mails versendet.';
@@ -176,6 +181,9 @@ function renderDetail(data) {
     html += '<button type="button" class="secondary btn-copy-email" data-email="' + escapeHtml(detailEmail) + '" title="E-Mail in Zwischenablage kopieren">E-Mail kopieren</button>';
     if (detailEmail) {
         html += '<button type="button" class="secondary" id="btnSendReceivedEmail" title="' + (hasReceivedEmail ? 'Eingangsbestätigung erneut an Kunden senden' : 'Eingangsbestätigung manuell senden (wird sonst automatisch nach Bestelleingang versendet)') + '">' + (hasReceivedEmail ? 'Eingangs-E-Mail erneut senden' : 'Eingangs-E-Mail senden') + '</button>';
+    }
+    if (canSendReview) {
+        html += '<button type="button" class="secondary" id="btnSendReviewEmail" title="' + (hasReviewEmail ? 'Bewertungsanfrage erneut senden (falls Template aktiv)' : 'Bewertungsanfrage jetzt senden (automatisch ca. 4 Tage nach Versand/Abholung, wenn Template aktiv)') + '">' + (hasReviewEmail ? 'Bewertungsanfrage erneut senden' : 'Bewertungsanfrage senden') + '</button>';
     }
     html += '<span class="detail-email-log-badge" title="' + escapeHtml(emailLogTitle) + (logEntries.length === 0 ? '\n\nDie Eingangsbestätigung wird automatisch direkt nach Bestelleingang versendet.' : '') + '">' + (logEntries.length > 0 ? logEntries.length + ' E-Mail(s)' : 'Keine E-Mails') + '</span>';
     html += '<button type="button" class="secondary" id="btnDetailSave">Speichern</button>';
@@ -625,6 +633,27 @@ function bindDetailActions(content, data) {
         if (btn) btn.disabled = true;
         try {
             await sendOrderEmail(orderId, 'received');
+            const data = await getOrderDetail(orderId);
+            state.currentDetail = data;
+            document.getElementById('detailContent').innerHTML = renderDetail(data);
+            bindDetailActions(document.getElementById('detailContent'), data);
+        } catch (e) {
+            alert('E-Mail-Versand fehlgeschlagen: ' + e.message);
+            if (btn) btn.disabled = false;
+        }
+    });
+    content.querySelector('#btnSendReviewEmail')?.addEventListener('click', async () => {
+        const btn = content.querySelector('#btnSendReviewEmail');
+        if (btn) btn.disabled = true;
+        try {
+            const logEntries = Array.isArray(order.email_sent_log) ? order.email_sent_log : [];
+            const alreadyReview = logEntries.some(function(e) { return e.type === 'review_request'; });
+            const resend = alreadyReview && confirm('Bewertungsanfrage wurde bereits versendet. Erneut senden?');
+            if (alreadyReview && !resend) {
+                if (btn) btn.disabled = false;
+                return;
+            }
+            await sendOrderEmail(orderId, 'review_request', undefined, { resend: alreadyReview && resend });
             const data = await getOrderDetail(orderId);
             state.currentDetail = data;
             document.getElementById('detailContent').innerHTML = renderDetail(data);

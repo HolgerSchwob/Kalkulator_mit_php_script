@@ -13,8 +13,8 @@ export class BaseEditor {
         this.config = config;
         this.onSubmit = config.onSubmit;
         this.onCancel = config.onCancel;
-        
-        // Erzeuge die grundlegenden DOM-Elemente des Modals
+        this._abortController = new AbortController();
+
         this._createModal(title);
     }
 
@@ -48,10 +48,10 @@ export class BaseEditor {
         `;
         modalContent.appendChild(footer);
         
-        // Event Listeners
-        this.modalElement.querySelector('.close-btn').addEventListener('click', () => this.close());
-        this.modalElement.querySelector('.cancel-btn').addEventListener('click', () => this.close());
-        this.modalElement.querySelector('.confirm-btn').addEventListener('click', () => this._handleConfirm());
+        const sig = { signal: this._abortController.signal };
+        this.modalElement.querySelector('.close-btn').addEventListener('click', () => this.close(), sig);
+        this.modalElement.querySelector('.cancel-btn').addEventListener('click', () => this.close(), sig);
+        this.modalElement.querySelector('.confirm-btn').addEventListener('click', () => this._handleConfirm(), sig);
 
         // Füge das Modal zum Body hinzu und zeige es an
         document.body.appendChild(this.modalElement);
@@ -97,12 +97,17 @@ export class BaseEditor {
         if (triggerCancel && typeof this.onCancel === 'function') {
             this.onCancel();
         }
+        this._destroy();
+        this._abortController.abort();
         if (this.modalElement) {
             this.modalElement.classList.remove('visible');
-            // Warte auf das Ende der Transition, bevor das Element entfernt wird.
             this.modalElement.addEventListener('transitionend', () => {
                 this.modalElement.remove();
             }, { once: true });
+            setTimeout(() => { if (this.modalElement?.parentNode) this.modalElement.remove(); }, 500);
         }
     }
+
+    /** Wird beim Schließen aufgerufen. Subklassen überschreiben dies für eigenes Cleanup. */
+    _destroy() {}
 }

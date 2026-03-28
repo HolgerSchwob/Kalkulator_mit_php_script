@@ -286,6 +286,14 @@
                             <textarea id="customerNotes" name="customerNotes"></textarea>
                         </div>
                     </form>
+                    <div class="inquiry-b2b-block">
+                        <label for="inquiryB2bCode">Aktions- oder Firmencode (optional)</label>
+                        <div class="inquiry-b2b-row">
+                            <input type="text" id="inquiryB2bCode" name="inquiryB2bCode" autocomplete="off" placeholder="z. B. EDAG-X7K2M9" spellcheck="false">
+                            <button type="button" id="inquiryB2bValidateBtn" class="button-secondary">Code prüfen</button>
+                        </div>
+                        <p id="inquiryB2bMessage" class="inquiry-b2b-message hidden" role="status" aria-live="polite"></p>
+                    </div>
                 </div>
 
                 <!-- STEP 2: LIEFERADRESSE -->
@@ -320,8 +328,11 @@
                     <h4>Schritt 3: Zahlungsart</h4>
                     <fieldset id="inquiryPaymentMethodStripeWrap" class="hidden" aria-label="Zahlungsart">
                         <legend class="visually-hidden">Zahlungsart</legend>
-                        <label class="block-mb"><input type="radio" name="inquiryPaymentMethod" value="stripe"> Online-Zahlung (Karte)</label>
-                        <label class="block-mb"><input type="radio" name="inquiryPaymentMethod" value="offline" checked> Rechnung / Vorkasse</label>
+                        <div class="inquiry-payment-note info-box">
+                            <p><strong>Online bezahlen:</strong> Nach dem nächsten Schritt leiten wir Sie zur <strong>sicheren Zahlungsseite von Stripe</strong> weiter. Dort zahlen Sie z. B. mit Kredit- oder Debitkarte; je nach Gerät auch mit Apple&nbsp;Pay oder Google&nbsp;Pay. Kartendaten werden nur bei Stripe erfasst, nicht in unserem Shop.</p>
+                        </div>
+                        <label class="block-mb inquiry-payment-option-stripe"><input type="radio" name="inquiryPaymentMethod" value="stripe"> Online bezahlen (Weiterleitung zu Stripe)</label>
+                        <label class="block-mb inquiry-payment-option-offline"><input type="radio" name="inquiryPaymentMethod" value="offline" checked> Später per Rechnung / Vorkasse</label>
                     </fieldset>
                     <div id="inquiryPaymentMethodOfflineOnly" class="hidden">
                         <p>Zahlung per Rechnung bzw. Vorkasse.</p>
@@ -331,7 +342,7 @@
                 <!-- STEP 4: FINALE ÜBERPRÜFUNG -->
                 <div id="inquiryStepFinalReview" class="inquiry-step-content hidden">
                     <h4>Schritt 4: Überprüfung und Absenden</h4>
-                    <p>Bitte überprüfen Sie Ihre Konfiguration. Mit dem Absenden stellen Sie eine <strong>unverbindliche Anfrage</strong>.</p>
+                    <p id="inquiryFinalLead">Bitte überprüfen Sie Ihre Konfiguration. Mit dem Absenden stellen Sie eine <strong>unverbindliche Anfrage</strong>.</p>
                     <div class="inquiry-summary-box">
                         <div id="inquiryFinalSummaryDetails"></div>
                         <p class="summary-total-line">
@@ -387,97 +398,7 @@
     </div>
 
 
-    <!-- =================================================================== -->
-    <!-- BEGINN: HTML-STRUKTUR FÜR DEN BUCHDECKENEDITOR (SAUBERE VERSION)   -->
-    <!-- =================================================================== -->
-    <div id="editor-modal" class="modal-overlay">
-        <div class="editor-modal-content">
-            <div class="modal-header">
-                <h1 class="editor-title">Buchdecke Personalisieren</h1>
-                <button id="closeEditorModalButton" class="button-danger" aria-label="Editor schließen">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="editor-controls-column">
-                    <div class="template-selector-container">
-                        <button class="slider-arrow" id="prev-template" aria-label="Vorheriges Template">&lt;</button>
-                        <div class="template-slider">
-                            <div class="template-miniatures" id="template-miniatures-list"></div>
-                        </div>
-                        <button class="slider-arrow" id="next-template" aria-label="Nächstes Template">&gt;</button>
-                    </div>
-                    <div class="controls">
-                        <div class="control-group">
-                            <label for="text-title-input">Titel (U1):</label>
-                            <input type="text" id="text-title-input">
-                        </div>
-                        <div class="control-group">
-                            <label for="text-subtitle-input">Untertitel (U1):</label>
-                            <input type="text" id="text-subtitle-input">
-                        </div>
-                        <div class="control-group">
-                            <label for="text-author-input">Autor (U4):</label>
-                            <input type="text" id="text-author-input">
-                        </div>
-                        <div class="control-group">
-                            <label for="text-spine-title-input">Rückentitel:</label>
-                            <input type="text" id="text-spine-title-input">
-                        </div>
-                        <div class="control-group">
-                            <label for="spine-width-input">Rückenbreite (mm):</label>
-                            <input type="number" id="spine-width-input" min="5" max="100">
-                        </div>
-                        <div class="control-group">
-                            <label>Farbe U1:</label>
-                            <div class="color-palette" id="palette-u1"></div>
-                        </div>
-                         <div class="control-group">
-                            <label>Farbe U4:</label>
-                            <div class="color-palette" id="palette-u4"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="editor-preview-column">
-                    <div id="svg-container">
-                        <div id="svg-canvas"></div>
-                    </div>
-                    <div class="view-controls">
-                        <button id="zoom-in-button" aria-label="Hineinzoomen">+</button>
-                        <button id="zoom-out-button" aria-label="Herauszoomen">-</button>
-                        <button id="zoom-reset-button" aria-label="Zoom zurücksetzen">Reset</button>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <div class="footer-actions-left">
-                    <button id="editor-preview-button" class="button-secondary">Vorschau</button>
-                </div>
-                <div class="footer-actions-right">
-                    <button id="editor-cancel-button" class="button-secondary">Abbrechen</button>
-                    <button id="editor-confirm-button" class="button-primary">Übernehmen</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="preview-modal" class="modal-overlay">
-        <div class="editor-modal-content">
-            <div class="modal-header">
-                <h2>Vorschau Buchdecke</h2>
-                <button class="close-preview-button" id="close-preview-modal-button" aria-label="Vorschau schließen">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div id="preview-svg-container">
-                    <div id="preview-svg-canvas"></div>
-                </div>
-            </div>
-            <div class="modal-footer modal-footer-end">
-                 <button id="download-preview-svg-button" class="button-secondary">SVG Herunterladen</button>
-            </div>
-        </div>
-    </div>
-    <!-- =================================================================== -->
-    <!-- ENDE: HTML-STRUKTUR FÜR DEN BUCHDECKENEDITOR                      -->
-    <!-- =================================================================== -->
+    <!-- Buchdecken-Editor: wird per JS als .editor-modal-overlay eingefügt (HardcoverEditor.mjs). -->
 
     <!-- LADE-OVERLAY -->
    <div id="loadingOverlay" class="loading-overlay hidden">
@@ -511,8 +432,8 @@
         function hasBlockingModalOpen() {
           var lieferzeiten = document.getElementById('lieferzeiten-modal-overlay');
           if (lieferzeiten && lieferzeiten.classList.contains('active')) return true;
-          var editorModal = document.getElementById('editor-modal');
-          if (editorModal && window.getComputedStyle(editorModal).display !== 'none') return true;
+          var coverEditor = document.querySelector('.editor-modal-overlay.visible');
+          if (coverEditor) return true;
           return false;
         }
         window.addEventListener('message', function(e) {

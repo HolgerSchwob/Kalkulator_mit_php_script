@@ -1514,6 +1514,43 @@ textarea:focus-visible,
     margin-bottom: 3px; /* Abstand zwischen Listenelementen */
 }
 
+.inquiry-b2b-block {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--color-border-light);
+}
+.inquiry-b2b-block label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: bold;
+    font-size: 0.95em;
+}
+.inquiry-b2b-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+.inquiry-b2b-row input[type="text"] {
+    flex: 1 1 180px;
+    min-width: 0;
+    padding: 10px;
+    border: 1px solid var(--color-border-input);
+    border-radius: var(--radius);
+    box-sizing: border-box;
+    font-size: 1em;
+}
+.inquiry-b2b-message {
+    margin: 10px 0 0;
+    font-size: 0.9em;
+    color: var(--color-text-muted);
+}
+.inquiry-b2b-message.is-ok {
+    color: var(--color-success, #15803d);
+}
+.inquiry-b2b-message.is-err {
+    color: var(--color-error, #c0392b);
+}
 
 #selectedDeliveryMethodInfo {
     margin-bottom: 18px;
@@ -1539,318 +1576,7 @@ textarea:focus-visible,
     border-radius: var(--radius);
 }
 
-/* BEGINN: Stile für Buchdeckeneditor */
-/* Wichtig: Die .editor-modal-overlay Klasse wird auch vom Editor verwendet, aber mit spezifischeren Kindelementen.
-   Die Hauptanwendung hat .modal-overlay. Wir stellen sicher, dass die Editor-Styles spezifisch sind. */
-
-#editor-modal, #preview-modal { /* Diese IDs sind die Haupt-Overlay-Container für den Editor */
-    /* display: none; Wird von JS gesteuert - ist schon in .modal-overlay der Hauptanwendung */
-    /* position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; */ /* Übernommen von .modal-overlay */
-    /* overflow: hidden; */ /* Editor-HTML hatte 'hidden', Hauptanwendung nicht explizit für .modal-overlay */
-    /* background-color: rgba(0,0,0,0.4); */ /* Übernommen von .modal-overlay */
-    /* align-items: center; justify-content: center; */ /* Übernommen von .modal-overlay */
-    font-family: Arial, sans-serif; /* Spezifische Schriftart für den Editor-Inhalt, falls gewünscht */
-    z-index: 1002; /* Potenziell höherer z-index als andere Modals, falls nötig */
-}
-
-#editor-modal .editor-modal-content,
-#preview-modal .editor-modal-content {
-    background-color: var(--color-surface);
-    margin: auto; /* Zentriert, wenn .editor-modal-overlay flex ist */
-    padding: 15px;
-    border: 1px solid var(--color-text-light);
-    border-radius: 8px;
-    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    /* WICHTIG: Die .modal-content der Hauptanwendung hat max-width, max-height.
-       Hier werden spezifische Größen für den Editor gesetzt. */
-    width: 95%;
-    max-width: 1200px; /* Editor-spezifisch */
-    max-height: 95vh;   /* Editor-spezifisch */
-    overflow: hidden; /* Verhindert, dass Inhalt überläuft, body hat scroll */
-}
-
-#editor-modal .modal-header, /* Spezifisch für Editor-Modal */
-#preview-modal .modal-header { /* Spezifisch für Preview-Modal */
-    padding-bottom: 5px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid var(--color-border-light);
-    margin-bottom: 0; /* Überschreibt ggf. .modal-header der Haupt-App */
-}
-
-#editor-modal .modal-header h1.editor-title, /* Spezifisch für Editor-Modal */
-#preview-modal .modal-header h2 { /* Spezifisch für Preview-Modal */
-    margin: 0; 
-    font-size: 1.4em; 
-    /* Farbe wird von Hauptanwendung .modal-header h2 geerbt oder hier explizit setzen */
-}
-
-#editor-modal .modal-body, /* Spezifisch für Editor-Modal */
-#preview-modal .modal-body { /* Spezifisch für Preview-Modal */
-    display: flex;
-    flex-direction: row; /* Editor hat row, Hauptanwendung column für .modal-body */
-    gap: 15px;
-    overflow: hidden; /* Wichtig, damit Spalten intern scrollen können */
-    flex-grow: 1;
-    min-height: 0; /* Wichtig für Flexbox-Kinder mit overflow */
-    padding: 0; /* Editor-Modal-Body hat kein eigenes Padding, die Spalten schon */
-    padding-right: 0; /* Überschreibt .modal-body der Hauptanwendung */
-}
-
-
-#editor-modal .editor-controls-column {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    width: 320px;
-    flex-shrink: 0;
-    overflow-y: auto;
-    padding: 10px; /* Eigenes Padding für die Spalte */
-    background-color: var(--color-bg); /* Leichter Hintergrund für Kontrollspalte */
-    border-radius: 6px;
-}
-
-#editor-modal .editor-preview-column {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    flex-grow: 1;
-    min-width: 0; /* Wichtig für Flexbox-Kinder */
-    padding: 10px; /* Eigenes Padding für die Spalte */
-}
-
-#editor-modal .controls, 
-#editor-modal .template-selector-container {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 10px;
-    background-color: var(--color-surface);
-    border-radius: 6px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
-#editor-modal .template-selector-container {
-     align-items: stretch; /* Editor-spezifisch */
-     flex-direction: row; /* Für horizontale Anordnung der Pfeile und Slider */
-     justify-content: space-between;
-}
-#editor-modal .view-controls {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 8px;
-    padding: 8px; /* Etwas mehr Padding */
-    background-color: var(--color-surface);
-    border-radius: 6px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    margin-top: auto; /* Schiebt es nach unten in der Flex-Spalte */
-}
-#editor-modal .view-controls button {
-    padding: 8px 12px;
-    font-size: 0.9em;
-    cursor: pointer;
-    background-color: var(--color-secondary); /* Angepasst an button-secondary */
-    color: var(--color-white);
-    border: none;
-    border-radius: var(--radius);
-    transition: background-color 0.2s ease;
-}
-#editor-modal .view-controls button:hover { 
-    background-color: var(--color-secondary-hover); /* Angepasst an button-secondary hover */
-}
-
-#editor-modal .control-group {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 4px;
-}
-#editor-modal .control-group label {
-    font-weight: normal; /* Editor-spezifisch */
-    font-size: 0.85em;
-    white-space: nowrap;
-    color: var(--color-text); /* Dunklere Farbe für bessere Lesbarkeit */
-    margin-bottom: 2px; /* Kleiner Abstand zum Input */
-}
-#editor-modal .control-group input[type="text"],
-#editor-modal .control-group input[type="number"] {
-    padding: 6px 8px;
-    border: 1px solid var(--color-border-input);
-    border-radius: 3px;
-    font-size: 0.9em;
-    width: 100%;
-    box-sizing: border-box;
-}
-#editor-modal .color-palette { 
-    display: flex; 
-    align-items: center; 
-    gap: 4px; 
-    flex-wrap: wrap; /* Erlaubt Umbruch bei vielen Farben */
-}
-#editor-modal .color-palette button {
-    width: 24px; height: 24px; border: 1px solid var(--color-border-input);
-    border-radius: 3px; cursor: pointer;
-    transition: box-shadow 0.2s ease, border-color 0.2s ease;
-}
-#editor-modal .color-palette button.active {
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 2px rgba(0,123,255,.5);
-}
-#editor-modal #svg-container {
-    width: 100%;
-    border: 1px solid var(--color-border-input);
-    position: relative;
-    overflow: hidden;
-    background-color: var(--color-border-light);
-    cursor: grab;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-grow: 1;
-    min-height: 250px; /* Mindesthöhe für den SVG-Bereich */
-    border-radius: var(--radius);
-}
-#editor-modal #svg-container:active { cursor: grabbing; }
-
-#editor-modal #svg-canvas { /* Das Kind-Div, in das SVG.js rendert */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-}
-#editor-modal #svg-canvas > svg {
-    /* Größe wird von JS gesetzt (viewBox und preserveAspectRatio) */
-    max-width: 100%;
-    max-height: 100%;
-}
-
-#editor-modal .template-slider { 
-    display: flex; 
-    align-items: center; 
-    overflow: hidden; 
-    flex-grow: 1; 
-    margin: 0 8px; 
-}
-#editor-modal .template-miniatures { 
-    display: flex; 
-    transition: transform 0.3s ease-in-out; 
-}
-#editor-modal .template-miniature {
-    width: 80px; height: 53px; border: 2px solid transparent; margin-right: 8px; cursor: pointer;
-    object-fit: contain; background-color: var(--color-border); /* Platzhalterfarbe für Miniaturen */
-    border-radius: 3px;
-    transition: border-color 0.2s ease;
-}
-#editor-modal .template-miniature:hover {
-    border-color: var(--color-text-light);
-}
-#editor-modal .template-miniature.active { 
-    border-color: var(--color-primary); /* Angepasst an primäre Akzentfarbe */
-}
-#editor-modal .slider-arrow {
-    background: none; border: 1px solid var(--color-border-input); border-radius:4px;
-    padding: 4px 8px; font-size: 1em; cursor: pointer;
-    background-color: var(--color-bg);
-    transition: background-color 0.2s ease;
-}
-#editor-modal .slider-arrow:hover { background-color: var(--color-border-light); }
-
-#editor-modal .modal-footer, /* Spezifisch für Editor-Modal */
-#preview-modal .modal-footer { /* Spezifisch für Preview-Modal */
-    padding-top: 10px; 
-    border-top: 1px solid var(--color-border-light); 
-    gap: 10px;
-    display: flex; 
-    justify-content: space-between; /* Editor hat links und rechts Aktionen */
-    align-items: center;
-    margin-top: 0; /* Überschreibt ggf. .modal-footer der Haupt-App */
-}
-#editor-modal .modal-footer .footer-actions-right button,
-#editor-modal .modal-footer .footer-actions-left button,
-#preview-modal .modal-footer button {
-     padding: 8px 15px; 
-     font-size: 0.9em;
-     border:none; 
-     border-radius:4px;
-     cursor: pointer;
-     transition: background-color 0.2s ease;
-}
-/* Button-Styling für Editor an Hauptanwendung anpassen oder spezifisch lassen */
-#editor-modal .modal-footer .footer-actions-right button#editor-confirm-button {
-    background-color: var(--color-success); /* Grün für Bestätigen */
-    color: var(--color-white); 
-}
-#editor-modal .modal-footer .footer-actions-right button#editor-confirm-button:hover { background-color: var(--success-hover);}
-
-#editor-modal .modal-footer .footer-actions-right button#editor-cancel-button,
-#editor-modal .modal-footer .footer-actions-left button#editor-preview-button, /* Vorschau-Button */
-#preview-modal .modal-footer button { /* Alle Buttons im Preview Footer */
-    background-color: var(--color-secondary); /* Grau (button-secondary) */
-    color: var(--color-white); 
-}
-#editor-modal .modal-footer .footer-actions-right button#editor-cancel-button:hover,
-#editor-modal .modal-footer .footer-actions-left button#editor-preview-button:hover,
-#preview-modal .modal-footer button:hover { 
-    background-color: var(--color-secondary-hover);
-}
-
-
-/* Preview Modal Styles */
-#preview-modal .editor-modal-content { /* Spezifische Größe für Preview-Modal */
-    width: 90vw;
-    height: 90vh;
-    max-width: 1600px; /* Sehr breit für große Vorschau */
-}
-#preview-modal .modal-body { /* Spezifisch für Preview-Modal Body */
-    padding: 0; /* Kein Padding, da SVG-Container den Platz füllt */
-    display: flex; /* Ist schon von #preview-modal .modal-body geerbt */
-    flex-grow: 1;
-}
-#preview-modal #preview-svg-container {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: var(--color-border); /* Hintergrund für den SVG-Vorschau-Bereich */
-    overflow: hidden;
-    border-radius: var(--radius);
-}
-#preview-modal #preview-svg-canvas { /* Das Kind-Div für die Vorschau */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-}
-#preview-modal #preview-svg-canvas > svg {
-    /* Größe wird von JS gesetzt */
-    max-width: 100%;
-    max-height: 100%;
-}
-#preview-modal .modal-header .close-preview-button {
-    font-size: 1.5em;
-    font-weight: bold;
-    color: var(--color-text-light);
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0 5px;
-    line-height: 1;
-}
-#preview-modal .modal-header .close-preview-button:hover {
-    color: var(--color-text);
-}
-#preview-modal .modal-footer { /* Spezifisch für Preview-Modal Footer */
-    justify-content: flex-end; /* Nur rechte Aktionen (z.B. Schließen oder Download) */
-}
-
-/* ENDE: Stile für Buchdeckeneditor */
+/* Buchdeckeneditor: Layout & Modal liegen in kalkulator/editor-styles.css (dynamisch eingebunden). */
 
 /* Stile für Testausgabe (aus editor.html, ggf. entfernen) */
 /* Diese Stile sind für den Test-Div gedacht, der in der Haupt-HTML auskommentiert wurde */

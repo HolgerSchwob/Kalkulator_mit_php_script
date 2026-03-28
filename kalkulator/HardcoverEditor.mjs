@@ -6,23 +6,12 @@
  * - FEATURE: Hochgeladene Logos bleiben nun beim Wechsel zwischen Templates erhalten.
  * - LOGIC: Der `logoInputs`-Zustand wird nicht mehr gelöscht. Die `_updateLogos`-Funktion rendert ein Logo nur, wenn der entsprechende Platzhalter im aktuellen Template existiert.
  */
-import { BaseEditor } from './BaseEditor.mjs';
+import { BaseEditor } from './baseEditor.mjs';
 import { generateU1Thumbnail } from './svg-thumbnail-generator.mjs';
+import { getSupabaseConfig } from './supabaseConfig.mjs';
 
-// --- CONFIGURATION ---
-//const EDITOR_CONFIG = {
-    //TEMPLATE_PATH: 'templates/hardcover/',
-    // --- BEHAVIOR CONFIGURATION (nicht-dimensionale Werte) ---
-    const EDITOR_BEHAVIOR_CONFIG = {
+const EDITOR_BEHAVIOR_CONFIG = {
     DEFAULT_SPINE_WIDTH: 35.0,
-
-    //VISIBLE_COVER_HEIGHT: 302.0,
-    //U1_WIDTH: 215.0,
-    //U4_WIDTH: 215.0,
-    //SVG_TOTAL_WIDTH: 500.0,
-    //SVG_TOTAL_HEIGHT: 330.0,
-    //SVG_CENTER_X: 250.0,
-    // FALZ_ZONE_WIDTH: 8.0,
     ZOOM_STEP: 0.2,
     MIN_ZOOM: 0.5,
     MAX_ZOOM: 3,
@@ -31,6 +20,16 @@ import { generateU1Thumbnail } from './svg-thumbnail-generator.mjs';
     LOGO_MANUAL_SCALE_MIN: 0.5,
     LOGO_MANUAL_SCALE_MAX: 2.0,
     LOGO_MOVE_STEP: 1,
+};
+
+const HCE_ICON = {
+    svgOpen: '<svg class="hce-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">',
+    svgClose: '</svg>',
+    chevronLeft: () => `${HCE_ICON.svgOpen}<path d="m15 18-6-6 6-6"/>${HCE_ICON.svgClose}`,
+    chevronRight: () => `${HCE_ICON.svgOpen}<path d="m9 18 6-6-6-6"/>${HCE_ICON.svgClose}`,
+    minus: () => `${HCE_ICON.svgOpen}<path d="M5 12h14"/>${HCE_ICON.svgClose}`,
+    plus: () => `${HCE_ICON.svgOpen}<path d="M5 12h14"/><path d="M12 5v14"/>${HCE_ICON.svgClose}`,
+    rotateCcw: () => `${HCE_ICON.svgOpen}<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>${HCE_ICON.svgClose}`,
 };
 
 export class HardcoverEditor extends BaseEditor {
@@ -64,6 +63,13 @@ export class HardcoverEditor extends BaseEditor {
         this.pan = { x: 0, y: 0 };
         this.isPanning = false;
         this.startPan = { x: 0, y: 0 };
+        this._lastPinchDistance = null;
+        this._applyDebounceTimer = null;
+        /** @type {AbortController | null} Nur für exklusives Akkordeon (toggle-Listener), pro UI-Aufbau neu. */
+        this._accordionExclusiveAbort = null;
+        this._fitGeneration = {};
+        this._thumbnailsLoaded = false;
+        this._thumbnailsLoadingPromise = null;
 
         this._init();
     }
@@ -73,33 +79,46 @@ export class HardcoverEditor extends BaseEditor {
             <div class="hardcover-editor-container">
                 <div class="editor-preview-panel">
                     <div class="editor-header-controls">
-                        <button id="hce-prev-template" class="btn btn-icon" title="Vorheriges Design">‹</button>
+                        <button type="button" id="hce-prev-template" class="btn btn-icon btn-icon-nav" title="Vorheriges Design" aria-label="Vorheriges Design">${HCE_ICON.chevronLeft()}</button>
                         <div class="template-selector-wrapper">
-                            <button id="hce-template-title-btn" class="template-title-btn">Lade...</button>
+                            <button type="button" id="hce-template-title-btn" class="template-title-btn">Lade...</button>
                             <div id="hce-template-selector-dropdown" class="template-selector-dropdown"></div>
                         </div>
-                        <button id="hce-next-template" class="btn btn-icon" title="Nächstes Design">›</button>
+                        <button type="button" id="hce-next-template" class="btn btn-icon btn-icon-nav" title="Nächstes Design" aria-label="Nächstes Design">${HCE_ICON.chevronRight()}</button>
                     </div>
-                    <div id="hce-svg-container" class="svg-container"></div>
+                    <div id="hce-svg-container" class="svg-container" role="img" aria-label="Vorschau Buchdecke"></div>
                     <div class="preview-footer">
-                        <div id="hce-color-palette-container" class="color-palette-container"></div>
-                        <div id="hce-zoom-controls" class="zoom-controls"></div>
+                        <div class="preview-footer-section preview-footer-colors">
+                            <span class="preview-footer-label">Farben</span>
+                            <div id="hce-color-palette-container" class="color-palette-container"></div>
+                        </div>
+                        <div class="preview-footer-section preview-footer-zoom">
+                            <span class="preview-footer-label">Ansicht</span>
+                            <div id="hce-zoom-controls" class="zoom-controls"></div>
+                        </div>
                     </div>
                 </div>
-                <div id="hce-controls-panel" class="editor-controls-panel"></div>
+                <div id="hce-controls-panel" class="editor-controls-panel">
+                    <div class="editor-controls-panel-head">
+                        <h3 class="editor-controls-panel-title">Eingaben</h3>
+                        <p class="editor-controls-panel-subtitle">Texte, Logos und Farben</p>
+                    </div>
+                    <div id="hce-controls-scroll" class="editor-controls-panel-body"></div>
+                </div>
             </div>`;
 
         this.svgContainer = this.bodyElement.querySelector('#hce-svg-container');
-        this.bodyElement.querySelector('#hce-prev-template').addEventListener('click', () => this._selectTemplateByOffset(-1));
-        this.bodyElement.querySelector('#hce-next-template').addEventListener('click', () => this._selectTemplateByOffset(1));
-        this.bodyElement.querySelector('#hce-template-title-btn').addEventListener('click', () => this._toggleTemplateSelector());
+        const ls = { signal: this._abortController.signal };
+        this.bodyElement.querySelector('#hce-prev-template').addEventListener('click', () => this._selectTemplateByOffset(-1), ls);
+        this.bodyElement.querySelector('#hce-next-template').addEventListener('click', () => this._selectTemplateByOffset(1), ls);
+        this.bodyElement.querySelector('#hce-template-title-btn').addEventListener('click', () => this._toggleTemplateSelector(), ls);
 
         this._setupZoomControls();
 
         try {
             await this._fetchTemplateList();
             if (this.availableTemplates.length === 0) throw new Error(this.templateSource === 'supabase' ? "Keine Templates in Supabase für diese Gruppe. Bitte im Dashboard unter Einstellungen → Templates welche hochladen." : "Keine Templates im Manifest gefunden.");
-            await this._setupTemplateSelector();
+            this._setupTemplateSelector();
             if (this.uiState.currentTemplateIndex >= this.availableTemplates.length) {
                 this.uiState.currentTemplateIndex = 0;
             }
@@ -116,22 +135,32 @@ export class HardcoverEditor extends BaseEditor {
     _setupZoomControls() {
         const zoomControlsContainer = this.bodyElement.querySelector('#hce-zoom-controls');
         zoomControlsContainer.innerHTML = `
-            <button id="hce-zoom-out" class="btn btn-icon btn-zoom" title="Herauszoomen">-</button>
-            <button id="hce-zoom-reset" class="btn btn-icon btn-zoom" title="Zoom zurücksetzen">⟲</button>
-            <button id="hce-zoom-in" class="btn btn-icon btn-zoom" title="Hineinzoomen">+</button>
+            <button type="button" id="hce-zoom-out" class="btn btn-icon btn-zoom" title="Herauszoomen" aria-label="Herauszoomen">${HCE_ICON.minus()}</button>
+            <button type="button" id="hce-zoom-reset" class="btn btn-icon btn-zoom" title="Zoom zurücksetzen" aria-label="Zoom zurücksetzen">${HCE_ICON.rotateCcw()}</button>
+            <button type="button" id="hce-zoom-in" class="btn btn-icon btn-zoom" title="Hineinzoomen" aria-label="Hineinzoomen">${HCE_ICON.plus()}</button>
         `;
-        this.bodyElement.querySelector('#hce-zoom-in').addEventListener('click', () => this._zoom(1));
-        this.bodyElement.querySelector('#hce-zoom-out').addEventListener('click', () => this._zoom(-1));
-        this.bodyElement.querySelector('#hce-zoom-reset').addEventListener('click', () => this._resetZoomAndPan());
-        this.svgContainer.addEventListener('mousedown', (e) => this._onPanStart(e));
-        this.svgContainer.addEventListener('mousemove', (e) => this._onPanMove(e));
-        this.svgContainer.addEventListener('mouseup', () => this._onPanEnd());
-        this.svgContainer.addEventListener('mouseleave', () => this._onPanEnd());
+        const ls = { signal: this._abortController.signal };
+        this.bodyElement.querySelector('#hce-zoom-in').addEventListener('click', () => this._zoom(1), ls);
+        this.bodyElement.querySelector('#hce-zoom-out').addEventListener('click', () => this._zoom(-1), ls);
+        this.bodyElement.querySelector('#hce-zoom-reset').addEventListener('click', () => this._resetZoomAndPan(), ls);
+
+        this.svgContainer.addEventListener('mousedown', (e) => this._onPanStart(e), ls);
+        this.svgContainer.addEventListener('mousemove', (e) => this._onPanMove(e), ls);
+        this.svgContainer.addEventListener('mouseup', () => this._onPanEnd(), ls);
+        this.svgContainer.addEventListener('mouseleave', () => this._onPanEnd(), ls);
+
+        const touchWheel = { ...ls, passive: false };
+        this.svgContainer.addEventListener('touchstart', (e) => this._onTouchStart(e), touchWheel);
+        this.svgContainer.addEventListener('touchmove', (e) => this._onTouchMove(e), touchWheel);
+        this.svgContainer.addEventListener('touchend', () => this._onPanEnd(), ls);
+        this.svgContainer.addEventListener('touchcancel', () => this._onPanEnd(), ls);
+
+        this.svgContainer.addEventListener('wheel', (e) => this._onWheel(e), touchWheel);
     }
 
     async _fetchTemplateList() {
         if (this.templateSource === 'supabase') {
-            const { url: baseUrl, anonKey } = await this._getSupabaseConfig();
+            const { url: baseUrl, anonKey } = await getSupabaseConfig();
             const groupParam = this.templateGroup ? '?gruppe=' + encodeURIComponent(this.templateGroup) : '';
             const response = await fetch(baseUrl + '/functions/v1/get-cover-templates' + groupParam, {
                 headers: {
@@ -151,33 +180,22 @@ export class HardcoverEditor extends BaseEditor {
         this.availableTemplates = manifest.templates;
     }
 
-    /** Liefert Supabase-URL (ohne trailing slash) und anonKey für Edge-Function-Aufrufe. */
-    async _getSupabaseConfig() {
-        const response = await fetch('../supabase.config.json');
-        if (!response.ok) throw new Error('Supabase-Konfiguration nicht geladen.');
-        const config = await response.json();
-        const url = (config.url || '').replace(/\/$/, '');
-        const anonKey = config.anonKey || config.key || '';
-        if (!url || !anonKey) throw new Error('Supabase-Konfiguration unvollständig (url, anonKey).');
-        return { url, anonKey };
-    }
-
-    async _getSupabaseBaseUrl() {
-        const { url } = await this._getSupabaseConfig();
-        return url;
-    }
-
-    async _setupTemplateSelector() {
+    _setupTemplateSelector() {
         const dropdown = this.bodyElement.querySelector('#hce-template-selector-dropdown');
         dropdown.innerHTML = '';
+        this._thumbnailsLoaded = false;
+        this._thumbnailsLoadingPromise = null;
 
-        const templatePromises = this.availableTemplates.map(async (template, index) => {
+        const ls = { signal: this._abortController.signal };
+
+        this.availableTemplates.forEach((template, index) => {
             const item = document.createElement('div');
             item.className = 'template-item';
-            item.dataset.index = index;
+            item.dataset.index = String(index);
 
             const thumbContainer = document.createElement('div');
             thumbContainer.className = 'template-item-thumb';
+            thumbContainer.innerHTML = '<span class="template-thumb-placeholder">…</span>';
             item.appendChild(thumbContainer);
 
             const name = document.createElement('span');
@@ -187,29 +205,51 @@ export class HardcoverEditor extends BaseEditor {
             item.addEventListener('click', () => {
                 this._selectTemplateByIndex(index);
                 this._toggleTemplateSelector(false);
-            });
+            }, ls);
 
             dropdown.appendChild(item);
-
-            try {
-                const svgUrl = template.url || `${this.templatePath}${template.file}?t=${new Date().getTime()}`;
-                const response = await fetch(svgUrl);
-                const svgText = await response.text();
-                const thumbnailUrl = await generateU1Thumbnail(svgText, this.dimensions, this.spineWidth, 120);
-                thumbContainer.innerHTML = `<img src="${thumbnailUrl}" alt="${template.name}">`;
-            } catch (e) {
-                thumbContainer.innerHTML = `<span>Vorschau<br>fehlerhaft</span>`;
-                console.error(`Konnte Thumbnail für ${template.file} nicht erstellen`, e);
-            }
         });
+    }
 
-        await Promise.all(templatePromises);
+    async _ensureTemplateThumbnailsLoaded() {
+        if (this._thumbnailsLoaded) return;
+        if (this._thumbnailsLoadingPromise) return this._thumbnailsLoadingPromise;
+
+        const dropdown = this.bodyElement.querySelector('#hce-template-selector-dropdown');
+        const items = dropdown.querySelectorAll('.template-item');
+
+        this._thumbnailsLoadingPromise = (async () => {
+            await Promise.all(
+                this.availableTemplates.map(async (template, index) => {
+                    const item = items[index];
+                    if (!item) return;
+                    const thumbContainer = item.querySelector('.template-item-thumb');
+                    if (!thumbContainer) return;
+                    try {
+                        const svgUrl = template.url || `${this.templatePath}${template.file}?t=${new Date().getTime()}`;
+                        const response = await fetch(svgUrl);
+                        const svgText = await response.text();
+                        const thumbnailUrl = await generateU1Thumbnail(svgText, this.dimensions, this.spineWidth, 120);
+                        thumbContainer.innerHTML = `<img src="${thumbnailUrl}" alt="${template.name}">`;
+                    } catch (e) {
+                        thumbContainer.innerHTML = `<span>Vorschau<br>fehlerhaft</span>`;
+                        console.error(`Konnte Thumbnail für ${template.file} nicht erstellen`, e);
+                    }
+                })
+            );
+            this._thumbnailsLoaded = true;
+        })();
+
+        return this._thumbnailsLoadingPromise;
     }
 
     _toggleTemplateSelector(forceState) {
         const dropdown = this.bodyElement.querySelector('#hce-template-selector-dropdown');
         this.isTemplateSelectorOpen = typeof forceState !== 'undefined' ? forceState : !this.isTemplateSelectorOpen;
         dropdown.classList.toggle('is-open', this.isTemplateSelectorOpen);
+        if (this.isTemplateSelectorOpen) {
+            this._ensureTemplateThumbnailsLoaded().catch((e) => console.warn('Thumbnails:', e));
+        }
     }
 
     _selectTemplateByOffset(offset) {
@@ -267,32 +307,42 @@ export class HardcoverEditor extends BaseEditor {
     }
 
     /**
-     * Lädt Farbpalette und Template-Zuordnung aus Supabase (farbpaare + template_zuordnung).
-     * Farbfelder im SVG (pal-p) werden ignoriert; nur Supabase zählt.
+     * Lädt Farbpalette aus Supabase (cover_templates → cover_template_paletten → cover_farbpaare).
+     * Jedes Farbpaar ist eine atomare Einheit mit color1 und color2.
      */
     async _loadPaletteFromSupabase(templateFileName) {
         this.colorPairs = [];
         try {
             const { getSupabaseClient } = await import('./supabaseClient.mjs');
             const supabase = await getSupabaseClient();
-            const [{ data: farben }, { data: zuordnung }] = await Promise.all([
-                supabase.from('farbpaare').select('id, farbbezeichnung, rgb').order('sort_order', { ascending: true }),
-                supabase.from('template_zuordnung').select('color_ids').eq('template_filename', templateFileName).maybeSingle(),
-            ]);
-            const colorIds = Array.isArray(zuordnung?.color_ids) ? zuordnung.color_ids : [];
-            const map = new Map((farben || []).map(f => [f.id, f]));
-            for (let i = 0; i + 1 < colorIds.length; i += 2) {
-                const c1 = map.get(colorIds[i]);
-                const c2 = map.get(colorIds[i + 1]);
-                if (c1 && c2) {
-                    this.colorPairs.push({
-                        color1: c1.rgb || '#888',
-                        name1: c1.farbbezeichnung || 'Farbe 1',
-                        color2: c2.rgb || '#ccc',
-                        name2: c2.farbbezeichnung || 'Farbe 2',
-                    });
-                }
-            }
+
+            // 1. Template-ID anhand des Dateinamens ermitteln
+            const { data: template } = await supabase
+                .from('cover_templates')
+                .select('id')
+                .eq('filename', templateFileName)
+                .maybeSingle();
+
+            if (!template?.id) return;
+
+            // 2. Zugewiesene Farbpaare für dieses Template laden (mit Farbdaten)
+            const { data: assignments } = await supabase
+                .from('cover_template_paletten')
+                .select('sort_order, cover_farbpaare(id, name, color1_name, color1_rgb, color2_name, color2_rgb)')
+                .eq('template_id', template.id)
+                .order('sort_order', { ascending: true });
+
+            this.colorPairs = (assignments ?? [])
+                .map((a) => a.cover_farbpaare)
+                .filter(Boolean)
+                .map((fp) => ({
+                    id:     fp.id,
+                    name:   fp.name || 'Farbpaar',
+                    color1: fp.color1_rgb  || '#888888',
+                    name1:  fp.color1_name || 'Farbe 1',
+                    color2: fp.color2_rgb  || '#cccccc',
+                    name2:  fp.color2_name || 'Farbe 2',
+                }));
         } catch (e) {
             console.warn('Palette aus Supabase konnte nicht geladen werden:', e.message);
         }
@@ -306,13 +356,39 @@ export class HardcoverEditor extends BaseEditor {
     }
 
     _createUiFromSvg() {
-        const controlsPanel = this.bodyElement.querySelector('#hce-controls-panel');
+        if (this._accordionExclusiveAbort) {
+            this._accordionExclusiveAbort.abort();
+        }
+        this._accordionExclusiveAbort = new AbortController();
+        const accSignal = this._accordionExclusiveAbort.signal;
+
+        const controlsScroll = this.bodyElement.querySelector('#hce-controls-scroll');
         const colorPaletteContainer = this.bodyElement.querySelector('#hce-color-palette-container');
-        controlsPanel.innerHTML = '';
+        controlsScroll.innerHTML = '';
         colorPaletteContainer.innerHTML = '';
-        this._createTextInputs(controlsPanel);
-        this._createLogoInputs(controlsPanel);
+        this._createTextInputs(controlsScroll);
+        this._createLogoInputs(controlsScroll);
         this._createColorPalettes(colorPaletteContainer);
+
+        // Nur ein Akkordeon gleichzeitig offen (klassisches Accordion).
+        // Wichtig: `toggle` auf <details> blubbert nicht → Listener müssen am jeweiligen Element sitzen.
+        this._bindExclusiveAccordions(controlsScroll, accSignal);
+    }
+
+    /**
+     * Schließt alle anderen `.accordion`-Details, sobald eines geöffnet wird.
+     * @param {HTMLElement} scrollContainer
+     * @param {AbortSignal} signal
+     */
+    _bindExclusiveAccordions(scrollContainer, signal) {
+        scrollContainer.querySelectorAll('details.accordion').forEach((details) => {
+            details.addEventListener('toggle', () => {
+                if (!details.open) return;
+                scrollContainer.querySelectorAll('details.accordion').forEach((other) => {
+                    if (other !== details) other.open = false;
+                });
+            }, { signal });
+        });
     }
 
     _createTextInputs(panel) {
@@ -340,6 +416,7 @@ export class HardcoverEditor extends BaseEditor {
     }
 
     _createAccordionGroup(panel, title, elements, isOpen) {
+        const ls = { signal: this._abortController.signal };
         const details = document.createElement('details');
         details.className = 'accordion';
         details.open = isOpen;
@@ -368,14 +445,14 @@ export class HardcoverEditor extends BaseEditor {
 
             if (isMultiline) {
                 input = document.createElement('textarea');
-                input.rows = maxLines > 1 ? Math.min(maxLines, 4) : 2;
+                input.rows = maxLines > 1 ? Math.min(maxLines, 3) : 2;
                 if (maxLines > 0) {
                     input.addEventListener('input', () => {
                         const lines = input.value.split('\n');
                         if (lines.length > maxLines) {
                             input.value = lines.slice(0, maxLines).join('\n');
                         }
-                    });
+                    }, ls);
                 }
             } else {
                 input = document.createElement('input');
@@ -401,8 +478,8 @@ export class HardcoverEditor extends BaseEditor {
 
             input.addEventListener('input', () => {
                 this.uiState.textInputs[el.id] = input.value;
-                this._applyStateToSvg();
-            });
+                this._scheduleApply();
+            }, ls);
 
             fieldWrapper.appendChild(input);
             content.appendChild(fieldWrapper);
@@ -414,9 +491,10 @@ export class HardcoverEditor extends BaseEditor {
         const logoPlaceholders = Array.from(this.svgNode.querySelectorAll('rect[id^="tpl-logo"]'));
         if (logoPlaceholders.length === 0) return;
 
+        const ls = { signal: this._abortController.signal };
         const details = document.createElement('details');
         details.className = 'accordion';
-        details.open = true;
+        details.open = false;
         const summary = document.createElement('summary');
         summary.textContent = 'Logos & Bilder';
         details.appendChild(summary);
@@ -447,7 +525,7 @@ export class HardcoverEditor extends BaseEditor {
             const uploadButton = document.createElement('button');
             uploadButton.className = 'btn btn-secondary btn-upload';
             uploadButton.textContent = `${labelText} hochladen...`;
-            uploadButton.onclick = () => fileInput.click();
+            uploadButton.addEventListener('click', () => fileInput.click(), ls);
 
             const removeButton = document.createElement('button');
             removeButton.className = 'btn-remove-logo';
@@ -497,21 +575,20 @@ export class HardcoverEditor extends BaseEditor {
             
             content.appendChild(fieldWrapper);
 
-            // Event Listeners
-            fileInput.addEventListener('change', (e) => this._handleLogoUpload(e, logoId));
-            removeButton.addEventListener('click', () => this._removeLogo(logoId));
+            fileInput.addEventListener('change', (e) => this._handleLogoUpload(e, logoId), ls);
+            removeButton.addEventListener('click', () => this._removeLogo(logoId), ls);
             slider.addEventListener('input', (e) => {
                 if (this.uiState.logoInputs[logoId]) {
                     this.uiState.logoInputs[logoId].manualScale = parseFloat(e.target.value);
                     this._applyStateToSvg();
                 }
-            });
+            }, ls);
             previewArea.querySelector('.logo-position-controls').addEventListener('click', (e) => {
                 const button = e.target.closest('.btn-move');
                 if (button) {
                     this._moveLogo(logoId, button.dataset.direction);
                 }
-            });
+            }, ls);
             
             if(this.uiState.logoInputs[logoId]) {
                 this._updateLogoControlUI(logoId, this.uiState.logoInputs[logoId].fileName);
@@ -526,8 +603,15 @@ export class HardcoverEditor extends BaseEditor {
      * SVG-Farbfelder (pal-p) werden nicht mehr ausgewertet.
      */
     _createColorPalettes(container) {
-        if (!this.colorPairs || this.colorPairs.length === 0) return;
+        if (!this.colorPairs || this.colorPairs.length === 0) {
+            const empty = document.createElement('p');
+            empty.className = 'hce-color-palette-empty';
+            empty.textContent = 'Keine Farben hinterlegt. Zuweisung im Dashboard prüfen oder Verbindung testen.';
+            container.appendChild(empty);
+            return;
+        }
         if (this.uiState.selectedColorPairIndex >= this.colorPairs.length) this.uiState.selectedColorPairIndex = 0;
+        const ls = { signal: this._abortController.signal };
         this.colorPairs.forEach((pair, index) => {
             const btn = document.createElement('button');
             btn.className = 'color-pair-button';
@@ -539,7 +623,7 @@ export class HardcoverEditor extends BaseEditor {
                 container.querySelectorAll('button').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 this._applyStateToSvg();
-            });
+            }, ls);
             container.appendChild(btn);
         });
     }
@@ -565,7 +649,7 @@ export class HardcoverEditor extends BaseEditor {
     }
 
     _onPanMove(e) {
-       if (!this.isPanning) return;
+        if (!this.isPanning) return;
         e.preventDefault();
         this.pan.x = e.clientX - this.startPan.x;
         this.pan.y = e.clientY - this.startPan.y;
@@ -574,7 +658,52 @@ export class HardcoverEditor extends BaseEditor {
 
     _onPanEnd() {
         this.isPanning = false;
+        this._lastPinchDistance = null;
         this.svgContainer.classList.remove('panning');
+    }
+
+    _onTouchStart(e) {
+        if (e.touches.length === 1) {
+            e.preventDefault();
+            const t = e.touches[0];
+            this.isPanning = true;
+            this.startPan.x = t.clientX - this.pan.x;
+            this.startPan.y = t.clientY - this.pan.y;
+            this.svgContainer.classList.add('panning');
+        } else if (e.touches.length === 2) {
+            e.preventDefault();
+            this._lastPinchDistance = this._getPinchDistance(e.touches);
+        }
+    }
+
+    _onTouchMove(e) {
+        if (e.touches.length === 2 && this._lastPinchDistance != null) {
+            e.preventDefault();
+            const dist = this._getPinchDistance(e.touches);
+            const delta = dist - this._lastPinchDistance;
+            if (Math.abs(delta) > 2) {
+                this._zoom(delta > 0 ? 1 : -1);
+                this._lastPinchDistance = dist;
+            }
+            return;
+        }
+        if (!this.isPanning || e.touches.length !== 1) return;
+        e.preventDefault();
+        const t = e.touches[0];
+        this.pan.x = t.clientX - this.startPan.x;
+        this.pan.y = t.clientY - this.startPan.y;
+        this._updateSvgTransform();
+    }
+
+    _getPinchDistance(touches) {
+        const dx = touches[0].clientX - touches[1].clientX;
+        const dy = touches[0].clientY - touches[1].clientY;
+        return Math.hypot(dx, dy);
+    }
+
+    _onWheel(e) {
+        e.preventDefault();
+        this._zoom(e.deltaY < 0 ? 1 : -1);
     }
 
     _updateSvgTransform() {
@@ -703,51 +832,57 @@ export class HardcoverEditor extends BaseEditor {
 
     _applyStateToSvg() {
         if (!this.svgNode) return;
-        
+        this._applyTexts();
+        this._applyColors();
+        this._updateLogos();
+        this._updateSpineAndLayout();
+        this._updateEditorTitle();
+    }
+
+    _applyTexts() {
         this.svgNode.querySelectorAll('text[id^="tpl-"]').forEach(textElement => {
             const id = textElement.id;
             const hasAdvancedFeatures = textElement.dataset.multiline === 'true' || this.svgNode.querySelector(`#${id}_bbox`);
             if (hasAdvancedFeatures) this._updateAdvancedText(id);
             else this._updateSimpleText(id);
         });
-        
-        const activePair = this.colorPairs[this.uiState.selectedColorPairIndex];
-        if (activePair) {
-            const isExplicitWhite = (node) => {
-                const fill = (node.getAttribute('fill') || '').trim().toLowerCase();
-                const style = node.getAttribute('style') || '';
-                const fillMatch = style.match(/fill\s*:\s*([^;]+)/i);
-                const styleFill = (fillMatch && fillMatch[1]) ? fillMatch[1].trim().toLowerCase() : '';
-                const effective = fill || styleFill;
-                return effective === '#ffffff' || effective === '#fff' || effective === 'white' || effective === 'rgb(255,255,255)' || effective === 'rgb(255, 255, 255)';
-            };
-            const setColorOnNode = (node, color) => {
-                node.setAttribute('fill', color);
-                const style = node.getAttribute('style') || '';
-                let newStyle = style.replace(/fill\s*:\s*[^;]+/gi, '').replace(/;\s*;/g, ';').replace(/^;|;$/g, '').trim();
-                newStyle = (newStyle ? newStyle + '; ' : '') + 'fill: ' + color;
-                if (node.getAttribute('stroke-width') != null || node.getAttribute('stroke') !== null) {
-                    node.setAttribute('stroke', color);
-                    newStyle += '; stroke: ' + color;
-                }
-                node.setAttribute('style', newStyle);
-            };
-            const applyColor = (el, color) => {
-                setColorOnNode(el, color);
-                el.querySelectorAll('*').forEach(desc => {
-                    if (desc.hasAttribute('colorselector')) return;
-                    if (isExplicitWhite(desc)) return;
-                    setColorOnNode(desc, color);
-                });
-            };
-            this.svgNode.querySelectorAll('[colorselector="color1"]').forEach(el => applyColor(el, activePair.color1));
-            this.svgNode.querySelectorAll('[colorselector="color2"]').forEach(el => applyColor(el, activePair.color2));
-        }
-        
-        this._updateLogos();
+    }
 
-        this._updateSpineAndLayout();
-        this._updateEditorTitle();
+    _applyColors() {
+        const activePair = this.colorPairs[this.uiState.selectedColorPairIndex];
+        if (!activePair) return;
+        this.svgNode.querySelectorAll('[data-color-role="color-1"]').forEach(el => this._applyColorToElement(el, activePair.color1));
+        this.svgNode.querySelectorAll('[data-color-role="color-2"]').forEach(el => this._applyColorToElement(el, activePair.color2));
+    }
+
+    _applyColorToElement(el, color) {
+        this._setColorOnNode(el, color);
+        el.querySelectorAll('*').forEach(desc => {
+            if (desc.hasAttribute('data-color-role')) return;
+            if (this._isExplicitWhite(desc)) return;
+            this._setColorOnNode(desc, color);
+        });
+    }
+
+    _setColorOnNode(node, color) {
+        node.setAttribute('fill', color);
+        const style = node.getAttribute('style') || '';
+        let newStyle = style.replace(/fill\s*:\s*[^;]+/gi, '').replace(/;\s*;/g, ';').replace(/^;|;$/g, '').trim();
+        newStyle = (newStyle ? newStyle + '; ' : '') + 'fill: ' + color;
+        if (node.getAttribute('stroke-width') != null || node.getAttribute('stroke') !== null) {
+            node.setAttribute('stroke', color);
+            newStyle += '; stroke: ' + color;
+        }
+        node.setAttribute('style', newStyle);
+    }
+
+    _isExplicitWhite(node) {
+        const fill = (node.getAttribute('fill') || '').trim().toLowerCase();
+        const style = node.getAttribute('style') || '';
+        const fillMatch = style.match(/fill\s*:\s*([^;]+)/i);
+        const styleFill = (fillMatch && fillMatch[1]) ? fillMatch[1].trim().toLowerCase() : '';
+        const effective = fill || styleFill;
+        return effective === '#ffffff' || effective === '#fff' || effective === 'white' || effective === 'rgb(255,255,255)' || effective === 'rgb(255, 255, 255)';
     }
     
     _updateLogos() {
@@ -874,33 +1009,33 @@ export class HardcoverEditor extends BaseEditor {
     }
 
     async _fitTextToBbox(textElement, bbox) {
-        textElement.setAttribute('transform', this.initialTransforms[textElement.id] || '');
-        this._removeTextWarning(textElement.id);
+        const id = textElement.id;
+        const gen = (this._fitGeneration[id] || 0) + 1;
+        this._fitGeneration[id] = gen;
+
+        textElement.setAttribute('transform', this.initialTransforms[id] || '');
+        this._removeTextWarning(id);
         
         await new Promise(resolve => requestAnimationFrame(resolve));
+
+        if (this._fitGeneration[id] !== gen) return;
     
         const bboxWidth = bbox.getBoundingClientRect().width;
         const textWidth = textElement.getBoundingClientRect().width;
     
-        if (textWidth <= bboxWidth) {
-            return;
-        }
+        if (textWidth <= bboxWidth) return;
     
-        const scaleFactor = bboxWidth / textWidth;
-    
-        if (scaleFactor < EDITOR_BEHAVIOR_CONFIG.TEXT_FIT_MIN_SCALE) {
+        let scale = bboxWidth / textWidth;
+
+        if (scale < EDITOR_BEHAVIOR_CONFIG.TEXT_FIT_MIN_SCALE) {
             this._createTextWarning(textElement, 'Eingabe zu lang');
-            const minScale = EDITOR_BEHAVIOR_CONFIG.TEXT_FIT_MIN_SCALE;
-            const textBBox = textElement.getBBox();
-            const centerX = textBBox.x + textBBox.width / 2;
-            const centerY = textBBox.y + textBBox.height / 2;
-            textElement.setAttribute('transform', `translate(${centerX}, ${centerY}) scale(${minScale}) translate(${-centerX}, ${-centerY})`);
-        } else {
-            const textBBox = textElement.getBBox();
-            const centerX = textBBox.x + textBBox.width / 2;
-            const centerY = textBBox.y + textBBox.height / 2;
-            textElement.setAttribute('transform', `translate(${centerX}, ${centerY}) scale(${scaleFactor}) translate(${-centerX}, ${-centerY})`);
+            scale = EDITOR_BEHAVIOR_CONFIG.TEXT_FIT_MIN_SCALE;
         }
+
+        const textBBox = textElement.getBBox();
+        const cx = textBBox.x + textBBox.width / 2;
+        const cy = textBBox.y + textBBox.height / 2;
+        textElement.setAttribute('transform', `translate(${cx}, ${cy}) scale(${scale}) translate(${-cx}, ${-cy})`);
     }
     
     _createTextWarning(textElement, message) {
@@ -924,6 +1059,18 @@ export class HardcoverEditor extends BaseEditor {
         warningText.setAttribute('font-family', 'Roboto, sans-serif');
 
         bbox.parentNode.appendChild(warningText);
+
+        const inputEl = this.bodyElement.querySelector(`#hce-input-${textElement.id}`);
+        if (inputEl) {
+            inputEl.classList.add('has-warning');
+            const wrapper = inputEl.closest('.form-field');
+            if (wrapper && !wrapper.querySelector('.form-field-hint')) {
+                const hint = document.createElement('div');
+                hint.className = 'form-field-hint';
+                hint.textContent = message;
+                wrapper.appendChild(hint);
+            }
+        }
     }
     
     _removeTextWarning(elementId) {
@@ -931,8 +1078,13 @@ export class HardcoverEditor extends BaseEditor {
         if (warningElement) {
             warningElement.remove();
         }
+        const inputEl = this.bodyElement.querySelector(`#hce-input-${elementId}`);
+        if (inputEl) {
+            inputEl.classList.remove('has-warning');
+            const hint = inputEl.closest('.form-field')?.querySelector('.form-field-hint');
+            if (hint) hint.remove();
+        }
     }
-
 
     _updateSpineAndLayout() {
         if (!this.svgNode) return;
@@ -941,8 +1093,8 @@ export class HardcoverEditor extends BaseEditor {
         const groupSpine = this.svgNode.querySelector('#tpl-group-spine');
         if (!groupU1 || !groupU4 || !groupSpine) return;
 
-        const initialU1Transform = this.initialTransforms['#tpl-group-u1'] || 'translate(0,0)';
-        const initialU4Transform = this.initialTransforms['#tpl-group-u4'] || 'translate(0,0)';
+        const initialU1Transform = this.initialTransforms['tpl-group-u1'] || 'translate(0,0)';
+        const initialU4Transform = this.initialTransforms['tpl-group-u4'] || 'translate(0,0)';
 
         const spineW = this.spineWidth;
         const delta = (spineW - EDITOR_BEHAVIOR_CONFIG.DEFAULT_SPINE_WIDTH) / 2.0;
@@ -972,55 +1124,33 @@ export class HardcoverEditor extends BaseEditor {
         this._removeHelperLines();
 
         const spineW = this.spineWidth;
-        const topY = 0; // Annahme: Helper lines sollen über die ganze SVG-Höhe gehen
+        const topY = 0;
         const bottomY = this.dimensions.svgTotalHeight;
-        const halfSpine = spineW / 2;
-          const center = this.dimensions.svgCenterX;
+        const center = this.dimensions.svgCenterX;
+        const leftSpineX = center - spineW / 2;
+        const rightSpineX = center + spineW / 2;
+        const falzW = this.dimensions.falzZoneWidth;
 
-        const leftSpineX = center - halfSpine;
-        const rightSpineX = center + halfSpine;
+        const helperGroup = this._createSvgElement('g', {
+            id: 'hce-helper-lines', 'pointer-events': 'none'
+        });
 
-        const helperGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        helperGroup.id = 'hce-helper-lines';
-        helperGroup.setAttribute('pointer-events', 'none');
+        const dashLineAttrs = { stroke: 'rgba(0,0,0,0.5)', 'stroke-width': '0.5', 'stroke-dasharray': '3,3' };
 
-        const lineLeft = document.createElementNS("http://www.w3.org/2000/svg", "line");
-        lineLeft.setAttribute('x1', leftSpineX);
-        lineLeft.setAttribute('y1', topY);
-        lineLeft.setAttribute('x2', leftSpineX);
-        lineLeft.setAttribute('y2', bottomY);
-        lineLeft.setAttribute('stroke', 'rgba(0,0,0,0.5)');
-        lineLeft.setAttribute('stroke-width', '0.5');
-        lineLeft.setAttribute('stroke-dasharray', '3,3');
+        helperGroup.appendChild(this._createSvgElement('rect', { x: leftSpineX - falzW, y: topY, width: falzW, height: bottomY, fill: 'rgba(0,0,0,0.1)' }));
+        helperGroup.appendChild(this._createSvgElement('rect', { x: rightSpineX, y: topY, width: falzW, height: bottomY, fill: 'rgba(0,0,0,0.1)' }));
+        helperGroup.appendChild(this._createSvgElement('line', { x1: leftSpineX, y1: topY, x2: leftSpineX, y2: bottomY, ...dashLineAttrs }));
+        helperGroup.appendChild(this._createSvgElement('line', { x1: rightSpineX, y1: topY, x2: rightSpineX, y2: bottomY, ...dashLineAttrs }));
 
-        const lineRight = document.createElementNS("http://www.w3.org/2000/svg", "line");
-        lineRight.setAttribute('x1', rightSpineX);
-        lineRight.setAttribute('y1', topY);
-        lineRight.setAttribute('x2', rightSpineX);
-        lineRight.setAttribute('y2', bottomY);
-        lineRight.setAttribute('stroke', 'rgba(0,0,0,0.5)');
-        lineRight.setAttribute('stroke-width', '0.5');
-        lineRight.setAttribute('stroke-dasharray', '3,3');
-
-        const falzLeft = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        falzLeft.setAttribute('x', leftSpineX - this.dimensions.falzZoneWidth);
-      falzLeft.setAttribute('y', topY);
-        falzLeft.setAttribute('width', this.dimensions.falzZoneWidth);
-        falzLeft.setAttribute('height', bottomY);
-        falzLeft.setAttribute('fill', 'rgba(0,0,0,0.1)');
-
-        const falzRight = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        falzRight.setAttribute('x', rightSpineX);
-        falzRight.setAttribute('y', topY);
-        falzRight.setAttribute('width', this.dimensions.falzZoneWidth);
-        falzRight.setAttribute('height', bottomY);
-        falzRight.setAttribute('fill', 'rgba(0,0,0,0.1)');
-
-        helperGroup.appendChild(falzLeft);
-        helperGroup.appendChild(falzRight);
-        helperGroup.appendChild(lineLeft);
-        helperGroup.appendChild(lineRight);
         this.svgNode.appendChild(helperGroup);
+    }
+
+    _createSvgElement(tag, attrs = {}) {
+        const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+        for (const [key, value] of Object.entries(attrs)) {
+            el.setAttribute(key, value);
+        }
+        return el;
     }
 
     _removeHelperLines() {
@@ -1028,12 +1158,16 @@ export class HardcoverEditor extends BaseEditor {
         if (existingHelpers) {
             existingHelpers.remove();
         }
+    }
+
+    _removeAllSvgOverlays() {
+        this._removeHelperLines();
         this.svgNode.querySelectorAll('[id$="_warning"]').forEach(el => el.remove());
     }
 
     async _getFinalResult() {
-       this._resetZoomAndPan();
-        this._removeHelperLines();
+        this._resetZoomAndPan();
+        this._removeAllSvgOverlays();
 
         const currentTemplate = this.availableTemplates[this.uiState.currentTemplateIndex];
         if (!currentTemplate) throw new Error("Kein Template ausgewählt.");
@@ -1069,6 +1203,21 @@ export class HardcoverEditor extends BaseEditor {
                 spineWidth: this.spineWidth,
             }
         };
+    }
+
+    _destroy() {
+        clearTimeout(this._applyDebounceTimer);
+        if (this._accordionExclusiveAbort) {
+            this._accordionExclusiveAbort.abort();
+            this._accordionExclusiveAbort = null;
+        }
+        this.svgNode = null;
+        this.svgDoc = null;
+    }
+
+    _scheduleApply(delayMs = 120) {
+        clearTimeout(this._applyDebounceTimer);
+        this._applyDebounceTimer = setTimeout(() => this._applyStateToSvg(), delayMs);
     }
 
     _sleep(ms) {

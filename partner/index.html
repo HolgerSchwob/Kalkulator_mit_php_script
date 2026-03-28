@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>bamadi Partner – B2B-Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../logo bamadi/bamadi-logo.css">
+  <link rel="stylesheet" href="partner.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Zum Inhalt springen</a>
+
+  <!-- ========== Login / Registrierung ========== -->
+  <div id="authView" class="auth-view">
+    <div class="auth-panel">
+      <header class="auth-header">
+        <a href="../index.html" class="bamadi-logo bamadi-logo--primary bamadi-logo--sm" aria-label="bamadi Startseite">
+          <span class="logo-text">bamad</span><span class="logo-accent">i</span>
+        </a>
+        <p class="auth-kicker">Partner</p>
+        <h1 class="auth-title">Unternehmen &amp; Schulen</h1>
+        <p class="auth-lead">Abschlussarbeiten zentral verwalten und Druckkosten steuern. Zugang nur mit Einladung oder nach Freischaltung.</p>
+      </header>
+
+      <section class="auth-card" aria-labelledby="login-heading">
+        <h2 id="login-heading" class="card-title">Anmelden</h2>
+        <p class="card-hint">Wir senden Ihnen einen sicheren Anmeldelink per E-Mail (ohne Passwort).</p>
+        <p id="authDeployHint" class="deploy-hint" hidden></p>
+        <form id="loginForm" class="auth-form" novalidate>
+          <label for="loginEmail">Geschäftliche E-Mail</label>
+          <input type="email" id="loginEmail" name="email" autocomplete="email" required placeholder="name@unternehmen.de">
+          <button type="submit" class="btn btn-primary" id="loginSubmit">Anmeldelink senden</button>
+          <p id="loginMessage" class="form-message" role="status" hidden></p>
+        </form>
+      </section>
+
+      <section class="auth-card" aria-labelledby="register-heading">
+        <h2 id="register-heading" class="card-title">Registrierung</h2>
+        <p class="card-hint">Neu bei bamadi? Nach dem Absenden prüfen wir Ihre Angaben und schalten den Zugang frei.</p>
+        <form id="registerForm" class="auth-form" novalidate>
+          <label for="regCompany">Firmen- oder Schulname</label>
+          <input type="text" id="regCompany" name="company" autocomplete="organization" required>
+          <div class="form-row-2">
+            <div>
+              <label for="regContact">Ansprechpartner</label>
+              <input type="text" id="regContact" name="contact" autocomplete="name" required>
+            </div>
+            <div>
+              <label for="regPhone">Telefon</label>
+              <input type="tel" id="regPhone" name="phone" autocomplete="tel">
+            </div>
+          </div>
+          <label for="regEmail">E-Mail</label>
+          <input type="email" id="regEmail" name="email" autocomplete="email" required>
+          <button type="submit" class="btn btn-secondary" id="registerSubmit">Registrierung absenden</button>
+          <p id="registerMessage" class="form-message" role="status" hidden></p>
+        </form>
+      </section>
+
+      <p class="auth-demo">
+        <button type="button" class="btn-text" id="btnDemoPreview">Oberfläche ansehen (ohne Anmeldung)</button>
+      </p>
+
+      <footer class="auth-footer">
+        <a href="../index.html">Zurück zu bamadi.de</a>
+        <span class="sep">·</span>
+        <a href="../legal/impressum.html">Impressum</a>
+        <span class="sep">·</span>
+        <a href="../legal/datenschutz.html">Datenschutz</a>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ========== App (nach Login) ========== -->
+  <div id="appView" class="app-view" hidden>
+    <aside class="sidebar" aria-label="Partner-Navigation">
+      <div class="sidebar-brand">
+        <a href="#/dashboard" class="bamadi-logo bamadi-logo--primary bamadi-logo--sm" aria-label="Partner Dashboard">
+          <span class="logo-text">bamad</span><span class="logo-accent">i</span>
+        </a>
+        <span class="sidebar-badge">Partner</span>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="#/dashboard" class="nav-item" data-route="dashboard">Dashboard</a>
+        <a href="#/gruppen" class="nav-item" data-route="gruppen">Gruppen &amp; Studenten</a>
+        <a href="#/codes" class="nav-item" data-route="codes">Codes</a>
+        <a href="#/abrechnung" class="nav-item" data-route="abrechnung">Abrechnung</a>
+        <a href="#/einstellungen" class="nav-item" data-route="einstellungen">Einstellungen</a>
+      </nav>
+      <div class="sidebar-footer">
+        <p class="sidebar-account" id="sidebarAccountLabel">—</p>
+        <button type="button" class="btn btn-ghost btn-block" id="btnLogout">Abmelden</button>
+      </div>
+    </aside>
+
+    <div class="app-main">
+      <header class="app-topbar">
+        <h1 class="page-title" id="pageTitle">Dashboard</h1>
+        <a href="../index.html" class="topbar-link">bamadi.de</a>
+      </header>
+      <main id="main" class="app-content">
+
+        <section id="view-dashboard" class="view" data-view="dashboard" hidden>
+          <div class="kpi-grid">
+            <article class="kpi-card">
+              <p class="kpi-label">Codes gesamt</p>
+              <p class="kpi-value" id="kpiCodesTotal">—</p>
+            </article>
+            <article class="kpi-card">
+              <p class="kpi-label">Eingelöst</p>
+              <p class="kpi-value" id="kpiCodesRedeemed">—</p>
+            </article>
+            <article class="kpi-card">
+              <p class="kpi-label">Kosten lfd. Monat</p>
+              <p class="kpi-value" id="kpiMonthCost">—</p>
+            </article>
+            <article class="kpi-card">
+              <p class="kpi-label">Rechnungen</p>
+              <p class="kpi-value kpi-value--sm" id="kpiInvoiceHint">—</p>
+            </article>
+          </div>
+          <div class="panel">
+            <h2 class="panel-title">Letzte Aktivitäten</h2>
+            <p class="panel-empty" id="activityEmpty">Noch keine Aktivitäten. Legen Sie Studenten an oder importieren Sie eine Liste.</p>
+            <ul class="activity-list" id="activityList" hidden></ul>
+          </div>
+          <div class="quick-actions">
+            <a href="#/gruppen" class="btn btn-primary">Neue Gruppe</a>
+            <a href="#/codes" class="btn btn-secondary">Codes verwalten</a>
+            <span class="quick-note">CSV-Import folgt in Phase 2.</span>
+          </div>
+        </section>
+
+        <section id="view-gruppen" class="view" data-view="gruppen" hidden>
+          <div class="panel">
+            <div class="panel-head">
+              <h2 class="panel-title">Gruppen</h2>
+              <button type="button" class="btn btn-primary btn-sm" id="btnAddGroup" disabled>Gruppe anlegen</button>
+            </div>
+            <p class="panel-hint">Eine Gruppe steht z. B. für einen Jahrgang oder ein Studienprogramm. Anbindung an die Datenbank erfolgt mit dem nächsten Implementierungsschritt.</p>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Abgabe</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="groupsBody">
+                  <tr><td colspan="3" class="cell-muted">Keine Daten geladen.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <h2 class="panel-title">Studenten</h2>
+              <button type="button" class="btn btn-secondary btn-sm" id="btnAddStudent" disabled>Student anlegen</button>
+            </div>
+            <div class="table-wrap table-wrap--scroll">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>E-Mail</th>
+                    <th>Gruppe</th>
+                    <th>Code</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="studentsBody">
+                  <tr><td colspan="5" class="cell-muted">Keine Daten geladen.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="view-codes" class="view" data-view="codes" hidden>
+          <div class="panel">
+            <h2 class="panel-title">Codes</h2>
+            <p class="panel-hint">Persönliche Codes pro Student oder Gruppencode (Konzept siehe interne Spezifikation). Generierung und Versand werden an Supabase angebunden.</p>
+            <ul class="bullet-list">
+              <li>E-Mail an Studenten aus dem Portal</li>
+              <li>PDF-Liste zum Drucken</li>
+              <li>CSV-Export</li>
+            </ul>
+          </div>
+        </section>
+
+        <section id="view-abrechnung" class="view" data-view="abrechnung" hidden>
+          <div class="panel">
+            <h2 class="panel-title">Kosten &amp; Rechnungen</h2>
+            <p class="panel-hint">Abrechnung auf Rechnung (kein Stripe im B2B-Portal). Monatliche Sammelrechnung und PDF-Versand werden hier ergänzt.</p>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Zeitraum</th>
+                    <th>Betrag</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="invoicesBody">
+                  <tr><td colspan="3" class="cell-muted">Keine Rechnungen geladen.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="view-einstellungen" class="view" data-view="einstellungen" hidden>
+          <div class="panel">
+            <h2 class="panel-title">Stammdaten</h2>
+            <form class="settings-form" id="settingsForm">
+              <label for="setCompany">Firmenname</label>
+              <input type="text" id="setCompany" readonly value="—">
+              <label for="setEmail">Kontakt-E-Mail</label>
+              <input type="email" id="setEmail" readonly value="—">
+              <p class="panel-hint">Bearbeitung und Kostenmodell folgen nach Anbindung an <code>b2b_accounts</code>.</p>
+            </form>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="partner.mjs"></script>
+</body>
+</html>

@@ -1,21 +1,8 @@
 // editorHandler.mjs
 // Acts as the bridge between the main calculator and the SVG editor modules. By Lucy.
 
-import { openEditor } from './EditorFactory.mjs'; // Assuming EditorFactory is in the same directory
-
-/**
- * Lädt Supabase-URL und Anon-Key aus supabase.config.json (gleiche Quelle wie der Editor).
- * @returns {Promise<{ url: string, anonKey: string }>}
- */
-async function getSupabaseConfig() {
-    const response = await fetch('../supabase.config.json');
-    if (!response.ok) throw new Error('Supabase-Konfiguration nicht geladen.');
-    const config = await response.json();
-    const url = (config.url || '').replace(/\/$/, '');
-    const anonKey = config.anonKey || config.key || '';
-    if (!url || !anonKey) throw new Error('Supabase-Konfiguration unvollständig (url, anonKey).');
-    return { url, anonKey };
-}
+import { openEditor } from './EditorFactory.mjs';
+import { getSupabaseConfig } from './supabaseConfig.mjs';
 
 /**
  * Lädt die Gruppen-Config für die angegebene Template-Gruppe (Dimensionen, spine_offset_mm, falz_zone_width).

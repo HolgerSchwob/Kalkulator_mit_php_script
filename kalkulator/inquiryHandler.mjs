@@ -6,13 +6,63 @@
 // V6: Order submission via Supabase (orders table + storage).
 
 import { escapeHtml } from './uiUtils.mjs';
+import { getSupabaseConfig } from './supabaseConfig.mjs';
 
 let DOM = {}; // Wird von initInquiryHandler befüllt
 let currentStep = 1;
 const TOTAL_STEPS = 4; // 1 Kundendaten, 2 Lieferadresse, 3 Zahlungsart, 4 Überprüfung
 let inquiryStateCache, calculationResultsCache, configCache;
 
+function normalizeB2bCodeInput(raw) {
+    return String(raw || '').trim().toUpperCase().replace(/\s+/g, '');
+}
+
+async function validateB2bCodeRemote(codeRaw) {
+    const supabaseConfig = await getSupabaseConfig();
+    const fnUrl = supabaseConfig.url + '/functions/v1/validate-b2b-code';
+    const total = typeof calculationResultsCache?.totalOrderPrice === 'number'
+        ? calculationResultsCache.totalOrderPrice
+        : 0;
+    const response = await fetch(fnUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + supabaseConfig.anonKey,
+        },
+        body: JSON.stringify({ code: codeRaw, order_total_eur: total }),
+    });
+    const result = await response.json().catch(() => ({}));
+    return result;
+}
+
+function resetB2bUi() {
+    if (DOM.b2bMessage) {
+        DOM.b2bMessage.textContent = '';
+        DOM.b2bMessage.classList.add('hidden');
+        DOM.b2bMessage.classList.remove('is-ok', 'is-err');
+    }
+    if (DOM.b2bCodeInput) DOM.b2bCodeInput.value = '';
+}
+
 const STORAGE_BUCKET = 'order-files';
+
+function isTruthyFlag(v) {
+    return v === true || v === 1 || v === 'true' || v === '1';
+}
+
+/** Stripe Checkout darf nicht im iframe laufen — komplette Registerkarte umleiten (z. B. Kalkulator in Overlay-iframe). */
+function navigateTopLevel(url) {
+    try {
+        const topWin = window.top;
+        if (topWin && topWin.location) {
+            topWin.location.href = url;
+            return;
+        }
+    } catch (_) {
+        /* Cross-Origin iframe: Fallback */
+    }
+    window.location.href = url;
+}
 
 /** Generiert eine lesbare Auftragsnummer (z. B. A-20250211-X7K9M2). */
 function generateOrderNumber() {
@@ -35,6 +85,21 @@ function buildPayloadForDb(inquiryState, calculationResults, customerData, shipp
         shippingData,
     };
 }
+function updateFinalReviewLead() {
+    const el = DOM.finalReviewLead;
+    if (!el || !configCache) return;
+    const stripeOn = isTruthyFlag(configCache.general?.stripeEnabled);
+    const pm = DOM.paymentStep?.querySelector('input[name="inquiryPaymentMethod"]:checked');
+    const payStripe = pm?.value === 'stripe';
+    if (stripeOn && payStripe) {
+        el.innerHTML = 'Bitte prüfen Sie Ihre Angaben. Mit <strong>Bestellung absenden</strong> wird der Auftrag angelegt und Sie werden zur <strong>sicheren Zahlung bei Stripe</strong> weitergeleitet.';
+    } else if (stripeOn && !payStripe) {
+        el.innerHTML = 'Bitte prüfen Sie Ihre Angaben. Mit dem Absenden wird Ihre Bestellung übermittelt; die Zahlung erfolgt <strong>per Rechnung bzw. Vorkasse</strong>, wie gewählt.';
+    } else {
+        el.innerHTML = 'Bitte überprüfen Sie Ihre Konfiguration. Mit dem Absenden stellen Sie eine <strong>unverbindliche Anfrage</strong>.';
+    }
+}
+
 function updateModalStep() {
     if (!DOM.customerDataStep) return;
     DOM.customerDataStep.classList.toggle('hidden', currentStep !== 1);
@@ -45,6 +110,7 @@ function updateModalStep() {
     DOM.backButton.classList.toggle('hidden', currentStep === 1);
     DOM.nextButton.classList.toggle('hidden', currentStep === TOTAL_STEPS);
     DOM.submitButton.classList.toggle('hidden', currentStep !== TOTAL_STEPS);
+    if (currentStep === 4) updateFinalReviewLead();
 }
 
 function nextStep() {
@@ -82,6 +148,7 @@ function openModal(inquiryState, calculationResults, config) {
     configCache = config;
     
     currentStep = 1;
+    resetB2bUi();
     populateModalData();
     updateModalStep();
     DOM.overlay.classList.add('active');
@@ -114,12 +181,19 @@ function populateModalData() {
         }
     }
 
-    const stripeEnabled = configCache.general?.stripeEnabled === true;
+    const gen = configCache.general;
+    const stripeEnabled = isTruthyFlag(gen?.stripeEnabled);
     if (DOM.paymentMethodStripeWrap) DOM.paymentMethodStripeWrap.classList.toggle('hidden', !stripeEnabled);
     if (DOM.paymentMethodOfflineOnly) DOM.paymentMethodOfflineOnly.classList.toggle('hidden', stripeEnabled);
-    if (stripeEnabled && configCache.general?.requireOnlinePayment === true) {
-        const stripeRadio = DOM.paymentStep?.querySelector('input[name="inquiryPaymentMethod"][value="stripe"]');
-        if (stripeRadio) stripeRadio.checked = true;
+    const requireOnline = stripeEnabled && isTruthyFlag(gen?.requireOnlinePayment);
+    const stripeRadio = DOM.paymentStep?.querySelector('input[name="inquiryPaymentMethod"][value="stripe"]');
+    const offlineRadio = DOM.paymentStep?.querySelector('input[name="inquiryPaymentMethod"][value="offline"]');
+    if (requireOnline && stripeRadio) stripeRadio.checked = true;
+    const offlineLabel = offlineRadio?.closest('label.inquiry-payment-option-offline') || offlineRadio?.closest('label');
+    if (offlineLabel) offlineLabel.classList.toggle('hidden', requireOnline);
+
+    if (DOM.title) {
+        DOM.title.textContent = stripeEnabled ? 'Bestellung' : 'Unverbindliche Anfrage';
     }
 
     let summaryHTML = `<p><strong>Ihre Konfiguration:</strong></p><ul>`;
@@ -153,6 +227,18 @@ async function handleSubmit(event) {
         return;
     }
 
+    let b2bCodeToSend = undefined;
+    const codeRaw = DOM.b2bCodeInput?.value?.trim();
+    if (codeRaw) {
+        const normalized = normalizeB2bCodeInput(codeRaw);
+        const v = await validateB2bCodeRemote(normalized);
+        if (!v.valid) {
+            alert(v.error || 'Der eingegebene Code ist ungültig oder konnte nicht geprüft werden.');
+            return;
+        }
+        b2bCodeToSend = normalized;
+    }
+
     if (DOM.loadingOverlay) {
         DOM.loadingOverlay.classList.add('active');
     } else {
@@ -184,16 +270,14 @@ async function handleSubmit(event) {
     })();
 
     try {
-        const configRes = await fetch('../supabase.config.json');
-        if (!configRes.ok) throw new Error('Supabase-Konfiguration konnte nicht geladen werden.');
-        const supabaseConfig = await configRes.json();
-        const fnUrl = (supabaseConfig.url || '').replace(/\/$/, '') + '/functions/v1/create-order-and-checkout';
+        const supabaseConfig = await getSupabaseConfig();
+        const fnUrl = supabaseConfig.url + '/functions/v1/create-order-and-checkout';
 
         const response = await fetch(fnUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + (supabaseConfig.anonKey || ''),
+                'Authorization': 'Bearer ' + supabaseConfig.anonKey,
             },
             body: JSON.stringify({
                 inquiryDetails,
@@ -202,6 +286,7 @@ async function handleSubmit(event) {
                 paymentMethod,
                 totalOrderPrice: totalPrice,
                 priceDetails: calculationResultsCache || undefined,
+                ...(b2bCodeToSend ? { b2bCode: b2bCodeToSend } : {}),
             }),
         });
 
@@ -247,11 +332,11 @@ async function handleSubmit(event) {
         const statusUrl = `${window.location.origin}${window.location.pathname.replace(/index\.html?$/i, '')}auftrag.html?order=${encodeURIComponent(orderNumber)}&email=${encodeURIComponent(customerEmail)}`;
 
         if (checkoutUrl) {
-            window.location.href = checkoutUrl;
+            navigateTopLevel(checkoutUrl);
             return;
         }
         alert(`Vielen Dank! Ihre Bestellung wurde erfasst.\n\nIhre Auftragsnummer: ${orderNumber}\n\nSie erhalten in Kürze eine E-Mail mit der Bestätigung des Auftragseingangs.\n\nÜber den folgenden Link können Sie Ihren Auftragsstatus jederzeit einsehen:\n${statusUrl}`);
-        window.location.href = statusUrl;
+        navigateTopLevel(statusUrl);
     } catch (error) {
         console.error('Fehler beim Senden der Bestellung:', error);
         alert(`Es gab ein Problem bei der Übermittlung: ${error.message}`);
@@ -281,6 +366,39 @@ export function initInquiryHandler(domElements) {
     
     if(DOM.submitButton) {
         DOM.submitButton.addEventListener('click', handleSubmit);
+    }
+
+    if (DOM.b2bValidateBtn && DOM.b2bCodeInput && DOM.b2bMessage) {
+        DOM.b2bValidateBtn.addEventListener('click', async () => {
+            const raw = DOM.b2bCodeInput.value?.trim();
+            DOM.b2bMessage.classList.remove('hidden', 'is-ok', 'is-err');
+            if (!raw) {
+                DOM.b2bMessage.textContent = 'Bitte einen Code eingeben.';
+                DOM.b2bMessage.classList.add('is-err');
+                return;
+            }
+            DOM.b2bValidateBtn.disabled = true;
+            try {
+                const normalized = normalizeB2bCodeInput(raw);
+                const v = await validateB2bCodeRemote(normalized);
+                if (v.valid) {
+                    const emp = (v.employer_amount_cents ?? 0) / 100;
+                    const stu = (v.student_amount_cents ?? 0) / 100;
+                    DOM.b2bMessage.innerHTML = `Code gültig (${escapeHtml(v.account_name || '')}). ` +
+                        `Übernahme: <strong>${emp.toFixed(2)} €</strong>, Ihr Anteil: <strong>${stu.toFixed(2)} €</strong>.`;
+                    DOM.b2bMessage.classList.add('is-ok');
+                } else {
+                    DOM.b2bMessage.textContent = v.error || 'Code ungültig.';
+                    DOM.b2bMessage.classList.add('is-err');
+                }
+            } catch (e) {
+                DOM.b2bMessage.textContent = 'Code konnte nicht geprüft werden.';
+                DOM.b2bMessage.classList.add('is-err');
+                console.warn(e);
+            } finally {
+                DOM.b2bValidateBtn.disabled = false;
+            }
+        });
     }
     
     DOM.overlay.addEventListener('click', e => {

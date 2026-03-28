@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>bamadi.de – Abschlussarbeit drucken & binden (v2)</title>
+<script>console.log('[bamadi] bamadi-v2 geladen');</script>
+<script src="app.js" defer></script>
+<script src="bamadi-v2-bindings.js" defer></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="landing.css">
+
+</head>
+<body>
+<!-- ========== LANDING PAGE (One-Pager) ==========
+  Struktur: 1) Nav 2) Modals (Kalkulator, Bindungs-Modal, Legal) 3) first-view (Hero+Trust-Bar) 4) Sektionen 5) Footer
+  Logik: app.js | Kalkulator/Editor: kalkulator/* (unverändert) -->
+
+<!-- 1. Haupt-Navigation (fixed) -->
+<nav id="nav">
+  <a href="/" class="nav-logo">bamad<span class="acc">i</span></a>
+  <button type="button" class="nav-toggle" aria-label="Menü öffnen" aria-expanded="false" aria-controls="nav-menu">
+    <span class="nav-toggle-open" aria-hidden="true"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg></span>
+    <span class="nav-toggle-close" aria-hidden="true"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></span>
+  </button>
+  <div class="nav-backdrop" aria-hidden="true"></div>
+  <ul class="nav-links" id="nav-menu">
+  <li><a href="#how">So funktioniert's</a></li>
+    <li><a href="#bindungen">Bindungen</a></li>
+    <li><a href="#ueber-uns">Über uns</a></li>
+    <li><a href="#faq">FAQ</a></li>
+    <li><a href="auftrag.html" class="nav-status-link">Auftragsstatus</a></li>
+    <li class="nav-cta-item"><a href="#bindungen" class="nav-cta">Jetzt konfigurieren</a></li>
+  </ul>
+</nav>
+
+<!-- 2. Kalkulator Fullscreen-Overlay (öffnet kalkulator/index.html im iframe, Steuerung in app.js) -->
+<div id="kalkulator-overlay" aria-hidden="true">
+  <div class="kalkulator-iframe-wrap">
+    <iframe id="kalkulator-iframe" title="Kalkulator"></iframe>
+  </div>
+  <button type="button" class="kalkulator-overlay-close" aria-label="Overlay schließen">✕</button>
+</div>
+
+<!-- 3. Bindungs-Modal (Produktdetails-Slides, öffnet bei Klick auf Produktkarte) -->
+<div class="overlay" id="overlay" onclick="closeOnBg(event)">
+  <div class="modal" id="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-slides">
+      <button class="side-arr side-arr--prev" id="btnPrev" onclick="prevSlide()" aria-label="Zurück">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="20" fill="rgba(255,255,255,0.92)"/>
+          <path d="M23 13L16 20L23 27" stroke="#1A3A5C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <button class="side-arr side-arr--next" id="btnNext" onclick="nextSlide()" aria-label="Weiter">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="20" fill="rgba(255,255,255,0.92)"/>
+          <path d="M17 13L24 20L17 27" stroke="#1A3A5C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div class="slides-track" id="track"></div>
+    </div>
+    <div class="modal-nav">
+      <div class="nav-dots" id="navDots"></div>
+      <span class="slide-counter" id="slideCounter">1 / 3</span>
+    </div>
+  </div>
+</div>
+
+<!-- 4. Hauptinhalt: Hero + Trust-Bar (first-view) -->
+<div class="first-view">
+<!-- Hero (Headline, CTA, Buch-Slider) -->
+<section id="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-inner">
+    <div class="hero-content">
+      <h1 class="hero-h1">Deine Abschlussarbeit. Gedruckt wie sie es <em>verdient.</em></h1>
+      <p class="hero-sub">Konfigurieren, hochladen, fertig — Preis sofort sichtbar. Handwerklich gebunden in unserer Buchbinderei in Fulda.</p>
+      <div class="hero-cta">
+        <a href="#bindungen" class="btn-primary btn-primary--hero">
+          Jetzt konfigurieren
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+        </a>
+      </div>
+      <div class="hero-google-rating">
+        <a href="https://maps.app.goo.gl/6JX51vi3HBjYaaeLA" target="_blank" rel="noopener noreferrer" class="google-badge google-badge--hero">
+          <span class="google-g-wrap" aria-hidden="true">
+            <!-- Offizielles Google-G (Markenfarben) -->
+            <svg class="google-g-logo" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+          </span>
+          <div class="badge-content">
+            <span class="rating-number">4.9 / 5</span>
+            <div class="stars" aria-hidden="true">★★★★★</div>
+            <span class="review-count">Google-Bewertung · 120+ Rezensionen</span>
+          </div>
+        </a>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="hero-slider-wrap">
+        <div class="slider-wrap" id="heroSlider">
+          <div class="book-slide active">
+            <div class="book">
+              <div class="book-spine" style="background:linear-gradient(to bottom,#0d2035,#1A3A5C)"></div>
+              <div class="book-cover" style="background:linear-gradient(155deg,#1A3A5C 0%,#244d78 50%,#1a3a5c 100%)">
+                <div class="cover-inner" style="color:#fff">
+                  <div class="cover-tag" style="color:var(--gold)">Masterarbeit · 2026</div>
+                  <div class="cover-rule" style="background:var(--gold)"></div>
+                  <div class="cover-title">Nachhaltige Mobilität im urbanen Kontext der Metropolregion Rhein-Main</div>
+                  <div class="cover-author">M. Hoffmann · TU Darmstadt</div>
+                </div>
+              </div>
+              <div class="book-pages"></div>
+              <div class="book-badge">Beliebt</div>
+            </div>
+            <div class="slide-label">
+              <div class="slide-label-name">Hardcover Modern</div>
+              <div class="slide-label-detail">Vollfarbcover · Lay-flat · 120 g/m²</div>
+            </div>
+          </div>
+          <div class="book-slide">
+            <div class="book">
+              <div class="book-spine" style="background:linear-gradient(to bottom,#112218,#1a3424)"></div>
+              <div class="book-cover" style="background:linear-gradient(160deg,#1e3d28 0%,#264d32 60%,#1a3424 100%)">
+                <div class="cover-inner" style="color:#fff">
+                  <div class="cover-tag" style="color:rgba(255,255,255,0.5)">Dissertation</div>
+                  <div class="cover-rule" style="background:rgba(255,255,255,0.3)"></div>
+                  <div class="cover-title" style="font-size:12.5px">Epigenetische Regulation der Stressantwort bei chronischer Inflammation</div>
+                  <div class="cover-author">Dr. S. Weber · Universität Marburg</div>
+                </div>
+              </div>
+              <div class="book-pages"></div>
+            </div>
+            <div class="slide-label">
+              <div class="slide-label-name">Hardcover Klassik</div>
+              <div class="slide-label-detail">Efalin-Leineneinband · Lay-flat · 120 g/m²</div>
+            </div>
+          </div>
+          <div class="book-slide">
+            <div class="book">
+              <div class="book-spine" style="background:linear-gradient(to bottom,#2a0d12,#4a1520)"></div>
+              <div class="book-cover" style="background:linear-gradient(160deg,#4a1520 0%,#6b1e2d 60%,#4a1520 100%)">
+                <div class="cover-inner" style="color:#fff">
+                  <div class="cover-tag" style="color:rgba(255,200,200,0.55)">Bachelorarbeit · 2026</div>
+                  <div class="cover-rule" style="background:rgba(255,200,200,0.3)"></div>
+                  <div class="cover-title">Influencer Marketing und Kaufentscheidung — eine empirische Analyse</div>
+                  <div class="cover-author">L. Schmidt · Hochschule Fulda</div>
+                </div>
+              </div>
+              <div class="book-pages"></div>
+            </div>
+            <div class="slide-label">
+              <div class="slide-label-name">Hardcover Klassik</div>
+              <div class="slide-label-detail">Efalin Bordeaux · Lay-flat · 120 g/m²</div>
+            </div>
+          </div>
+          <div class="book-slide">
+            <div class="book">
+              <div class="book-spine" style="background:linear-gradient(to bottom,#c8c4b8,#e8e4d8)"></div>
+              <div class="book-cover" style="background:linear-gradient(155deg,#f0ece0 0%,#faf8f2 50%,#e8e4d8 100%)">
+                <div class="cover-inner" style="color:#1A3A5C">
+                  <div class="cover-tag" style="color:var(--gold)">Masterarbeit · 2025</div>
+                  <div class="cover-rule" style="background:var(--gold)"></div>
+                  <div class="cover-title" style="color:#1A3A5C">KI-gestützte Diagnostik in der Radiologie — Chancen und Grenzen</div>
+                  <div class="cover-author" style="color:#1A3A5C;opacity:0.4">J. Müller · LMU München</div>
+                </div>
+              </div>
+              <div class="book-pages"></div>
+            </div>
+            <div class="slide-label">
+              <div class="slide-label-name">Hardcover Modern</div>
+              <div class="slide-label-detail">Helles Cover · Lay-flat · 120 g/m²</div>
+            </div>
+          </div>
+          <div class="book-slide">
+            <div class="book">
+              <div class="book-spine" style="background:linear-gradient(to bottom,#1c2a3a,#2a3d52)"></div>
+              <div class="book-cover" style="background:linear-gradient(155deg,#243447 0%,#2e4460 50%,#1c2a3a 100%)">
+                <div class="cover-inner" style="color:#fff">
+                  <div class="cover-tag" style="color:rgba(150,200,255,0.6)">Bachelorarbeit</div>
+                  <div class="cover-rule" style="background:rgba(150,200,255,0.3)"></div>
+                  <div class="cover-title" style="font-size:12.5px">Nachhaltige Lieferketten im E-Commerce — Bewertungsmodelle im Vergleich</div>
+                  <div class="cover-author">T. Braun · FH Frankfurt</div>
+                </div>
+              </div>
+              <div class="book-pages"></div>
+            </div>
+            <div class="slide-label">
+              <div class="slide-label-name">Paperback Folie</div>
+              <div class="slide-label-detail">Laminierter Umschlag · 90 g/m²</div>
+            </div>
+          </div>
+          <div class="book-slide">
+            <div class="book">
+              <div class="book-spine" style="background:linear-gradient(to bottom,#111,#222)"></div>
+              <div class="book-cover" style="background:linear-gradient(160deg,#1a1a1a 0%,#2a2a2a 60%,#111 100%)">
+                <div class="cover-inner" style="color:#fff">
+                  <div class="cover-tag" style="color:var(--gold)">Dissertation · 2026</div>
+                  <div class="cover-rule" style="background:var(--gold)"></div>
+                  <div class="cover-title">Digitale Transformation im Gesundheitswesen — eine institutionenökonomische Analyse</div>
+                  <div class="cover-author">Prof. Dr. A. Klein · Goethe Universität</div>
+                </div>
+              </div>
+              <div class="book-pages"></div>
+            </div>
+            <div class="slide-label">
+              <div class="slide-label-name">Hardcover Klassik</div>
+              <div class="slide-label-detail">Efalin Schwarz · Lay-flat · 120 g/m²</div>
+            </div>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="heroProgress"></div>
+          </div>
+        </div>
+        <div class="dots" id="heroDots"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TRUST LINE -->
+<div id="trust-bar">
+  <div class="container">
+    <div class="tb-inner">
+      <span class="tb-point">32 Jahre inhabergeführt</span>
+      <span class="tb-sep">·</span>
+      <span class="tb-point">Digitaldruck &amp; Buchbinderei</span>
+      <span class="tb-sep">·</span>
+      <span class="tb-point">Express in 24h</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ========== Sektionen (scroll) ========== -->
+<!-- How it works (3 Schritte) -->
+<section id="how" class="view-section">
+  <div class="container">
+    <div class="sec-intro">
+    <div class="eyebrow"><span>So funktioniert's</span></div>
+      <h2 class="h-lg" style="color:var(--navy)">Vom PDF zum Paket — in Minuten.</h2>
+      <p>Konfigurieren, hochladen, bezahlen — ohne Registrierung, ohne Wartezeit.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <span class="step-n">01</span>
+        <div class="step-icon"><svg width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg></div>
+        <h3>Konfigurieren</h3>
+        <p>Seitenanzahl, Papier, Bindung, Extras — der Endpreis inkl. MwSt. aktualisiert sich mit jedem Klick. Was du siehst, zahlst du.</p>
+      </div>
+      <div class="step">
+        <span class="step-n">02</span>
+        <div class="step-icon"><svg width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg></div>
+        <h3>Hochladen & Bezahlen</h3>
+        <p>PDF hochladen, per Karte bezahlen — sofort bestätigt, Rechnung automatisch per E-Mail. Keine Registrierung nötig.</p>
+      </div>
+      <div class="step">
+        <span class="step-n">03</span>
+        <div class="step-icon"><svg width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div>
+        <h3>Wir drucken &amp; binden. Du lehnst dich zurück.</h3>
+        <p>Dein Auftrag läuft live auf deinem Schirm: Druck, Bindung, Verpackung — bis das Paket rausgeht. Per E-Mail oder direkt auf bamadi.de.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Bindungen (7 Produkte, 2 Gruppen — Karten öffnen Bindungs-Modal) -->
+<section id="bindungen" class="view-section">
+  <div class="container">
+    <div class="sec-intro sec-intro--bindungen">
+      <div class="eyebrow"><span>Bindungen</span></div>
+      <h2 class="h-lg" style="color:var(--navy)">Sieben Bindungen. Eine Empfehlung für jeden Anlass.</h2>
+      <p class="sec-intro-sub">Von der Ringbindung bis zur fadengehefteten Hardcover-Bindung mit rundem Rücken: Alle Arbeiten gedruckt auf säurefreiem Papier, gebunden in unserer Buchbinderei. Wähle die Bindung, die zu deiner Arbeit passt.</p>
+    </div>
+
+    <div class="prod-group">
+      <div class="prod-grid prod-grid--3">
+        <div class="prod-card" data-binding="0">
+          <div class="prod-vis pv1"><div class="pb pb1"></div><div class="p-bdg">Beliebt</div></div>
+          <div class="prod-body">
+            <h3>Hardcover Modern</h3>
+            <p>Dein Cover in Farbe gedruckt, fest gebunden. Fächerklebebindung mit Kaltleim — das Buch liegt komplett flach auf, keine Seite springt zurück.</p>
+            <p class="prod-opt">Optional mit Fadenheftung und rundem Rücken.</p>
+            <div class="prod-detail">VOLLFARBCOVER · LAY-FLAT · 120 G/M² INHALT</div>
+            <div class="prod-price">ab 34,90 € <span>inkl. MwSt.</span></div>
+          </div>
+        </div>
+        <div class="prod-card" data-binding="1">
+          <div class="prod-vis pv2"><div class="pb pb2"></div><div class="p-bdg">Klassiker</div></div>
+          <div class="prod-body">
+            <h3>Hardcover Klassik</h3>
+            <p>Efalin-Leineneinband in mehreren Farben — zeitlos, ohne Aufdruck. Innen dieselbe Lay-flat-Bindung: das Buch hält, was es verspricht.</p>
+            <p class="prod-opt">Optional mit Fadenheftung und rundem Rücken.</p>
+            <div class="prod-detail">EFALIN-EINBAND · LAY-FLAT · 120 G/M² INHALT</div>
+            <div class="prod-price">ab 38,50 € <span>inkl. MwSt.</span></div>
+          </div>
+        </div>
+        <div class="prod-card" data-binding="2">
+          <div class="prod-vis pv5"><div class="pb pb5"></div><div class="p-bdg">Neu</div></div>
+          <div class="prod-body">
+            <h3>Hardcover Premium</h3>
+            <p>Dein Cover vollflächig auf Canvas-Gewebe gedruckt — Farbbrillanz, die du fühlen kannst. Textilhaptik statt Karton. Ein Einband, der jede Abschlussarbeit zum Einzelstück macht.</p>
+            <p class="prod-opt">Optional mit Fadenheftung und rundem Rücken — Verlagsniveau.</p>
+            <div class="prod-detail">CANVAS-GEWEBEEINBAND · VOLLFARBDRUCK · LAY-FLAT · 120 G/M² INHALT</div>
+            <div class="prod-price">ab [PREIS] € <span>inkl. MwSt.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="prod-group prod-group--pb">
+      <div class="prod-grid prod-grid--4">
+        <div class="prod-card" data-binding="3">
+          <div class="prod-vis pv3"><div class="pb pb3"></div></div>
+          <div class="prod-body">
+            <h3>Paperback Folie</h3>
+            <p>Klebebindung mit transparenter Deckfolie — dein Deckblatt bleibt sichtbar. Leicht, robust, günstig. Die erste Wahl, wenn mehrere Pflichtexemplare gefragt sind.</p>
+            <div class="prod-detail">TRANSPARENTE DECKFOLIE · HOTMELT-BINDUNG</div>
+            <div class="prod-price">ab 14,90 € <span>inkl. MwSt.</span></div>
+          </div>
+        </div>
+        <div class="prod-card" data-binding="4">
+          <div class="prod-vis pv6"><div class="pb pb6"></div></div>
+          <div class="prod-body">
+            <h3>Paperback Efalin</h3>
+            <p>Efalin-Leineneinband mit Weißdruck. Wertig und dezent — für alle, die Softcover wollen, aber kein Plastik-Gefühl.</p>
+            <div class="prod-detail">EFALIN-EINBAND · WEISSDRUCK · HOTMELT-BINDUNG</div>
+            <div class="prod-price">ab [PREIS] € <span>inkl. MwSt.</span></div>
+          </div>
+        </div>
+        <div class="prod-card" data-binding="5">
+          <div class="prod-vis pv7"><div class="pb pb7"></div></div>
+          <div class="prod-body">
+            <h3>Paperback Umschlag</h3>
+            <p>300 g/m² Umschlag, vollflächig bedruckt und mattfoliert. Ein Softcover wie aus dem Buchhandel — mit deinem eigenen Cover-Design.</p>
+            <div class="prod-detail">300 G/M² · 4/0 BEDRUCKT · MATTFOLIERT · HOTMELT-BINDUNG</div>
+            <div class="prod-price">ab [PREIS] € <span>inkl. MwSt.</span></div>
+          </div>
+        </div>
+        <div class="prod-card" data-binding="6">
+          <div class="prod-vis pv4"><div class="pb pb4"></div></div>
+          <div class="prod-body">
+            <h3>Ringbindung</h3>
+            <p>Spiralbindung mit transparentem Deckblatt. Liegt komplett flach, Seiten lassen sich umschlagen — ideal für Werkstücke, Präsentationen und Projektarbeiten.</p>
+            <div class="prod-detail">SPIRALBINDUNG · TRANSPARENTES COVER</div>
+            <div class="prod-price">ab 12,90 € <span>inkl. MwSt.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="prod-bind-cta">
+      <p class="prod-bind-cta-text">Du kannst im Kalkulator dein Angebot als PDF herunterladen — zum Vergleichen oder Weiterleiten.</p>
+      <a href="#bindungen" class="btn-primary">Zum Kalkulator</a>
+    </div>
+  </div>
+</section>
+
+<!-- USP + Buchbinderei/Vertrauen -->
+<section id="ueber-uns" class="view-section">
+  <div class="container">
+    <div class="usp-layout">
+      <div>
+        <div class="eyebrow"><span>Warum bamadi</span></div>
+        <h2 class="h-lg" style="color:var(--navy);margin-bottom:36px">Hightech trifft<br>Handwerk — für<br>deine Abschlussarbeit.</h2>
+        <div class="usp-list">
+          <div class="usp-item"><div class="usp-n">01</div><div><h3>Heute bestellt. Morgen bei dir.</h3><p>Bis 14:00 Uhr bestellt und bezahlt — dann liegt dein Buch morgen an deiner Tür. Verbindlich, nicht vage.</p></div></div>
+          <div class="usp-item"><div class="usp-n">02</div><div><h3>Was du siehst, zahlst du.</h3><p>Der Preis im Kalkulator ist der Endpreis — inkl. MwSt. und Versand. Einfach fertig konfigurieren und loslegen.</p></div></div>
+          <div class="usp-item"><div class="usp-n">03</div><div><h3>Immer wissen, wo deine Arbeit ist.</h3><p>Vom Eingang bis zur DHL-Übergabe siehst du jeden Schritt live. Eine E-Mail mit Link reicht.</p></div></div>
+          <div class="usp-item"><div class="usp-n">04</div><div><h3>32 Jahre inhabergeführt — Digitaldruck &amp; Buchbinderei unter einem Dach.</h3><p>Schwob Digitaldruck in Fulda: modernster Digitaldruck, wenn es um Präzision geht; Buchbinder-Handwerk, wenn es um Haltbarkeit und Anmut geht. Zwei Welten, die sich bei uns ergänzen.</p></div></div>
+        </div>
+      </div>
+      <div class="usp-vis">
+        <div class="usp-right-row">
+          <div class="usp-vis-status">
+            <div class="sc">
+              <div class="sc-top"><div class="sc-title">Auftragsstatus</div><div class="live"><span class="live-dot"></span>Live</div></div>
+              <div class="sc-sub">#BA-2406-047 · Hardcover Modern · 120 Seiten</div>
+              <div class="sc-rows">
+                <div class="sc-row"><div class="scd done">✓</div><span class="sc-lbl lbl-done">Bezahlung eingegangen</span><span class="sc-t">09:14</span></div>
+                <div class="sc-row"><div class="scd done">✓</div><span class="sc-lbl lbl-done">PDF geprüft</span><span class="sc-t">09:31</span></div>
+                <div class="sc-row"><div class="scd done">✓</div><span class="sc-lbl lbl-done">Bereit für Druck</span><span class="sc-t">10:02</span></div>
+                <div class="sc-row"><div class="scd now">▶</div><span class="sc-lbl lbl-now">Wird gedruckt & gebunden</span><span class="sc-t tnow">jetzt</span></div>
+                <div class="sc-row"><div class="scd later">○</div><span class="sc-lbl lbl-later">Versandbereit</span><span class="sc-t">~13:30</span></div>
+                <div class="sc-row"><div class="scd later">○</div><span class="sc-lbl lbl-later">Übergabe an DHL Express</span><span class="sc-t">~14:00</span></div>
+              </div>
+            </div>
+            <div class="sc-ov">
+              <div class="ov-lbl">Gedruckt in</div>
+              <div class="ov-big">Fulda</div>
+              <div class="ov-sub">Mitten in Deutschland</div>
+            </div>
+            <a href="auftrag.html" class="sc-track-link">→ Eigenen Auftrag verfolgen</a>
+          </div>
+          <figure class="usp-photo">
+            <img src="media/bild2.png" alt="Team in der Druckerei von bamadi">
+            <figcaption class="usp-photo-caption">Team hinter bamadi</figcaption>
+          </figure>
+        </div>
+      </div>
+    </div>
+    <hr class="usp-divider">
+    <div class="vt-grid">
+      <div class="vt-text">
+        <div class="eyebrow"><span>Wer wir sind</span></div>
+        <h2 class="h-md">Fulda, seit 1994 —<br>Digitaldruck &amp; Buchbinderei.</h2>
+        <p>Hinter bamadi steht <strong>Schwob Digitaldruck</strong>: ein inhabergeführter Familienbetrieb mit 32 Jahren Erfahrung und Ausbildungsbetrieb der IHK. Hier treffen aktuellste Digitaldrucktechnik und klassische Buchbinderei aufeinander — nicht als Gegensatz, sondern weil beides zusammen das beste Ergebnis liefert.</p>
+        <p>Druck, Bindung, Verpackung — alles unter einem Dach. Vom Druckbogen bis zur Fächerklebebindung: Präzision aus der Maschine, Finish aus der Werkstatt. So entstehen Arbeiten, die sich gut anfühlen und lange halten.</p>
+        <a href="mailto:hallo@bamadi.de" class="vt-link">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          <span>hallo@bamadi.de</span>
+        </a>
+      </div>
+      <div class="vt-side">
+        <figure class="vt-photo">
+          <img src="media/bild1.png" alt="Buchbinder bei der Arbeit in der Werkstatt in Fulda">
+          <figcaption class="vt-photo-caption">Echte Buchbinderei in Fulda</figcaption>
+        </figure>
+        <figure class="vt-photo vt-photo--dummy">
+          <img src="media/media-placeholder-produktionsdrucker.png" alt="Symbolbild: großformatiger Produktions-Digitaldruck" loading="lazy">
+          <figcaption class="vt-photo-caption">Produktions-Digitaldruck · KI-Platzhalter</figcaption>
+        </figure>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ (Akordeon) -->
+<section id="faq" class="view-section">
+  <div class="container">
+    <div class="faq-wrap">
+      <div class="faq-side">
+        <div class="eyebrow"><span>FAQ</span></div>
+        <h2 class="h-md">Häufige Fragen.</h2>
+        <p>Noch unsicher? Wir antworten in der Regel noch am selben Werktag.</p>
+        <a href="mailto:hallo@bamadi.de" class="faq-mail">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          <span>hallo@bamadi.de</span>
+        </a>
+      </div>
+      <div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">Bis wann muss ich für Express bestellen?<span class="faq-icon">+</span></button>
+          <div class="faq-a">Bis 14:00 Uhr — dann ist deine Arbeit morgen bei dir. Den Live-Countdown siehst du im Kalkulator.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">In welchem Format muss ich mein PDF einreichen?<span class="faq-icon">+</span></button>
+          <div class="faq-a">Am besten PDF/A mit eingebetteten Schriften, mind. 300 dpi. Standard-PDFs aus Word oder LaTeX funktionieren in aller Regel problemlos. Wir prüfen jede Datei vor dem Druck manuell.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">Kann ich mehrere Exemplare in verschiedenen Bindungen bestellen?<span class="faq-icon">+</span></button>
+          <div class="faq-a">Ja — du kannst mehrere Bindungsvarianten und Stückzahlen in einer Bestellung kombinieren. Der Preis wird jeweils sofort angezeigt.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">Was passiert, wenn meine Arbeit fehlerhaft ankommt?<span class="faq-icon">+</span></button>
+          <div class="faq-a">Druckfehler auf unserer Seite? Wir produzieren kostenlos nach — ohne Diskussion. Schreib uns mit Foto und deiner Auftragsnummer an [email protected] — wir produzieren kostenlos nach.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">Wie verfolge ich meinen Auftrag?<span class="faq-icon">+</span></button>
+          <div class="faq-a">Nach der Bestellung erhältst du deine Auftragsnummer per E-Mail. Damit kannst du unter bamadi.de/auftrag den Status jederzeit in Echtzeit einsehen.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">Welche Papierqualität wird verwendet?<span class="faq-icon">+</span></button>
+          <div class="faq-a">Alle Abschlussarbeiten werden auf 120 g/m² säurefreiem Papier gedruckt — archivierbar nach DIN, kein Durchscheinen, kein Vergilben. Bei Paperback-Varianten kann die Grammatur abweichen.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">Kann ich meine Bestellung stornieren?<span class="faq-icon">+</span></button>
+          <div class="faq-a">Bis zum Start des Drucks kannst du stornieren. Sobald die Produktion läuft, ist die Bestellung verbindlich. Bei Fragen einfach per E-Mail melden — wir antworten schnell.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">Was ist der Unterschied zwischen Fächerklebebindung und Fadenheftung?<span class="faq-icon">+</span></button>
+          <div class="faq-a">Bei der Fächerklebebindung wird der Buchblock mit Kaltleim (BB Superior) direkt am Rücken verklebt — das Buch liegt komplett flach auf und hält zuverlässig. Bei der Fadenheftung werden die Lagen zusätzlich mit Faden gehäkelt, bevor sie verleimt werden — das ist die langlebigste Bindung, die es gibt. Beide Varianten sind bei allen Hardcovers wählbar.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">Was bedeutet runder Rücken?<span class="faq-icon">+</span></button>
+          <div class="faq-a">Beim runden Rücken wird der Buchblock nach dem Binden leicht gerundet — wie bei hochwertigen Bibliotheksbänden. Das sieht nicht nur eleganter aus, sondern verbessert auch die Haltbarkeit. Optional bei allen Hardcovers.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">Kann ich DIN-A5-Pflichtexemplare für die Bibliothek bestellen?<span class="faq-icon">+</span></button>
+          <div class="faq-a">Ja. Softcover-Klebebindung in A5, beliebige Stückzahl — auch einzeln, ohne zusätzliche A4-Bestellung. Format wählbar im Kalkulator.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">Muss ich einen Account erstellen?<span class="faq-icon">+</span></button>
+          <div class="faq-a">Nein. Du bestellst ohne Registrierung. E-Mail-Adresse genügt für Bestätigung und Tracking.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">Was kostet der Versand?<span class="faq-icon">+</span></button>
+          <div class="faq-a">Versandkosten werden im Kalkulator transparent als eigene Position angezeigt. Abholung in Fulda ist kostenlos. Den genauen Versandpreis siehst du, bevor du bezahlst — keine Überraschungen.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA-Band (Jetzt konfigurieren) -->
+<section id="cta" class="view-section">
+  <div class="container">
+    <div class="cta-inner">
+      <div>
+        <h2>Abgabe in Sicht?<br>Lass es uns drucken.</h2>
+        <p>Konfigurieren, hochladen, bezahlen — Preis sofort sichtbar, Versand transparent.</p>
+      </div>
+        <a href="#bindungen" class="btn-dark">
+        Jetzt konfigurieren
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ========== Footer ========== -->
+<footer>
+  <div class="container">
+    <div class="ft-grid">
+      <div>
+        <span class="ft-logo">bamad<span class="acc">i</span></span>
+        <p class="ft-tag">Abschlussarbeiten von bamadi: Über 30 Jahre inhabergeführt in Fulda — modernster Digitaldruck, gebunden in echter Buchbinderei. Von der Ringbindung bis zur fadengehefteten Hardcover-Bindung. Bachelor, Master, Dissertation.</p>
+        <div class="ft-addr">
+          Schwob Digitaldruck · Inhaber Holger Schwob<br>
+          Michael-Henkel-Str. 4–6 · 36043 Fulda<br>
+          <a href="mailto:hallo@bamadi.de">hallo@bamadi.de</a> · +49 661 480047-0
+        </div>
+      </div>
+      <div class="ft-col"><h4>Produkt</h4><ul class="ft-links"><li><a href="#kalkulator">Kalkulator</a></li><li><a href="#bindungen">Bindungsarten</a></li><li><a href="#faq">Express-Lieferung</a></li><li><a href="auftrag.html">Auftragsstatus</a></li></ul></div>
+      <div class="ft-col"><h4>Service</h4><ul class="ft-links"><li><a href="#ueber-uns">Über uns</a></li><li><a href="#how">So funktioniert's</a></li><li><a href="#faq">FAQ</a></li><li><a href="#faq">PDF vorbereiten</a></li></ul></div>
+      <div class="ft-col"><h4>Rechtliches</h4><ul class="ft-links"><li><a href="#impressum">Impressum</a></li><li><a href="#datenschutz">Datenschutz</a></li><li><a href="#agb">AGB</a></li><li><a href="#widerruf">Widerruf</a></li></ul></div>
+    </div>
+    <div class="ft-bottom">
+      <span class="ft-copy">© 2026 bamadi.de — Ein Angebot von Schwob Digitaldruck, Fulda</span>
+      <div class="ft-socials"><a href="#">Instagram</a><a href="#">Google</a></div>
+    </div>
+  </div>
+</footer>
+
+<!-- 5. Legal-Modal (Impressum, Datenschutz, AGB, Widerruf — Tabs) -->
+<div id="legal-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="legal-modal-title">
+  <div class="legal-modal">
+    <div class="legal-modal-header">
+      <nav class="legal-tabs" role="tablist">
+        <button class="legal-tab active" role="tab" data-tab="impressum" aria-selected="true">Impressum</button>
+        <button class="legal-tab" role="tab" data-tab="datenschutz" aria-selected="false">Datenschutz</button>
+        <button class="legal-tab" role="tab" data-tab="agb" aria-selected="false">AGB</button>
+        <button class="legal-tab" role="tab" data-tab="widerruf" aria-selected="false">Widerruf</button>
+      </nav>
+      <button type="button" class="legal-modal-close" aria-label="Schließen" onclick="window.closeLegalOverlay && window.closeLegalOverlay()"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="legal-modal-body">
+      <div id="legal-impressum" class="legal-pane active" role="tabpanel">
+        <h2 id="legal-modal-title">Impressum</h2>
+        <p class="legal-meta">Angaben gemäß § 5 TMG</p>
+        <div class="legal-section">
+          <h3>Anbieter</h3>
+          <p><strong>Holger Schwob – Schwob Digitaldruck</strong><br>Michael-Henkel-Str. 4–6<br>36043 Fulda<br>Deutschland</p>
+          <h3>Kontakt</h3>
+          <p>Telefon: +49 661 9 777 17<br>E-Mail: <a href="mailto:hallo@bamadi.de">hallo@bamadi.de</a></p>
+          <h3>Umsatzsteuer-Identifikationsnummer</h3>
+          <p>Gemäß § 27a Umsatzsteuergesetz:<br>USt-IdNr.: DE263189591</p>
+          <h3>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h3>
+          <p>Holger Schwob<br>Michael-Henkel-Str. 4–6<br>36043 Fulda</p>
+        </div>
+        <hr>
+        <div class="legal-section">
+          <h3>EU-Streitschlichtung</h3>
+          <p>Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: <a href="https://ec.europa.eu/consumers/odr/" target="_blank" rel="noopener">https://ec.europa.eu/consumers/odr/</a></p>
+          <p>Unsere E-Mail-Adresse finden Sie oben im Impressum.</p>
+          <h3>Verbraucherstreitbeilegung</h3>
+          <p>Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p>
+        </div>
+        <hr>
+        <div class="legal-section">
+          <h3>Haftungshinweise</h3>
+          <h4>Haftung für Inhalte</h4>
+          <p>Als Diensteanbieter sind wir gemäß § 7 Abs. 1 TMG für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 TMG sind wir als Diensteanbieter jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen. Verpflichtungen zur Entfernung oder Sperrung der Nutzung von Informationen nach den allgemeinen Gesetzen bleiben hiervon unberührt.</p>
+          <h4>Haftung für Links</h4>
+          <p>Unser Angebot enthält Links zu externen Webseiten Dritter, auf deren Inhalte wir keinen Einfluss haben. Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter verantwortlich. Die verlinkten Seiten wurden zum Zeitpunkt der Verlinkung auf mögliche Rechtsverstöße überprüft. Bei Bekanntwerden von Rechtsverletzungen werden wir derartige Links umgehend entfernen.</p>
+          <h4>Urheberrecht</h4>
+          <p>Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht. Downloads und Kopien dieser Seite sind nur für den privaten, nicht kommerziellen Gebrauch gestattet. Soweit die Inhalte auf dieser Seite nicht vom Betreiber erstellt wurden, werden die Urheberrechte Dritter beachtet.</p>
+        </div>
+      </div>
+      <div id="legal-datenschutz" class="legal-pane" role="tabpanel" hidden>
+        <h2>Datenschutzerklärung</h2>
+        <p class="legal-meta">Stand: März 2026 · Gemäß DSGVO, BDSG und TMG</p>
+        <div class="legal-section">
+          <h3>§ 1 Verantwortlicher</h3>
+          <p>Verantwortlicher für die Datenverarbeitung auf dieser Website im Sinne der Datenschutz-Grundverordnung (DSGVO) ist:</p>
+          <p>Holger Schwob – Schwob Digitaldruck<br>Michael-Henkel-Str. 4–6<br>36043 Fulda<br>E-Mail: <a href="mailto:hallo@bamadi.de">hallo@bamadi.de</a><br>Telefon: +49 661 9 777 17</p>
+        </div>
+        <hr>
+        <div class="legal-section">
+          <h3>§ 2 Ihre Rechte als betroffene Person</h3>
+          <p>Sie haben gegenüber uns folgende Rechte hinsichtlich Ihrer personenbezogenen Daten:</p>
+          <ul>
+            <li><strong>Auskunftsrecht</strong> (Art. 15 DSGVO)</li>
+            <li><strong>Recht auf Berichtigung</strong> unrichtiger Daten (Art. 16 DSGVO)</li>
+            <li><strong>Recht auf Löschung</strong> (Art. 17 DSGVO)</li>
+            <li><strong>Recht auf Einschränkung der Verarbeitung</strong> (Art. 18 DSGVO)</li>
+            <li><strong>Recht auf Datenübertragbarkeit</strong> (Art. 20 DSGVO)</li>
+            <li><strong>Widerspruchsrecht</strong> gegen die Verarbeitung (Art. 21 DSGVO)</li>
+            <li><strong>Recht auf Widerruf</strong> einer erteilten Einwilligung (Art. 7 Abs. 3 DSGVO)</li>
+            <li><strong>Beschwerderecht</strong> bei einer Datenschutz-Aufsichtsbehörde (Art. 77 DSGVO)</li>
+          </ul>
+          <p>Zur Ausübung Ihrer Rechte wenden Sie sich an: <a href="mailto:hallo@bamadi.de">hallo@bamadi.de</a></p>
+          <p>Zuständige Aufsichtsbehörde: Der Hessische Beauftragte für Datenschutz und Informationsfreiheit, Postfach 3163, 65021 Wiesbaden</p>
+        </div>
+        <hr>
+        <div class="legal-section">
+          <h3>§ 3 Erhebung und Verarbeitung beim Besuch der Website</h3>
+          <h4>Server-Logfiles</h4>
+          <p>Beim Abruf unserer Website werden durch den Webserver automatisch sog. Server-Logfiles erhoben. Dazu gehören: IP-Adresse, Datum und Uhrzeit des Abrufs, aufgerufene Seite, Browsertyp und -version, Betriebssystem sowie Referrer-URL. Diese Daten dienen der Sicherstellung des Betriebs, der Fehleranalyse und der Sicherheit. Eine Zusammenführung mit anderen Datenquellen findet nicht statt. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einem sicheren Betrieb). Logfiles werden nach spätestens 30 Tagen gelöscht.</p>
+          <h4>Cookies und lokaler Speicher</h4>
+          <p>Unsere Website verwendet technisch notwendige Cookies und den lokalen Browserspeicher (localStorage) ausschließlich für den Betrieb des Kalkulators (z. B. Warenkorb-Zwischenspeicherung) und die Authentifizierung im internen Dashboard. Es werden keine Tracking- oder Marketing-Cookies gesetzt, ohne Ihre vorherige Einwilligung. Rechtsgrundlage für technisch notwendige Cookies ist Art. 6 Abs. 1 lit. f DSGVO.</p>
+          <h4>Analyse und Statistik</h4>
+          <p>Sofern eingesetzt, nutzen wir Plausible Analytics zur statistischen Auswertung des Nutzerverhaltens. Details zur Einbindung und ggf. Einwilligung werden über einen Cookie-Hinweis eingeholt.</p>
+        </div>
+        <hr>
+        <div class="legal-section">
+          <h3>§ 4 Bestellprozess und Vertragsabwicklung</h3>
+          <p>Zur Bearbeitung Ihrer Bestellung erheben und verarbeiten wir folgende personenbezogene Daten:</p>
+          <ul>
+            <li>Vor- und Nachname</li>
+            <li>Lieferanschrift und ggf. abweichende Rechnungsanschrift</li>
+            <li>E-Mail-Adresse</li>
+            <li>Telefonnummer (optional)</li>
+            <li>Bestelldetails (Produktkonfiguration, Seitenanzahl, Bindungsart etc.)</li>
+            <li>Hochgeladene Druckdatei (PDF Ihrer Abschlussarbeit) und ggf. Cover-Dateien</li>
+            <li>Zahlungsstatus (keine vollständigen Zahlungsdaten – siehe § 6 Stripe)</li>
+          </ul>
+          <p>Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung). Die Daten werden so lange gespeichert, wie es zur Auftragsabwicklung erforderlich ist und soweit steuer- und handelsrechtliche Aufbewahrungsfristen (i. d. R. 10 Jahre) nicht entgegenstehen.</p>
+          <p><strong>Hochgeladene Druckdateien</strong> werden ausschließlich zur Herstellung Ihres Auftrags verwendet. Sie werden nicht an Dritte weitergegeben und nach Abschluss des Auftrags innerhalb von 90 Tagen gelöscht, sofern keine gesetzlichen Aufbewahrungspflichten bestehen.</p>
+        </div>
+        <hr>
+        <div class="legal-section">
+          <h3>§ 5 Auftragsstatuseinsicht</h3>
+          <p>Über die Seite <em>auftrag.bamadi.de</em> (oder vergleichbare Unterseite) können Sie Ihren Auftragsstatus einsehen. Hierzu geben Sie Ihre Auftragsnummer und E-Mail-Adresse ein. Es wird keine dauerhafte Sitzung oder ein Kundenkonto angelegt; es handelt sich um einen lesenden Zugriff auf Ihre eigenen Bestelldaten. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO.</p>
+        </div>
+        <hr>
+        <div class="legal-section">
+          <h3>§ 6 Drittanbieter und Auftragsverarbeitung</h3>
+          <h4>Supabase (Datenbank und Speicher)</h4>
+          <p>Wir nutzen Supabase (Supabase Inc., 970 Toa Payoh North, #07-04, Singapur 318992 / europäische Server) als Backend-Datenbank und Dateispeicher. Dort werden Bestelldaten und hochgeladene Druckdateien gespeichert. Mit Supabase besteht ein Auftragsverarbeitungsvertrag (AVV) gemäß Art. 28 DSGVO. Daten werden auf Servern in der Europäischen Union (Frankfurt/EU-West) gespeichert. Weitere Informationen: <a href="https://supabase.com/privacy" target="_blank" rel="noopener">supabase.com/privacy</a></p>
+          <h4>Stripe (Zahlungsabwicklung)</h4>
+          <p>Zur Zahlungsabwicklung verwenden wir den Dienst Stripe (Stripe Payments Europe Ltd., 1 Grand Canal Street Lower, Grand Canal Dock, Dublin, Irland). Beim Bezahlvorgang werden Sie auf die gesicherten Seiten von Stripe weitergeleitet. Stripe erhebt und verarbeitet Ihre Zahlungsdaten (Kreditkarten- / Debitkarteninformationen) nach eigenen Datenschutzgrundsätzen. Wir selbst speichern keine vollständigen Zahlungsdaten. Rechtsgrundlage für die Übermittlung ist Art. 6 Abs. 1 lit. b DSGVO. Weitere Informationen: <a href="https://stripe.com/de/privacy" target="_blank" rel="noopener">stripe.com/de/privacy</a></p>
+          <h4>Google (Gmail API – E-Mail-Versand)</h4>
+          <p>Für den automatischen Versand von Auftragsbestätigungen und Statusbenachrichtigungen nutzen wir die Gmail API von Google Ireland Ltd., Gordon House, Barrow Street, Dublin 4, Irland. Dabei werden Ihre E-Mail-Adresse und der jeweilige E-Mail-Inhalt (Auftragsbestätigung, Statusmeldung) über die Google-Infrastruktur übermittelt. Mit Google besteht ein Auftragsverarbeitungsvertrag. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO. Weitere Informationen: <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">policies.google.com/privacy</a></p>
+          <h4>Google Fonts</h4>
+          <p>Diese Website lädt Schriftarten von Google Fonts (Google Ireland Ltd., Gordon House, Barrow Street, Dublin 4, Irland). Dabei wird Ihre IP-Adresse an Google übertragen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einheitlicher Darstellung). Sie können Google Fonts durch Verwendung eines Browser-Plugins blockieren oder JavaScript deaktivieren. Weitere Informationen: <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">policies.google.com/privacy</a></p>
+          <h4>Versanddienstleister (DHL / GLS)</h4>
+          <p>Zur Lieferung Ihrer Bestellung übermitteln wir Ihren Namen und Ihre Lieferanschrift an den beauftragten Versanddienstleister (i. d. R. DHL Paket GmbH, Charles-de-Gaulle-Str. 20, 53113 Bonn). Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO. Eine darüber hinausgehende Weitergabe findet nicht statt.</p>
+          <table>
+            <thead><tr><th>Anbieter</th><th>Zweck</th><th>Rechtsgrundlage</th><th>Datentransfer</th></tr></thead>
+            <tbody>
+              <tr><td>Supabase</td><td>Datenbank, Dateispeicher</td><td>Art. 6 I lit. b DSGVO, AVV</td><td>EU (Frankfurt)</td></tr>
+              <tr><td>Stripe</td><td>Zahlungsabwicklung</td><td>Art. 6 I lit. b DSGVO</td><td>EU (Irland)</td></tr>
+              <tr><td>Google (Gmail API)</td><td>E-Mail-Versand</td><td>Art. 6 I lit. b DSGVO, AVV</td><td>EU / ggf. USA (SCCs)</td></tr>
+              <tr><td>Google Fonts</td><td>Schriftdarstellung</td><td>Art. 6 I lit. f DSGVO</td><td>EU / ggf. USA (SCCs)</td></tr>
+              <tr><td>DHL / GLS</td><td>Versand</td><td>Art. 6 I lit. b DSGVO</td><td>Deutschland / EU</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <hr>
+        <div class="legal-section">
+          <h3>§ 7 E-Mail-Kommunikation und Bewertungsanfragen</h3>
+          <p>Nach Abschluss Ihrer Bestellung senden wir Ihnen automatisch eine Auftragsbestätigung sowie bei Statusänderungen Benachrichtigungs-E-Mails. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO.</p>
+          <p>Nach erfolgter Lieferung können wir Ihnen eine Anfrage zur Abgabe einer Bewertung zusenden. Rechtsgrundlage hierfür ist § 7 Abs. 3 UWG i. V. m. Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse). Sie können dem Empfang dieser E-Mails jederzeit widersprechen, indem Sie uns eine E-Mail an <a href="mailto:hallo@bamadi.de">hallo@bamadi.de</a> senden.</p>
+        </div>
+        <hr>
+        <div class="legal-section">
+          <h3>§ 8 Datensicherheit</h3>
+          <p>Unsere Website nutzt aus Sicherheitsgründen und zum Schutz der Übertragung personenbezogener Daten eine SSL/TLS-Verschlüsselung. Zugriff auf Bestelldaten im internen Dashboard ist durch einen Admin-Secret-Schlüssel geschützt und nicht öffentlich zugänglich.</p>
+          <p>Hochgeladene Kundendateien im Storage-Bucket sind nicht öffentlich zugänglich; der Zugriff erfolgt ausschließlich über zeitlich begrenzte, signierte URLs.</p>
+        </div>
+        <hr>
+        <div class="legal-section">
+          <h3>§ 9 Speicherdauer</h3>
+          <p>Personenbezogene Daten werden nur so lange gespeichert, wie dies für den jeweiligen Verarbeitungszweck erforderlich ist oder gesetzliche Aufbewahrungsfristen bestehen:</p>
+          <ul>
+            <li>Bestelldaten (Name, Adresse, Bestelldetails): 10 Jahre gemäß steuerrechtlicher Aufbewahrungspflicht (§ 147 AO)</li>
+            <li>Hochgeladene Druckdateien: 90 Tage nach Auftragsabschluss, dann automatische Löschung</li>
+            <li>E-Mail-Korrespondenz: 3 Jahre (handelsrechtliche Aufbewahrungspflicht)</li>
+            <li>Server-Logfiles: 30 Tage</li>
+          </ul>
+        </div>
+        <hr>
+        <div class="legal-section">
+          <h3>§ 10 Aktualität und Änderungen</h3>
+          <p>Diese Datenschutzerklärung ist aktuell gültig und hat den Stand März 2026. Durch die Weiterentwicklung unserer Website oder aufgrund geänderter gesetzlicher bzw. behördlicher Vorgaben kann es notwendig werden, diese Datenschutzerklärung zu ändern. Die jeweils aktuelle Version finden Sie stets auf dieser Seite.</p>
+        </div>
+      </div>
+      <div id="legal-agb" class="legal-pane" role="tabpanel" hidden>
+        <h2>Allgemeine Geschäftsbedingungen</h2>
+        <p class="legal-meta">Stand: März 2026</p>
+        <div class="legal-section">
+          <h3>§ 1 Geltungsbereich</h3>
+          <p>Diese Allgemeinen Geschäftsbedingungen (AGB) gelten für alle Bestellungen, die über den Online-Shop bamadi.de abgeschlossen werden. Anbieter ist Holger Schwob – Schwob Digitaldruck, Michael-Henkel-Str. 4–6, 36043 Fulda (nachfolgend „Verkäufer").</p>
+          <p>Die AGB gelten ausschließlich gegenüber Verbrauchern im Sinne des § 13 BGB. Verbraucher ist jede natürliche Person, die ein Rechtsgeschäft zu Zwecken abschließt, die überwiegend weder ihrer gewerblichen noch ihrer selbständigen beruflichen Tätigkeit zugerechnet werden können.</p>
+          <p>Abweichende Bedingungen des Kunden werden nicht anerkannt, es sei denn, der Verkäufer stimmt ihrer Geltung ausdrücklich schriftlich zu.</p>
+        </div>
+        <hr>
+        <div class="legal-section">
+          <h3>§ 2 Vertragsschluss</h3>
+          <p>Die Darstellung der Produkte im Online-Shop stellt kein rechtlich bindendes Angebot, sondern eine Aufforderung zur Bestellung (invitatio ad offerendum) dar.</p>
+          <p>Der Kunde gibt durch Absenden der Bestellung (Klick auf den Bestell-/Zahlungsbutton) ein verbindliches Angebot zum Kauf der im Warenkorb befindlichen Produkte ab. Unmittelbar nach Absenden der Bestellung erhält der Kunde eine automatische Bestätigungs-E-Mail über den Eingang der Bestellung. Diese E-Mail stellt noch keine Annahme des Angebots dar.</p>
+          <p>Ein Kaufvertrag kommt erst zustande, wenn der Verkäufer die Bestellung durch eine gesonderte Auftragsbestätigung annimmt oder mit der Ausführung der Bestellung beginnt. Der Verkäufer behält sich vor, Bestellungen ohne Angabe von Gründen abzulehnen, insbesondere bei offensichtlich fehlerhaften Dateien.</p>
+        </div>
+        <hr>
+        <div class="legal-section">
+          <h3>§ 3 Produkte und Konfiguration</h3>
+          <p>bamadi.de bietet den Druck und die Bindung von akademischen Abschlussarbeiten (Bachelor-, Masterarbeiten, Dissertationen) an. Der Kunde konfiguriert sein Produkt eigenverantwortlich im Online-Kalkulator (Seitenanzahl, Papier, Bindungsart, Cover u. a.) und lädt seine Druckdatei (PDF) hoch.</p>
+          <p>Der Kunde ist allein verantwortlich für die Korrektheit und Druckfähigkeit der übermittelten Dateien. Fehler in der Druckdatei (falsche Seitenanzahl, fehlerhafte PDF-Einstellungen, Auflösungsprobleme etc.) gehen nicht zu Lasten des Verkäufers, sofern dieser die Datei nicht ausdrücklich als druckfähig freigegeben hat.</p>
+          <p>Geringfügige Abweichungen in Farbe, Papierdicke oder Bindung, die drucktechnisch bedingt sind und innerhalb branchenüblicher Toleranzen liegen, begründen keinen Mangel.</p>
+        </div>
+        <hr>
+        <div class="legal-section">
+          <h3>§ 4 Preise und Zahlung</h3>
+          <p>Alle angegebenen Preise sind Endpreise und enthalten die gesetzliche Umsatzsteuer (derzeit 7 % auf Druckerzeugnisse). Versandkosten werden im Bestellprozess separat ausgewiesen.</p>
+          <p>Die Zahlung erfolgt wahlweise per Kreditkarte oder Debitkarte über den Zahlungsdienstleister Stripe Payments Europe Ltd. Der Rechnungsbetrag wird mit Abschluss der Bestellung fällig. Alternativ kann – sofern im Shop angeboten – eine Offline-Zahlung vereinbart werden.</p>
+          <p>Der Verkäufer behält sich bis zur vollständigen Bezahlung das Eigentum an der Ware vor. Die Produktion beginnt erst nach Zahlungseingang.</p>
+        </div>
+        <hr>
+        <div class="legal-section">
+          <h3>§ 5 Lieferung und Lieferzeiten</h3>
+          <p>Der Versand erfolgt innerhalb Deutschlands. Lieferzeiten sind im Bestellprozess angegeben und verstehen sich als Arbeitstage nach Zahlungseingang und Druckfreigabe. Als Arbeitstage gelten Montag bis Freitag, ausgenommen gesetzliche Feiertage.</p>
+          <p>Bei Express-Lieferung gilt: Bestellungen, die bis zum angegebenen Bestellschluss (i. d. R. 14:00 Uhr) eingehen und für die eine druckfähige Datei vorliegt, werden am folgenden Werktag versendet. Eine Garantie der Ankunft zu einem bestimmten Zeitpunkt kann gegenüber dem Versanddienstleister nicht übernommen werden.</p>
+          <p>Verzögerungen aufgrund höherer Gewalt, unverschuldeter Betriebsstörungen oder fehlerhafter Kundendateien bleiben vorbehalten.</p>
+          <p>Das Versandrisiko geht mit Übergabe an den Versanddienstleister auf den Kunden über. Dem Kunden wird eine Sendungsnummer zur Verfolgung mitgeteilt.</p>
+        </div>
+        <hr>
+        <div class="legal-section">
+          <h3>§ 6 Widerrufsrecht</h3>
+          <p><strong>Hinweis zum Ausschluss des Widerrufsrechts:</strong> Bei bamadi.de werden ausschließlich nach Kundenspezifikation individuell angefertigte Druckprodukte hergestellt. Das Widerrufsrecht ist gemäß § 312g Abs. 2 Nr. 1 BGB ausgeschlossen, sobald mit der Herstellung begonnen wurde. Näheres regelt die gesonderte <a href="#widerruf">Widerrufsbelehrung</a>.</p>
+        </div>
+        <hr>
+        <div class="legal-section">
+          <h3>§ 7 Gewährleistung und Mängelhaftung</h3>
+          <p>Es gelten die gesetzlichen Gewährleistungsrechte. Beruht ein Mangel auf einer fehlerhaften Druckdatei des Kunden, ist die Haftung des Verkäufers ausgeschlossen.</p>
+          <p>Mängel sind unverzüglich, spätestens innerhalb von 14 Tagen nach Lieferung, unter Beifügung von Fotos des Mangels per E-Mail an <a href="mailto:hallo@bamadi.de">hallo@bamadi.de</a> anzuzeigen. Der Verkäufer behält sich das Recht der Nacherfüllung (Nachlieferung oder Nachbesserung) vor.</p>
+        </div>
+        <hr>
+        <div class="legal-section">
+          <h3>§ 8 Pflichten des Kunden / Urheberrecht</h3>
+          <p>Der Kunde versichert, dass er über alle erforderlichen Rechte an der hochgeladenen Druckdatei verfügt und diese nicht gegen Rechte Dritter verstößt. Der Verkäufer übernimmt keine Überprüfung der Inhalte auf Rechtsverstöße.</p>
+          <p>Der Kunde stellt den Verkäufer von sämtlichen Ansprüchen Dritter frei, die aus einer Verletzung dieser Pflicht entstehen.</p>
+          <p>Die hochgeladenen Dateien werden ausschließlich zur Auftragsabwicklung gespeichert und nicht an Dritte weitergegeben. Näheres regelt die <a href="#datenschutz">Datenschutzerklärung</a>.</p>
+        </div>
+        <hr>
+        <div class="legal-section">
+          <h3>§ 9 Haftungsbeschränkung</h3>
+          <p>Der Verkäufer haftet unbeschränkt für Schäden aus der Verletzung des Lebens, des Körpers oder der Gesundheit sowie für vorsätzliche und grob fahrlässige Pflichtverletzungen.</p>
+          <p>Für leicht fahrlässige Verletzungen wesentlicher Vertragspflichten (Kardinalpflichten) ist die Haftung auf den vorhersehbaren, vertragstypischen Schaden beschränkt. Eine weitergehende Haftung für leichte Fahrlässigkeit ist ausgeschlossen.</p>
+        </div>
+        <hr>
+        <div class="legal-section">
+          <h3>§ 10 Datenschutz</h3>
+          <p>Die Erhebung, Verarbeitung und Nutzung personenbezogener Daten erfolgt gemäß der <a href="#datenschutz">Datenschutzerklärung</a> des Verkäufers.</p>
+        </div>
+        <hr>
+        <div class="legal-section">
+          <h3>§ 11 Schlussbestimmungen</h3>
+          <p>Es gilt das Recht der Bundesrepublik Deutschland unter Ausschluss des UN-Kaufrechts (CISG). Gegenüber Verbrauchern gilt diese Rechtswahl nur insoweit, als der Verbraucher dadurch nicht des Schutzes durch zwingende Bestimmungen des Rechts seines gewöhnlichen Aufenthaltsstaates beraubt wird.</p>
+          <p>Sofern der Kunde keinen allgemeinen Gerichtsstand in Deutschland hat oder nach Vertragsschluss seinen Wohnsitz ins Ausland verlegt hat, ist Gerichtsstand Fulda.</p>
+          <p>Sollten einzelne Bestimmungen dieser AGB unwirksam sein oder werden, bleibt die Wirksamkeit der übrigen Bestimmungen unberührt.</p>
+        </div>
+      </div>
+      <div id="legal-widerruf" class="legal-pane" role="tabpanel" hidden>
+        <h2>Widerrufsbelehrung &amp; Widerrufsformular</h2>
+        <p class="legal-meta">Stand: März 2026</p>
+        <div class="legal-highlight">
+          <p><strong>Wichtiger Hinweis vorab:</strong> Bei bamadi.de werden ausschließlich nach Ihren Vorgaben individuell angefertigte Druckprodukte hergestellt. Das Widerrufsrecht ist nach § 312g Abs. 2 Nr. 1 BGB für solche nach Kundenspezifikation gefertigten Waren ausgeschlossen, sobald wir mit der Herstellung Ihres Auftrags begonnen haben. Bitte lesen Sie die nachfolgende Belehrung vollständig.</p>
+        </div>
+        <div class="legal-section">
+          <h3>Widerrufsrecht</h3>
+          <p>Sie haben das Recht, binnen vierzehn Tagen ohne Angabe von Gründen diesen Vertrag zu widerrufen.</p>
+          <p>Die Widerrufsfrist beträgt vierzehn Tage ab dem Tag, an dem Sie oder ein von Ihnen benannter Dritter, der nicht der Beförderer ist, die Ware in Besitz genommen haben.</p>
+          <p>Um Ihr Widerrufsrecht auszuüben, müssen Sie uns (Holger Schwob – Schwob Digitaldruck, Michael-Henkel-Str. 4–6, 36043 Fulda, E-Mail: <a href="mailto:hallo@bamadi.de">hallo@bamadi.de</a>, Telefon: +49 661 9 777 17) mittels einer eindeutigen Erklärung (z. B. ein mit der Post versandter Brief oder eine E-Mail) über Ihren Entschluss, diesen Vertrag zu widerrufen, informieren. Sie können dafür das beigefügte Muster-Widerrufsformular verwenden, das jedoch nicht vorgeschrieben ist.</p>
+          <p>Zur Wahrung der Widerrufsfrist reicht es aus, dass Sie die Mitteilung über die Ausübung des Widerrufsrechts vor Ablauf der Widerrufsfrist absenden.</p>
+        </div>
+        <hr>
+        <div class="legal-section">
+          <h3>Ausschluss des Widerrufsrechts</h3>
+          <div class="legal-highlight">
+            <p><strong>Das Widerrufsrecht besteht nicht</strong> bei Verträgen zur Lieferung von Waren, die nicht vorgefertigt sind und für deren Herstellung eine individuelle Auswahl oder Bestimmung durch den Verbraucher maßgeblich ist oder die eindeutig auf die persönlichen Bedürfnisse des Verbrauchers zugeschnitten sind (§ 312g Abs. 2 Nr. 1 BGB).</p>
+          </div>
+          <p><strong>Alle bei bamadi.de bestellten Druckprodukte sind individuell angefertigt.</strong> Sie werden auf Basis Ihrer persönlichen Konfiguration (Seitenanzahl, Bindungsart, Papier, Cover-Gestaltung) und Ihrer individuellen Druckdatei (Ihre Abschlussarbeit) produziert. Sobald wir mit dem Druck Ihres Auftrags beginnen, ist das Widerrufsrecht daher ausgeschlossen.</p>
+          <p>Wir informieren Sie im Bestellprozess ausdrücklich über diesen Ausschluss und holen Ihre Zustimmung ein, dass Sie auf Ihr Widerrufsrecht verzichten und mit der sofortigen Produktionsaufnahme einverstanden sind.</p>
+          <p>Davon unberührt bleiben Ihre gesetzlichen Gewährleistungsrechte bei Mängeln, die wir zu vertreten haben.</p>
+        </div>
+        <hr>
+        <div class="legal-section">
+          <h3>Folgen des Widerrufs</h3>
+          <p>Wenn Sie diesen Vertrag widerrufen (soweit das Widerrufsrecht nicht ausgeschlossen ist), haben wir Ihnen alle Zahlungen, die wir von Ihnen erhalten haben, einschließlich der Lieferkosten (mit Ausnahme der zusätzlichen Kosten, die sich daraus ergeben, dass Sie eine andere Art der Lieferung als die von uns angebotene, günstigste Standardlieferung gewählt haben), unverzüglich und spätestens binnen vierzehn Tagen ab dem Tag zurückzuzahlen, an dem die Mitteilung über Ihren Widerruf dieses Vertrags bei uns eingegangen ist.</p>
+          <p>Für diese Rückzahlung verwenden wir dasselbe Zahlungsmittel, das Sie bei der ursprünglichen Transaktion eingesetzt haben, es sei denn, mit Ihnen wurde ausdrücklich etwas anderes vereinbart; in keinem Fall werden Ihnen wegen dieser Rückzahlung Entgelte berechnet.</p>
+          <p>Wir können die Rückzahlung verweigern, bis wir die Waren wieder zurückerhalten haben oder bis Sie den Nachweis erbracht haben, dass Sie die Waren zurückgesandt haben, je nachdem, welches der frühere Zeitpunkt ist.</p>
+          <p>Sie haben die Waren unverzüglich und in jedem Fall spätestens binnen vierzehn Tagen ab dem Tag, an dem Sie uns über den Widerruf dieses Vertrags unterrichten, an uns zurückzusenden oder zu übergeben. Die Frist ist gewahrt, wenn Sie die Waren vor Ablauf der Frist von vierzehn Tagen absenden.</p>
+          <p>Sie tragen die unmittelbaren Kosten der Rücksendung der Waren.</p>
+          <p>Sie müssen für einen etwaigen Wertverlust der Waren nur aufkommen, wenn dieser Wertverlust auf einen zur Prüfung der Beschaffenheit, Eigenschaften und Funktionsweise der Waren nicht notwendigen Umgang mit ihnen zurückzuführen ist.</p>
+        </div>
+        <hr>
+        <div class="legal-section">
+          <h3>Muster-Widerrufsformular</h3>
+          <p style="color:var(--g500);font-size:.85rem;margin-bottom:1rem">(Wenn Sie den Vertrag widerrufen wollen, füllen Sie bitte dieses Formular aus und senden Sie es zurück.)</p>
+          <div class="legal-formular">
+            <p>An:<br>Holger Schwob – Schwob Digitaldruck<br>Michael-Henkel-Str. 4–6<br>36043 Fulda<br>E-Mail: <a href="mailto:hallo@bamadi.de">hallo@bamadi.de</a></p>
+            <p style="margin-top:1.25rem">Hiermit widerrufe(n) ich/wir (*) den von mir/uns (*) abgeschlossenen Vertrag über den Kauf der folgenden Waren (*) / die Erbringung der folgenden Dienstleistung (*)</p>
+            <p>Bestellt am (*) _____________ / erhalten am (*) _____________</p>
+            <p>Name des/der Verbraucher(s): _________________________</p>
+            <p>Anschrift des/der Verbraucher(s): _________________________</p>
+            <p>Unterschrift des/der Verbraucher(s)<br>(nur bei Mitteilung auf Papier): _________________________</p>
+            <p>Datum: _____________</p>
+            <p style="color:var(--g500);font-size:.8rem;margin-top:1rem">(*) Unzutreffendes streichen.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+if ('IntersectionObserver' in window) {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('is-visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.08 });
+
+  document.querySelectorAll('.view-section').forEach(section => {
+    observer.observe(section);
+  });
+}
+</script>

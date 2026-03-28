@@ -1,6 +1,9 @@
-// Edge Function: admin-farbpaare – CRUD für Tabelle farbpaare (Dashboard, Admin)
+// Edge Function: admin-farbpaare – CRUD für cover_farbpaare (Dashboard, Admin)
 // Header: x-admin-secret = ADMIN_SECRET
-// GET: Liefert alle Einträge (sort_order). POST: Anlegen. PATCH: Aktualisieren. DELETE: Löschen (entfernt ID aus allen template_zuordnung.color_ids).
+// GET:    Alle Farbpaare (sort_order).
+// POST:   Neues Paar anlegen.
+// PATCH:  Paar aktualisieren.
+// DELETE: Paar löschen (cascade entfernt Einträge in cover_template_paletten automatisch).
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -16,164 +19,105 @@ function checkAdmin(req: Request): boolean {
   return expected.length > 0 && secret === expected
 }
 
+function json(data: unknown, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  })
+}
+
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: corsHeaders })
-  }
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders })
 
-  if (req.method !== 'GET' && req.method !== 'POST' && req.method !== 'PATCH' && req.method !== 'DELETE') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
-  }
+  const allowed = ['GET', 'POST', 'PATCH', 'DELETE']
+  if (!allowed.includes(req.method)) return json({ error: 'Method not allowed' }, 405)
+  if (!checkAdmin(req)) return json({ error: 'Unauthorized' }, 401)
 
-  if (!checkAdmin(req)) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
-  }
-
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  const supabase = createClient(supabaseUrl, serviceRoleKey)
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+  )
 
   try {
+    // ── GET ────────────────────────────────────────────────────────────────────
     if (req.method === 'GET') {
       const { data, error } = await supabase
-        .from('farbpaare')
+        .from('cover_farbpaare')
         .select('*')
         .order('sort_order', { ascending: true })
-
-      if (error) {
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
-      return new Response(JSON.stringify({ data: data ?? [] }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      if (error) return json({ error: error.message }, 500)
+      return json({ data: data ?? [] })
     }
 
+    // ── POST ───────────────────────────────────────────────────────────────────
     if (req.method === 'POST') {
-      const body = await req.json().catch(() => ({})) as {
-        farbbezeichnung?: string
-        rgb?: string
-        cmyk?: string
-        spotbezeichnung?: string
-        sort_order?: number
-      }
-      const farbbezeichnung = (body.farbbezeichnung ?? '').trim() || null
-      const rgb = (body.rgb ?? '').trim() || null
-      const cmyk = (body.cmyk ?? '').trim() ?? ''
-      const spotbezeichnung = (body.spotbezeichnung ?? '').trim() ?? ''
-      const sort_order = typeof body.sort_order === 'number' ? body.sort_order : 0
-      if (!farbbezeichnung || !rgb) {
-        return new Response(JSON.stringify({ error: 'farbbezeichnung und rgb sind erforderlich.' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
+      const body = await req.json().catch(() => ({})) as Record<string, unknown>
+      const name = String(body.name ?? '').trim()
+      const color1_rgb = String(body.color1_rgb ?? '').trim()
+      const color2_rgb = String(body.color2_rgb ?? '').trim()
+      if (!name || !color1_rgb || !color2_rgb) {
+        return json({ error: 'name, color1_rgb und color2_rgb sind erforderlich.' }, 400)
       }
       const { data, error } = await supabase
-        .from('farbpaare')
+        .from('cover_farbpaare')
         .insert({
-          farbbezeichnung,
-          rgb,
-          cmyk,
-          spotbezeichnung,
-          sort_order,
+          name,
+          color1_name:  String(body.color1_name  ?? '').trim(),
+          color1_rgb,
+          color1_cmyk:  String(body.color1_cmyk  ?? '').trim(),
+          color1_spot:  String(body.color1_spot  ?? '').trim(),
+          color2_name:  String(body.color2_name  ?? '').trim(),
+          color2_rgb,
+          color2_cmyk:  String(body.color2_cmyk  ?? '').trim(),
+          color2_spot:  String(body.color2_spot  ?? '').trim(),
+          sort_order:   typeof body.sort_order === 'number' ? body.sort_order : 0,
+          active:       body.active !== false,
         })
         .select()
         .single()
-      if (error) {
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
-      return new Response(JSON.stringify(data), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      if (error) return json({ error: error.message }, 500)
+      return json(data)
     }
 
+    // ── PATCH ──────────────────────────────────────────────────────────────────
     if (req.method === 'PATCH') {
-      const body = await req.json().catch(() => ({})) as {
-        id?: string
-        farbbezeichnung?: string
-        rgb?: string
-        cmyk?: string
-        spotbezeichnung?: string
-        sort_order?: number
-      }
-      const id = (body.id ?? '').trim()
-      if (!id) {
-        return new Response(JSON.stringify({ error: 'id erforderlich.' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
+      const body = await req.json().catch(() => ({})) as Record<string, unknown>
+      const id = String(body.id ?? '').trim()
+      if (!id) return json({ error: 'id erforderlich.' }, 400)
+
       const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
-      if (body.farbbezeichnung !== undefined) updates.farbbezeichnung = (body.farbbezeichnung ?? '').trim()
-      if (body.rgb !== undefined) updates.rgb = (body.rgb ?? '').trim()
-      if (body.cmyk !== undefined) updates.cmyk = (body.cmyk ?? '').trim()
-      if (body.spotbezeichnung !== undefined) updates.spotbezeichnung = (body.spotbezeichnung ?? '').trim()
+      const fields = [
+        'name',
+        'color1_name', 'color1_rgb', 'color1_cmyk', 'color1_spot',
+        'color2_name', 'color2_rgb', 'color2_cmyk', 'color2_spot',
+      ]
+      for (const f of fields) {
+        if (body[f] !== undefined) updates[f] = String(body[f] ?? '').trim()
+      }
       if (typeof body.sort_order === 'number') updates.sort_order = body.sort_order
+      if (typeof body.active === 'boolean') updates.active = body.active
 
       const { data, error } = await supabase
-        .from('farbpaare')
+        .from('cover_farbpaare')
         .update(updates)
         .eq('id', id)
         .select()
         .single()
-      if (error) {
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
-      return new Response(JSON.stringify(data), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      if (error) return json({ error: error.message }, 500)
+      return json(data)
     }
 
-    // DELETE: Zuerst aus allen template_zuordnung.color_ids entfernen, dann Zeile löschen.
-    const body = await req.json().catch(() => ({})) as { id?: string }
-    const id = (body.id ?? '').trim()
-    if (!id) {
-      return new Response(JSON.stringify({ error: 'id erforderlich.' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-    const { data: rows } = await supabase.from('template_zuordnung').select('template_filename, color_ids')
-    const toUpdate = (rows ?? []).filter((r: { color_ids?: string[] }) => Array.isArray(r.color_ids) && r.color_ids.includes(id))
-    for (const row of toUpdate) {
-      const colorIds = (row.color_ids as string[]).filter((cid: string) => cid !== id)
-      await supabase
-        .from('template_zuordnung')
-        .update({ color_ids: colorIds, updated_at: new Date().toISOString() })
-        .eq('template_filename', row.template_filename)
-    }
-    const { error: delError } = await supabase.from('farbpaare').delete().eq('id', id)
-    if (delError) {
-      return new Response(JSON.stringify({ error: delError.message }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-    return new Response(JSON.stringify({ ok: true }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
-  } catch (e) {
-    return new Response(
-      JSON.stringify({ error: 'Ein Fehler ist aufgetreten.' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    // ── DELETE ─────────────────────────────────────────────────────────────────
+    // cover_template_paletten hat ON DELETE CASCADE → wird automatisch bereinigt
+    const body = await req.json().catch(() => ({})) as Record<string, unknown>
+    const id = String(body.id ?? '').trim()
+    if (!id) return json({ error: 'id erforderlich.' }, 400)
+
+    const { error } = await supabase.from('cover_farbpaare').delete().eq('id', id)
+    if (error) return json({ error: error.message }, 500)
+    return json({ ok: true })
+
+  } catch {
+    return json({ error: 'Interner Fehler.' }, 500)
   }
 })

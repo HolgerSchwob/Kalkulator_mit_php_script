@@ -57,9 +57,10 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 .app {
-    max-width: 1600px;
+    max-width: min(1600px, 100%);
     margin: 0 auto;
-    padding: 0 16px 20px;
+    padding: 0 clamp(8px, 1.5vw, 20px) 20px;
+    box-sizing: border-box;
 }
 .header {
     padding: 16px 0 18px;
@@ -711,8 +712,32 @@ td .btn-link { white-space: nowrap; }
 .tz-pair-actions .btn-icon { padding: 4px 8px; font-size: 0.9rem; }
 .tz-pair-actions .tz-pair-delete { padding: 4px 10px; font-size: 0.8rem; }
 
-.tools-view { display: block; padding: 0 24px 32px; max-width: 1200px; margin: 0 auto; }
+/* Tools: Raster bis zum Rand; Tool-Liste bleibt lesbar zentriert, Iframe nutzt volle Breite */
+.tools-view {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    margin: 0;
+    max-width: none;
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    box-sizing: border-box;
+    min-height: calc(100vh - 88px);
+}
+/* Iframe geöffnet: „Tools“-Header ausblenden, mehr Platz für das Tool */
+.tools-view.tools-view--iframe > .header {
+    display: none;
+}
+.tools-view.tools-view--iframe {
+    min-height: calc(100vh - 56px);
+}
 .tools-view.hidden { display: none !important; }
+.tools-list-wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px 32px;
+}
 .tools-list-wrap .settings-hint { margin-bottom: 20px; }
 .tools-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
 .tool-card {
@@ -722,9 +747,28 @@ td .btn-link { white-space: nowrap; }
 .tool-card:hover { border-color: var(--navy); background: var(--color-border-light); }
 .tool-card-title { display: block; font-weight: 600; font-size: 1.1rem; margin-bottom: 8px; color: var(--navy); }
 .tool-card-desc { display: block; font-size: 0.9rem; color: var(--color-text-muted); line-height: 1.4; }
-.tools-frame-wrap { flex: 1; display: flex; flex-direction: column; min-height: 75vh; }
+.tools-frame-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: 0 clamp(4px, 1vw, 10px) 8px;
+    box-sizing: border-box;
+}
+.tools-view.tools-view--iframe .tools-frame-wrap {
+    padding: 0 4px 6px;
+}
 .tools-frame-wrap.hidden { display: none !important; }
-.tools-iframe { flex: 1; width: 100%; min-height: 70vh; border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-surface); }
+.tools-iframe {
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+    min-height: 320px;
+    height: 100%;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--color-bg);
+}
 
 /* ========== Statistik-Modal ========== */
 .stats-modal-overlay {

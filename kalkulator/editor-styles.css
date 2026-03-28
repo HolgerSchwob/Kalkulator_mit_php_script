@@ -16,7 +16,17 @@
     --border-color: var(--color-border);
     --border-radius: var(--radius-lg);
     --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
-    --shadow-md: var(--shadow-md);
+    /* Fallback, falls tokens.css nicht geladen ist (z. B. Testseite) */
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --editor-preview-bg: #e8ecf1;
+    --editor-canvas-checker: rgba(255, 255, 255, 0.45);
+    /* Kompaktere „Chrom“-Leisten (Header/Footer) – mehr Fläche für die Vorschau, ohne gequetscht zu wirken */
+    --editor-modal-header-py: 0.625rem;
+    --editor-modal-header-px: 1rem;
+    --editor-modal-title-size: 1.0625rem;
+    --editor-modal-body-padding: 1rem 1.25rem;
+    --editor-modal-footer-py: 0.625rem;
+    --editor-modal-footer-px: 1rem;
 }
 
 .editor-modal-overlay {
@@ -70,20 +80,23 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 1.5rem;
+    padding: var(--editor-modal-header-py) var(--editor-modal-header-px);
     border-bottom: 1px solid var(--border-color);
 }
 
 .editor-modal-header h2 {
-    font-size: 1.25rem;
+    font-size: var(--editor-modal-title-size);
     font-weight: 600;
+    line-height: 1.25;
+    margin: 0;
     color: var(--text-color-dark);
 }
 
 .editor-modal-body {
     flex-grow: 1;
+    min-height: 0;
     overflow: hidden;
-    padding: 1.5rem;
+    padding: var(--editor-modal-body-padding);
     background-color: var(--editor-body-bg);
     position: relative;
 }
@@ -116,13 +129,31 @@
 }
 
 .editor-modal-footer {
-    padding: 1rem 1.5rem;
+    padding: var(--editor-modal-footer-py) var(--editor-modal-footer-px);
     border-top: 1px solid var(--border-color);
     display: flex;
     justify-content: flex-end;
-    gap: 0.75rem;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
     background-color: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(5px);
+}
+
+/* Etwas flachere Aktions-Buttons in der Leiste (noch gut klickbar) */
+.editor-modal-footer .btn {
+    padding: 0.45rem 0.9rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    min-height: 2.25rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.editor-modal-header .close-btn {
+    font-size: 1.45rem;
+    padding: 0.1rem 0.35rem;
+    line-height: 1;
+    border-radius: 0.25rem;
 }
 
 /* ==========================================================================
@@ -132,49 +163,59 @@
 .hardcover-editor-container {
     display: flex;
     height: 100%;
-    gap: 1.5rem;
+    min-height: 0;
+    gap: 1.25rem;
     position: relative;
     z-index: 1;
 }
 
 .editor-preview-panel {
-    flex-grow: 1;
+    flex: 1 1 55%;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     background-color: var(--editor-bg);
     border-radius: 0.5rem;
     overflow: hidden;
     border: 1px solid var(--border-color);
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.08));
 }
 
 .editor-header-controls {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.75rem 1rem;
+    gap: 0.75rem;
+    padding: 0.625rem 1rem;
     border-bottom: 1px solid var(--border-color);
     flex-shrink: 0;
+    background: linear-gradient(180deg, var(--editor-bg) 0%, var(--secondary-color) 100%);
 }
 
 /* --- Template Selector Styles --- */
 .template-selector-wrapper {
     position: relative;
-    flex-grow: 1;
+    flex: 1 1 auto;
+    min-width: 0;
     display: flex;
     justify-content: center;
 }
 
 .template-title-btn {
-    font-size: 1rem;
-    font-weight: 500;
+    font-size: 0.9375rem;
+    font-weight: 600;
     color: var(--text-color-dark);
     background-color: var(--editor-bg);
     border: 1px solid var(--border-color);
-    border-radius: 0.375rem;
-    padding: 0.5rem 1.5rem;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1.25rem;
+    max-width: 100%;
+    min-width: 0;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .template-title-btn:hover {
@@ -183,13 +224,20 @@
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
+.template-title-btn:focus-visible {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px var(--primary-color-glow);
+}
+
 .template-selector-dropdown {
     position: absolute;
-    top: calc(100% + 5px);
+    top: calc(100% + 6px);
     left: 50%;
     transform: translateX(-50%);
-    width: 80%;
-    max-height: 400px;
+    width: min(560px, calc(100vw - 3rem));
+    min-width: min(280px, 100%);
+    max-height: min(420px, 50vh);
     overflow-y: auto;
     background-color: var(--editor-bg);
     border: 1px solid var(--border-color);
@@ -251,6 +299,11 @@
     height: 100%;
     object-fit: contain;
 }
+.template-thumb-placeholder {
+    font-size: 1.25rem;
+    color: var(--text-color-light);
+    user-select: none;
+}
 
 .template-item span {
     font-size: 0.8rem;
@@ -268,7 +321,15 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: transparent;
+    /* Leichtes Raster: helle Buchdecken bleiben sichtbar */
+    background-color: var(--editor-preview-bg);
+    background-image:
+        linear-gradient(45deg, var(--editor-canvas-checker) 25%, transparent 25%),
+        linear-gradient(-45deg, var(--editor-canvas-checker) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, var(--editor-canvas-checker) 75%),
+        linear-gradient(-45deg, transparent 75%, var(--editor-canvas-checker) 75%);
+    background-size: 12px 12px;
+    background-position: 0 0, 0 6px, 6px -6px, -6px 0;
     cursor: grab;
     overflow: hidden;
     transition: opacity 0.25s ease-in-out;
@@ -292,39 +353,144 @@
 
 .preview-footer {
     display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
     justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem 1rem;
+    gap: 0.75rem 1rem;
+    padding: 0.625rem 1rem 0.75rem;
     border-top: 1px solid var(--border-color);
     flex-shrink: 0;
+    background: var(--editor-bg);
 }
+
+.preview-footer-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.preview-footer-colors {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.preview-footer-zoom {
+    flex: 0 0 auto;
+    align-items: flex-end;
+}
+
+.preview-footer-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-color-light);
+    line-height: 1.2;
+}
+
 .color-palette-container {
     display: flex;
     justify-content: flex-start;
     align-items: center;
     flex-wrap: wrap;
     gap: 0.5rem;
+    min-height: 2rem;
 }
 .zoom-controls {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.375rem;
+    align-items: center;
 }
 
 
-/* --- Controls Panel --- */
+/* --- Controls Panel: fester Kopf, Formular scrollt --- */
 .editor-controls-panel {
-    width: 340px;
-    flex-shrink: 0;
-    overflow-y: auto;
-    padding-right: 0.5rem;
+    width: clamp(300px, 32vw, 400px);
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    background-color: var(--editor-bg);
+    box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.08));
 }
 
-/* --- Accordion and Form Fields --- */
+.editor-controls-panel-head {
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 0.5rem 0.75rem 0.45rem;
+    background: linear-gradient(180deg, var(--editor-bg) 0%, var(--secondary-color) 100%);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.editor-controls-panel-title {
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--text-color-dark);
+    line-height: 1.2;
+}
+
+.editor-controls-panel-subtitle {
+    margin: 0.125rem 0 0;
+    font-size: 0.6875rem;
+    color: var(--text-color-light);
+    line-height: 1.3;
+}
+
+.editor-controls-panel-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0.5rem 0.625rem 0.625rem;
+    scroll-behavior: smooth;
+    scrollbar-gutter: stable;
+}
+
+.hce-icon {
+    display: block;
+    flex-shrink: 0;
+    pointer-events: none;
+}
+
+.btn-icon-nav .hce-icon,
+.btn-zoom .hce-icon {
+    color: var(--text-color-light);
+}
+
+.btn-icon-nav:hover .hce-icon,
+.btn-zoom:hover .hce-icon {
+    color: var(--text-color-dark);
+}
+
+/* Zoom: etwas kleineres Icon + feinerer Strich (Lucide-Optik im runden Button) */
+.btn-zoom .hce-icon {
+    width: 18px;
+    height: 18px;
+    stroke-width: 1.75;
+}
+
+.hce-color-palette-empty {
+    margin: 0;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: var(--text-color-light);
+    max-width: 42ch;
+}
+
+/* --- Accordion and Form Fields (kompakt: weniger Scroll in der Seitenleiste) --- */
 .accordion {
     background-color: var(--editor-bg);
-    border-radius: 0.5rem;
+    border-radius: 0.375rem;
     border: 1px solid var(--border-color);
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     transition: all 0.3s ease;
 }
 .accordion[open] { 
@@ -332,9 +498,11 @@
     border-color: var(--color-border); 
 }
 .accordion summary {
-    font-size: 0.9rem;
+    font-size: 0.8125rem;
     font-weight: 600;
-    padding: 0.75rem 1rem;
+    padding: 0.45rem 1.75rem 0.45rem 0.625rem;
+    min-height: 2.25rem;
+    box-sizing: border-box;
     cursor: pointer;
     list-style: none;
     display: flex;
@@ -352,12 +520,12 @@
 }
 .accordion summary::after {
     content: '›';
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     color: var(--primary-color);
     transform: rotate(90deg);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: absolute;
-    right: 1rem;
+    right: 0.5rem;
     top: 50%;
     transform-origin: center;
     line-height: 0;
@@ -366,49 +534,76 @@
     transform: rotate(-90deg); 
 }
 .accordion-content {
-    padding: 0.75rem 1rem;
+    padding: 0.45rem 0.625rem 0.5rem;
     border-top: 1px solid var(--border-color);
 }
 .form-field { 
-    margin-bottom: 0.75rem; 
+    margin-bottom: 0.4375rem; 
 }
 .form-field:last-child { 
     margin-bottom: 0; 
 }
 .form-field label {
     display: block;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 500;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.125rem;
+    line-height: 1.25;
     color: var(--text-color-light);
 }
 .form-input {
     width: 100%;
-    padding: 0.5rem 0.75rem;
-    border-radius: 0.375rem;
+    padding: 0.3125rem 0.5rem;
+    min-height: 2rem;
+    font-size: 0.8125rem;
+    line-height: 1.35;
+    border-radius: 0.3125rem;
     border: 1px solid var(--border-color);
     transition: border-color 0.2s, box-shadow 0.2s;
     background-color: var(--editor-bg);
+}
+textarea.form-input {
+    min-height: 3.25rem;
+    resize: vertical;
+    padding-top: 0.35rem;
+    padding-bottom: 0.35rem;
 }
 .form-input:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px var(--primary-color-glow);
 }
+.form-input.has-warning {
+    border-color: var(--color-error);
+    box-shadow: var(--shadow-invalid);
+}
+.form-input.has-warning:focus {
+    border-color: var(--color-error);
+    box-shadow: var(--shadow-invalid-strong);
+}
+.form-field-hint {
+    font-size: 0.6875rem;
+    color: var(--color-error);
+    margin-top: 0.125rem;
+    line-height: 1.3;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
 
 /* --- Logo-specific Styles --- */
 .form-field-logo {
-    padding: 1rem;
+    padding: 0.5rem 0.625rem;
     border: 1px dashed var(--border-color);
-    border-radius: 0.5rem;
-    margin-top: 1rem;
+    border-radius: 0.375rem;
+    margin-top: 0.375rem;
 }
 
 .logo-input-container {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.75rem;
+    gap: 0.375rem;
+    margin-bottom: 0.4375rem;
 }
 
 .btn-upload {
@@ -423,10 +618,10 @@
     background: var(--secondary-color-hover);
     color: var(--text-color-light);
     border: none;
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     line-height: 1;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -440,14 +635,14 @@
 
 .logo-controls-wrapper {
     display: none; /* Hidden by default, shown via JS */
-    gap: 1rem;
-    align-items: center;
+    gap: 0.5rem;
+    align-items: flex-start;
 }
 
 .logo-preview-area {
     position: relative;
-    width: 100px; /* fixed width for control area */
-    height: 100px; /* fixed height for control area */
+    width: 76px;
+    height: 76px;
     flex-shrink: 0;
 }
 
@@ -458,8 +653,8 @@
     justify-content: center;
     align-items: center;
     background-color: var(--secondary-color);
-    border-radius: 0.375rem;
-    padding: 0.5rem;
+    border-radius: 0.3125rem;
+    padding: 0.3125rem;
     box-sizing: border-box;
 }
 .logo-preview-container img {
@@ -475,8 +670,8 @@
     width: 100%;
     height: 100%;
     display: grid;
-    grid-template-columns: 24px 1fr 24px;
-    grid-template-rows: 24px 1fr 24px;
+    grid-template-columns: 18px 1fr 18px;
+    grid-template-rows: 18px 1fr 18px;
     opacity: 0.2; /* Visible by default, but transparent */
     transition: opacity 0.2s ease;
 }
@@ -488,7 +683,7 @@
     background: rgba(255,255,255,0.7);
     backdrop-filter: blur(2px);
     border: 1px solid rgba(0,0,0,0.1);
-    font-size: 1rem;
+    font-size: 0.75rem;
     color: var(--text-color-dark);
     cursor: pointer;
     display: flex;
@@ -508,61 +703,74 @@
 
 .logo-slider-wrapper {
     width: 100%;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 .logo-slider-wrapper label {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 500;
     color: var(--text-color-light);
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.125rem;
     display: block;
 }
 
-input[type="range"] {
+.editor-controls-panel input[type="range"] {
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
-    height: 8px;
+    height: 6px;
     background: var(--secondary-color-hover);
-    border-radius: 5px;
+    border-radius: 4px;
     outline: none;
     transition: opacity .2s;
 }
-input[type="range"]::-webkit-slider-thumb {
+.editor-controls-panel input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
     background: var(--primary-color);
     cursor: pointer;
     border-radius: 50%;
     border: 2px solid white;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
-input[type="range"]::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
+.editor-controls-panel input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
     background: var(--primary-color);
     cursor: pointer;
     border-radius: 50%;
     border: 2px solid white;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
 
 /* --- Buttons and other controls --- */
-.color-pair-button, .btn, .btn-primary, .btn-secondary, .btn-icon, .close-btn {
-    /* Unchanged styles */
-}
 .color-pair-button {
-    width: 40px;
-    height: 28px;
+    width: 44px;
+    height: 30px;
     border: 2px solid var(--color-surface);
     outline: 1px solid var(--border-color);
     border-radius: 0.375rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: transform 0.15s ease, box-shadow 0.2s ease, outline-color 0.2s ease;
     position: relative;
     overflow: hidden;
+    flex-shrink: 0;
+}
+.color-pair-button:hover {
+    transform: scale(1.06);
+    outline-color: var(--color-border-input);
+}
+.color-pair-button:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+.color-pair-button.active {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 1px;
+    box-shadow: 0 0 0 1px var(--editor-bg), 0 2px 8px rgba(26, 58, 92, 0.35);
 }
 .btn {
     padding: 0.6rem 1.35rem;
@@ -576,17 +784,17 @@ input[type="range"]::-moz-range-thumb {
     box-shadow: 0 1px 2px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.1);
 }
 .btn-primary {
-    background-color: #1A3A5C;
-    color: #FFFFFF;
+    background-color: var(--primary-color);
+    color: var(--color-white, #FFFFFF);
     border: none;
 }
-.btn-primary:hover { background-color: #122843; }
+.btn-primary:hover { background-color: var(--primary-color-hover); }
 .btn-secondary {
     background-color: transparent;
-    border: 2px solid #1A3A5C;
-    color: #1A3A5C;
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
 }
-.btn-secondary:hover { background-color: #EBF2FA; }
+.btn-secondary:hover { background-color: var(--color-primary-light, #EBF2FA); }
 .btn-icon {
     background: var(--editor-bg); 
     border: 1px solid var(--border-color);
@@ -599,6 +807,14 @@ input[type="range"]::-moz-range-thumb {
     font-size: 1rem; 
     color: var(--text-color-light); 
     font-weight: bold;
+}
+
+/* Kompaktere Aktions-Buttons im Formularbereich */
+.editor-controls-panel .btn-upload {
+    padding: 0.4rem 0.65rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.25;
 }
 .close-btn {
     background: none; 
@@ -629,10 +845,36 @@ input[type="range"]::-moz-range-thumb {
         min-height: 0;
         overflow: auto;
     }
+    .preview-footer {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .preview-footer-zoom {
+        align-items: stretch;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 0.25rem;
+        border-top: 1px dashed var(--border-color);
+    }
+    .preview-footer-zoom .preview-footer-label {
+        flex-shrink: 0;
+    }
     .editor-controls-panel {
         width: 100%;
         flex: 1 1 auto;
         min-height: 200px;
-        overflow-y: visible;
+        max-height: min(50vh, 480px);
+        overflow: hidden;
+    }
+    .editor-controls-panel-body {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+}
+
+@media (min-width: 1200px) {
+    .editor-controls-panel {
+        width: clamp(320px, 28vw, 420px);
     }
 }

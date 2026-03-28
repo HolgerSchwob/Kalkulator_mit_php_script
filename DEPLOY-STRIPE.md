@@ -33,6 +33,16 @@ supabase functions deploy create-order-and-checkout
 supabase functions deploy stripe-webhook
 ```
 
+**Webhook und 401 „Missing authorization header“**  
+Supabase prüft Edge Functions standardmäßig mit JWT. Stripe sendet beim Webhook **keinen** `Authorization`-Header – dann antwortet das Gateway mit **401**, bevor Ihre Function läuft. Im Repo ist `supabase/config.toml` so gesetzt, dass nur die Webhook-Function **ohne** JWT-Zwang erreichbar ist:
+
+```toml
+[functions.stripe-webhook]
+verify_jwt = false
+```
+
+Die Absicherung erfolgt weiterhin über die **Stripe-Signatur** (`STRIPE_WEBHOOK_SIGNING_SECRET`). Nach Änderungen an `config.toml` die Function erneut deployen.
+
 ## 3. Secrets setzen
 
 Im Supabase-Dashboard: **Edge Functions** → **Secrets** (oder per CLI):
@@ -50,13 +60,13 @@ Im Supabase-Dashboard: **Edge Functions** → **Secrets** (oder per CLI):
 
 Ohne diese Secrets bleibt Stripe deaktivierbar über das Dashboard (Allgemein → „Stripe aktivieren“).
 
-## 4. Optional: Weiterleitung nach Zahlung
+## 4. Weiterleitung nach Zahlung (`PUBLIC_SITE_URL`)
 
-Damit Erfolgs-/Abbruch-URLs der Checkout-Session auf Ihre Seite zeigen:
+Nach erfolgreicher Zahlung leitet Stripe auf **`/auftrag.html`** auf **Ihrer** Domain weiter (nicht auf `*.supabase.co`).
 
-- **Edge Function Secrets**: `PUBLIC_SITE_URL` = z. B. `https://ihre-domain.de` (ohne Schrägstrich am Ende)
-
-Wenn nicht gesetzt, werden URLs aus dem Request abgeleitet.
+- **Empfohlen (Live):** Edge Function Secret **`PUBLIC_SITE_URL`** = z. B. `https://ihre-domain.de` (ohne Schrägstrich am Ende).
+- **Lokal:** Wenn das Secret fehlt, nutzt die Function den **`Origin`**-Header des Browsers (z. B. `http://localhost:5500`). Ohne gültige Basis-URL schlägt die Checkout-Erstellung mit einer klaren Fehlermeldung fehl.
+- **Nicht verwenden:** Früher wurde fälschlich die Projekt-ID als Host genutzt → **DNS-Fehler (NXDOMAIN)** nach Stripe. Mit aktuellem Code passiert das nicht mehr.
 
 ---
 

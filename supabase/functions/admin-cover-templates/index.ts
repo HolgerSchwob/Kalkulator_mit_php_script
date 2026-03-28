@@ -124,6 +124,75 @@ Deno.serve(async (req) => {
     }
 
     if (req.method === 'PATCH') {
+      const contentType = req.headers.get('content-type') ?? ''
+      // Multipart: SVG-Datei am gleichen storage_path ersetzen (z. B. SVG-Editor)
+      if (contentType.includes('multipart/form-data')) {
+        const formData = await req.formData()
+        const id = (formData.get('id') ?? '').toString().trim()
+        const file = formData.get('file')
+        if (!id) {
+          return new Response(JSON.stringify({ error: 'id erforderlich.' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          })
+        }
+        if (!file || !(file instanceof File)) {
+          return new Response(JSON.stringify({ error: 'Keine Datei im Feld "file".' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          })
+        }
+        const { data: existing, error: fetchErr } = await supabase
+          .from('cover_templates')
+          .select('storage_path, filename')
+          .eq('id', id)
+          .single()
+
+        if (fetchErr || !existing) {
+          return new Response(JSON.stringify({ error: 'Template nicht gefunden.' }), {
+            status: 404,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          })
+        }
+
+        const fileBytes = await file.arrayBuffer()
+        const { error: uploadErr } = await supabase.storage
+          .from(BUCKET)
+          .upload(existing.storage_path, fileBytes, { contentType: 'image/svg+xml', upsert: true })
+
+        if (uploadErr) {
+          return new Response(JSON.stringify({ error: 'Storage: ' + uploadErr.message }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          })
+        }
+
+        const { data: updated, error: updateErr } = await supabase
+          .from('cover_templates')
+          .update({ updated_at: new Date().toISOString() })
+          .eq('id', id)
+          .select()
+          .single()
+
+        if (updateErr) {
+          return new Response(JSON.stringify({ error: updateErr.message }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          })
+        }
+        const row = updated as { storage_path: string; [k: string]: unknown }
+        return new Response(
+          JSON.stringify({
+            ...row,
+            url: `${supabaseUrl}/storage/v1/object/public/${BUCKET}/${row.storage_path}`,
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        )
+      }
+
       const body = await req.json().catch(() => ({})) as {
         id?: string
         filename?: string

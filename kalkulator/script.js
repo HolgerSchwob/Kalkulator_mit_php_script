@@ -18,6 +18,7 @@ import { calculateVariantPrices, calculateExtrasPrices, calculateTotalOrderPrice
 import { initUiUtils } from './uiUtils.mjs';
 import { GlobalWorkerOptions } from './pdf.mjs';
 import { updateMainPdfStatusUI } from './bookBlockHandler.mjs';
+import { getSupabaseConfig } from './supabaseConfig.mjs';
 
 /** Escaped String für sichere Ausgabe in HTML (XSS-Schutz). */
 function escapeHtml(s) {
@@ -298,6 +299,7 @@ function cacheDomElements() {
         inquiryPaymentMethodStripeWrap: document.getElementById('inquiryPaymentMethodStripeWrap'),
         inquiryPaymentMethodOfflineOnly: document.getElementById('inquiryPaymentMethodOfflineOnly'),
         inquiryStepFinalReview: document.getElementById('inquiryStepFinalReview'),
+        finalReviewLead: document.getElementById('inquiryFinalLead'),
         inquiryFinalSummaryDetails: document.getElementById('inquiryFinalSummaryDetails'),
         inquiryFinalTotal: document.getElementById('inquiryFinalTotal'),
         inquiryAcceptTerms: document.getElementById('inquiryAcceptTerms'),
@@ -305,6 +307,9 @@ function cacheDomElements() {
         inquiryModalNextButton: document.getElementById('inquiryModalNextButton'),
         submitInquiryFormButton: document.getElementById('submitInquiryFormButton'),
         cancelInquiryModalButton: document.getElementById('cancelInquiryModalButton'),
+        inquiryB2bCode: document.getElementById('inquiryB2bCode'),
+        inquiryB2bValidateBtn: document.getElementById('inquiryB2bValidateBtn'),
+        inquiryB2bMessage: document.getElementById('inquiryB2bMessage'),
         
         // Confirmation Modal Elements
         confirmationModalOverlay: document.getElementById('confirmationModalOverlay'),
@@ -746,35 +751,36 @@ function applySortOrderToConfig(config) {
 async function loadCalcConfig() {
     supabaseUnavailable = false;
     try {
-        const supabaseRes = await fetch('../supabase.config.json?t=' + Date.now());
-        if (supabaseRes.ok) {
-            const supabaseConfig = await supabaseRes.json();
-            const baseUrl = (supabaseConfig.url || '').replace(/\/$/, '');
-            const anonKey = supabaseConfig.anonKey || supabaseConfig.key || '';
-            if (baseUrl && anonKey) {
-                try {
-                    const apiRes = await fetch(baseUrl + '/functions/v1/get-shop-config', {
-                        headers: {
-                            'Authorization': 'Bearer ' + anonKey,
-                            'apikey': anonKey
-                        }
-                    });
-                    if (apiRes.ok) {
-                        const data = await apiRes.json();
-                        if (data && data.config) {
-                            CALC_CONFIG = data.config;
-                            applySortOrderToConfig(CALC_CONFIG);
-                            return;
-                        }
+        const { url: baseUrl, anonKey } = await getSupabaseConfig();
+        if (baseUrl && anonKey) {
+            try {
+                const apiRes = await fetch(baseUrl + '/functions/v1/get-shop-config', {
+                    headers: {
+                        'Authorization': 'Bearer ' + anonKey,
+                        'apikey': anonKey
                     }
-                } catch (_) {
-                    console.warn("Supabase get-shop-config nicht erreichbar, Fallback auf config.json.");
+                });
+                if (apiRes.ok) {
+                    const data = await apiRes.json();
+                    if (data && data.config) {
+                        CALC_CONFIG = data.config;
+                        applySortOrderToConfig(CALC_CONFIG);
+                        return;
+                    }
                 }
-                supabaseUnavailable = true;
+            } catch (_) {
+                console.warn("Supabase get-shop-config nicht erreichbar, Fallback auf config.json.");
             }
+            supabaseUnavailable = true;
+        } else {
+            supabaseUnavailable = true;
         }
     } catch (e) {
         console.warn("Supabase-Config nicht verfügbar, Fallback auf config.json:", e.message);
+        supabaseUnavailable = true;
+    }
+    if (supabaseUnavailable) {
+        console.warn('[bamadi] Shop-Config: Fallback auf config.json — Einstellungen aus dem Dashboard (z. B. Stripe) gelten nur, wenn get-shop-config erfolgreich lädt. Netzwerk/Supabase-URL prüfen.');
     }
     const response = await fetch('../config.json');
     if (!response.ok) throw new Error(`Failed to load config.json: ${response.statusText}`);
@@ -880,6 +886,9 @@ async function main() {
             cancelButton: DOM.cancelInquiryModalButton,
             // Pass the loading overlay element to the handler
             loadingOverlay: DOM.loadingOverlay,
+            b2bCodeInput: DOM.inquiryB2bCode,
+            b2bValidateBtn: DOM.inquiryB2bValidateBtn,
+            b2bMessage: DOM.inquiryB2bMessage,
         });
 
         addInitialVariant(); 

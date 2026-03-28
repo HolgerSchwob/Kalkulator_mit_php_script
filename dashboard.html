@@ -125,7 +125,7 @@
                         <div class="settings-accordion-body-inner">
                             <section class="settings-section">
                                 <h2>E-Mail-Templates</h2>
-                                <p class="settings-hint">Jedes Template ist einem Auftragsstatus zugeordnet (template_key). Nur aktive Templates werden beim E-Mail-Versand verwendet. Platzhalter: <code>{{order_number}}</code>, <code>{{customer_name}}</code>, <code>{{status}}</code>. <button type="button" class="btn-link" id="btnShowEmailPlaceholders" title="Liste der Platzhalter anzeigen">Platzhalter anzeigen</button></p>
+                                <p class="settings-hint">Jedes Template ist einem Auftragsstatus oder einer Sonderkategorie zugeordnet (template_key, z. B. „Bewertungsanfrage“). Nur aktive Templates werden beim E-Mail-Versand verwendet. Platzhalter: <code>{{order_number}}</code>, <code>{{customer_name}}</code>, <code>{{customer_email}}</code>, <code>{{status}}</code>, <code>{{review_url}}</code> (für Bewertungslink). <button type="button" class="btn-link" id="btnShowEmailPlaceholders" title="Liste der Platzhalter anzeigen">Platzhalter anzeigen</button></p>
                                 <div id="settingsTemplatesLoading" style="display: none;">Lade Templates …</div>
                                 <div id="settingsTemplatesList" class="templates-list"></div>
                                 <div id="settingsTemplateFormContainer">
@@ -277,6 +277,10 @@
                     <a href="#" class="tool-card" id="toolCardSvgInkscapeToEditor" data-tool="svg-inkscape-to-editor">
                         <span class="tool-card-title">Inkscape → Editor (Postprozessor)</span>
                         <span class="tool-card-desc">SVG aus Inkscape laden (mit $$F1$$/$$S1$$-Markern, Ebenen, Codierfarben) → Konvertieren → Editor-taugliche SVG. Mit Mustertexten, -farben und -logos testen, ob alles korrekt zugeordnet wird.</span>
+                    </a>
+                    <a href="#" class="tool-card" id="toolCardSvgPersonalisierung" data-tool="svg-personalisierung">
+                        <span class="tool-card-title">SVG-Personalisierung</span>
+                        <span class="tool-card-desc">Inkscape-SVG laden, Schema aus Supabase zuweisen (data-label, Farbrollen), Editor-SVG und Produktion-SVG exportieren. Zentrale Pflege der Felder in Supabase.</span>
                     </a>
                 </div>
             </div>

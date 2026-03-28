@@ -15,6 +15,18 @@ body {
     margin-right: auto;
 }
 
+.payment-thanks {
+    background: #ecfdf5;
+    border: 1px solid #6ee7b7;
+    color: #065f46;
+    border-radius: var(--radius-lg);
+    padding: var(--space-4) var(--space-5);
+    margin-bottom: var(--space-5);
+    font-size: var(--text-base);
+    line-height: 1.5;
+}
+.payment-thanks.hidden { display: none; }
+
 .auftrag-header {
     margin-bottom: var(--space-5);
 }
@@ -53,7 +65,24 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
     color: var(--color-primary);
     border-radius: 20px;
     font-weight: 600;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.status-pay-line {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    margin-bottom: 1.25rem;
+}
+
+.status-sync-hint {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    margin-bottom: 1.25rem;
+    line-height: 1.5;
 }
 
 .section {

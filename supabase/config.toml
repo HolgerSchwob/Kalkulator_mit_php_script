@@ -1,0 +1,19 @@
+# Edge Functions: https://supabase.com/docs/guides/functions/function-configuration
+# Stripe-Webhooks senden keinen Bearer-Token — nur Stripe-Signatur. Ohne verify_jwt = false: HTTP 401.
+
+# Magic Link / OAuth: zusätzliche Redirect-URLs (lokal: supabase start).
+# Gehostetes Projekt (supabase.co): dieselben URLs unter Authentication → URL configuration → Redirect URLs eintragen.
+[auth]
+additional_redirect_urls = [
+  "http://127.0.0.1:3000/partner/index.html",
+  "http://127.0.0.1:3000/partner/",
+  "http://localhost:3000/partner/index.html",
+  "http://localhost:3000/partner/",
+]
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+# Cron/Scheduler ruft oft ohne JWT auf; Absicherung über x-admin-secret (ADMIN_SECRET).
+[functions.process-review-requests]
+verify_jwt = false

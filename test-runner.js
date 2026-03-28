@@ -4,8 +4,7 @@
  * aus der HTML-Seite und startet den Editor über die EditorFactory.
  */
 
-// Importiere die zentrale Funktion aus der EditorFactory
-import { openEditor } from './EditorFactory.mjs';
+import { openEditor } from './kalkulator/EditorFactory.mjs';
 
 // Warte, bis das gesamte DOM geladen ist, bevor Skripte ausgeführt werden
 document.addEventListener('DOMContentLoaded', () => {
@@ -42,9 +41,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 2. Erstelle das finale Konfigurationsobjekt für den Editor
         const editorConfig = {
-            bindingType: 'hardcover', // Dieser String entscheidet, welcher Editor geladen wird
+            bindingType: 'hardcover',
             spineWidth: spineWidth,
             initialData: initialData,
+            /** Lokale Vorlagen aus kalkulator/templates/hardcover/ (nicht Supabase) */
+            templatePath: 'kalkulator/templates/hardcover/',
+            templateSource: null,
+            dimensions: {
+                u1Width: 215,
+                u4Width: 215,
+                visibleCoverHeight: 302,
+                svgTotalWidth: 500,
+                svgTotalHeight: 330,
+                svgCenterX: 250,
+                falzZoneWidth: 8,
+            },
 
             /**
              * Callback-Funktion, die ausgeführt wird, wenn der Benutzer im Editor

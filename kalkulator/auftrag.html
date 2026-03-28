@@ -15,6 +15,9 @@
     <header class="auftrag-header">
         <a href="index.html" class="bamadi-logo bamadi-logo--primary bamadi-logo--md" aria-label="bamadi zum Kalkulator"> <span class="logo-text">bamad</span><span class="logo-accent">i</span> </a>
     </header>
+    <div id="paymentThanks" class="payment-thanks hidden" role="status">
+        <p><strong>Vielen Dank für Ihre Zahlung.</strong> Ihre Bestellung ist eingegangen. Nachfolgend sehen Sie den aktuellen Stand Ihres Auftrags.</p>
+    </div>
     <h1>Auftragsstatus</h1>
     <p>Geben Sie Ihre Auftragsnummer und E-Mail-Adresse ein, um Ihren Auftrag einzusehen. Keine Downloads – nur Übersicht.</p>
 
@@ -81,11 +84,45 @@
             return data;
         }
 
+        /** Nach Stripe-Rückkehr kann der Webhook 1–20 s brauchen – kurz pollen, bis payment_status = paid. */
+        let pollTimer = null;
+        async function pollUntilPaymentRecorded(orderNumber, email) {
+            if (pollTimer) clearInterval(pollTimer);
+            let attempts = 0;
+            const maxAttempts = 20;
+            pollTimer = setInterval(async () => {
+                attempts += 1;
+                if (attempts > maxAttempts) {
+                    clearInterval(pollTimer);
+                    pollTimer = null;
+                    return;
+                }
+                try {
+                    const o = await getOrder(orderNumber, email);
+                    if (o.payment_status === 'paid' || o.paid_at) {
+                        clearInterval(pollTimer);
+                        pollTimer = null;
+                        showResult(o);
+                    }
+                } catch (_) { /* weiter versuchen */ }
+            }, 2000);
+        }
+
         function escapeHtml(s) {
             if (s == null || s === undefined) return '';
             const t = document.createElement('span');
             t.textContent = s;
             return t.innerHTML;
+        }
+
+        function formatOrderStatus(order) {
+            const pay = order.payment_status;
+            const st = order.status || '';
+            if (pay === 'paid' || order.paid_at) {
+                if (st === 'Zahlung ausstehend') return 'Eingegangen';
+                return st || 'Eingegangen';
+            }
+            return st || '–';
         }
 
         function renderOrder(order) {
@@ -108,7 +145,18 @@
             ];
             const delivery = deliveryMethods.find(d => d.id === deliveryMethodId) || { name: '–', requiresAddress: false };
 
-            let html = '<div class="status-badge">Status: ' + escapeHtml(order.status || 'Eingegangen') + '</div>';
+            const urlPaid = new URLSearchParams(window.location.search).get('paid') === '1';
+            const payOk = order.payment_status === 'paid' || order.paid_at;
+            let html = '<div class="status-badge">Auftrag: ' + escapeHtml(formatOrderStatus(order)) + '</div>';
+            if (order.payment_status) {
+                const payLabel = payOk ? 'Bezahlt' : (order.payment_status === 'pending' ? 'Zahlung ausstehend' : order.payment_status);
+                html += '<div class="status-pay-line">Zahlung: <strong>' + escapeHtml(payLabel) + '</strong>';
+                if (order.paid_at) html += ' · ' + escapeHtml(new Date(order.paid_at).toLocaleString('de-DE'));
+                html += '</div>';
+            }
+            if (urlPaid && !payOk) {
+                html += '<p class="status-sync-hint">Die Online-Zahlung ist bei Stripe durchgelaufen; die Datenbank aktualisiert sich oft innerhalb weniger Sekunden. Bitte die Seite neu laden. Bleibt der Status „ausstehend“, prüfen Sie im Stripe-Dashboard unter Webhooks, ob Events an Ihre Supabase-URL zugestellt werden, und ob das Secret STRIPE_WEBHOOK_SIGNING_SECRET in Supabase mit dem Signing Secret des Webhooks übereinstimmt.</p>';
+            }
 
             html += '<div class="section"><h2>Ihre Bestellung</h2>';
             variants.forEach(v => {
@@ -163,6 +211,13 @@
             resultEl.innerHTML = renderOrder(order);
             resultEl.style.display = 'block';
             resultEl.classList.remove('hidden');
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('paid') === '1') {
+                params.delete('paid');
+                const qs = params.toString();
+                const path = window.location.pathname;
+                history.replaceState(null, '', qs ? `${path}?${qs}` : path);
+            }
         }
 
         async function handleSubmit(e) {
@@ -173,6 +228,7 @@
                 showError('Bitte Auftragsnummer und E-Mail eingeben.');
                 return;
             }
+            const justReturnedFromStripe = new URLSearchParams(window.location.search).get('paid') === '1';
             submitBtn.disabled = true;
             loading.style.display = 'block';
             loading.classList.remove('hidden');
@@ -183,6 +239,9 @@
             try {
                 const order = await getOrder(orderNumber, email);
                 showResult(order);
+                if (justReturnedFromStripe && order.payment_status !== 'paid' && !order.paid_at) {
+                    pollUntilPaymentRecorded(orderNumber, email);
+                }
             } catch (err) {
                 showError(err.message || 'Auftrag nicht gefunden oder E-Mail stimmt nicht überein.');
             } finally {
@@ -197,10 +256,19 @@
         const params = new URLSearchParams(window.location.search);
         const orderParam = params.get('order');
         const emailParam = params.get('email');
+        const paidParam = params.get('paid');
         if (orderParam && emailParam) {
-            document.getElementById('order_number').value = orderParam;
-            document.getElementById('email').value = emailParam;
-            handleSubmit(new Event('submit'));
+            if (paidParam === '1') {
+                const thanks = document.getElementById('paymentThanks');
+                if (thanks) thanks.classList.remove('hidden');
+            }
+            function safeDecode(s) {
+                if (!s) return '';
+                try { return decodeURIComponent(s); } catch { return s; }
+            }
+            document.getElementById('order_number').value = safeDecode(orderParam);
+            document.getElementById('email').value = safeDecode(emailParam);
+            void handleSubmit(new Event('submit'));
         }
     </script>
 </body>

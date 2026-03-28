@@ -10,6 +10,7 @@ export function GetEmailDetails() {
         '{{customer_name}} – Kundenname',
         '{{customer_email}} – E-Mail des Kunden',
         '{{status}} – aktueller Auftragsstatus',
+        '{{review_url}} – Link zur Bewertungsseite (Secret REVIEW_PAGE_URL in Supabase)',
     ];
     alert('Verfügbare Platzhalter in E-Mail-Templates:\n\n' + placeholders.join('\n'));
 }

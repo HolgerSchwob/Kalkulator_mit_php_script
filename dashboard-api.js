@@ -61,11 +61,19 @@ export async function updateOrder(orderId, payload) {
     return data;
 }
 
-export async function sendOrderEmail(orderId, type, statusText) {
+/**
+ * @param {string} orderId
+ * @param {'received'|'status'|'review_request'} type
+ * @param {string} [statusText] – bei type 'status'
+ * @param {{ resend?: boolean }} [opts] – bei Bewertungsanfrage: erneut senden trotz Log-Eintrag
+ */
+export async function sendOrderEmail(orderId, type, statusText, opts) {
+    const payload = { order_id: orderId, type, status: statusText || undefined };
+    if (opts && opts.resend) payload.allow_resend = true;
     const res = await fetch(state.config.supabaseUrl + '/functions/v1/send-order-email', {
         method: 'POST',
         headers: state.headers(),
-        body: JSON.stringify({ order_id: orderId, type, status: statusText || undefined }),
+        body: JSON.stringify(payload),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || (data.details || 'E-Mail-Versand fehlgeschlagen.'));

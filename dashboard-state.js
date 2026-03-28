@@ -10,7 +10,8 @@ export const TOOL_URLS = {
     'svg-productioner': 'svg%20productioner/svgproductioner.html',
     'preview-overlay-editor': 'tools/preview-overlay-editor/index.html',
     'svg-template-preflight': 'tools/svg-template-preflight/index.html',
-    'svg-inkscape-to-editor': 'tools/svg-inkscape-to-editor/index.html'
+    'svg-inkscape-to-editor': 'tools/svg-inkscape-to-editor/index.html',
+    'svg-personalisierung': 'dashboard-svg-editor.html?embed=1',
 };
 
 export const state = {

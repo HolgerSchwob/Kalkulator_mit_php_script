@@ -160,6 +160,17 @@
   </style>
 </head>
 <body>
+<!-- Echte Auftragsabfrage (Supabase) liegt unter kalkulator/auftrag.html; Stripe leitet mit ?order=&email= hierher -->
+<script>
+(function () {
+  try {
+    var p = new URLSearchParams(window.location.search);
+    if (p.get('order') && p.get('email')) {
+      window.location.replace('kalkulator/auftrag.html' + window.location.search + window.location.hash);
+    }
+  } catch (e) {}
+})();
+</script>
 
 <nav id="nav">
   <a href="index.html" class="nav-logo">bamad<span class="acc">i</span></a>

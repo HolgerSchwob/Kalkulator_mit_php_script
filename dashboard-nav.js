@@ -16,7 +16,9 @@ export function showToolsView() {
     document.getElementById('listView').classList.add('hidden');
     document.getElementById('detailPanel').classList.remove('visible');
     document.getElementById('settingsView').classList.add('hidden');
-    document.getElementById('toolsView').classList.remove('hidden');
+    const tv = document.getElementById('toolsView');
+    tv.classList.remove('hidden');
+    tv.classList.remove('tools-view--iframe');
     document.getElementById('toolsListWrap').classList.remove('hidden');
     document.getElementById('toolsFrameWrap').classList.add('hidden');
     document.getElementById('toolsFrame').src = '';
@@ -42,6 +44,7 @@ export function openTool(toolId) {
     const frame = document.getElementById('toolsFrame');
     const wrap = document.getElementById('toolsFrameWrap');
     document.getElementById('toolsListWrap').classList.add('hidden');
+    document.getElementById('toolsView').classList.add('tools-view--iframe');
     wrap.classList.remove('hidden');
     frame.src = url;
 
@@ -62,6 +65,7 @@ export function openTool(toolId) {
 }
 
 export function showToolsList() {
+    document.getElementById('toolsView').classList.remove('tools-view--iframe');
     document.getElementById('toolsListWrap').classList.remove('hidden');
     document.getElementById('toolsFrameWrap').classList.add('hidden');
     document.getElementById('toolsFrame').src = '';
