@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCG-Editor – bamadi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="dashboard-svg-editor.css">
+</head>
+<body>
+<div class="svg-editor-app">
+
+    <!-- ═══════════════════════════════════════════════════════════ HEADER -->
+    <header class="svg-editor-top">
+        <h1>SCG<span class="accent">-Editor</span></h1>
+
+        <div class="svg-editor-top-sep" aria-hidden="true"></div>
+
+        <!-- Template laden -->
+        <div class="svg-editor-supabase-bar" id="supabaseTemplateBar" aria-label="Templates laden">
+            <span class="svg-editor-supabase-label">Template</span>
+            <span class="svg-editor-status-dot" id="supabaseStatusDot" title="Supabase: nicht verbunden"></span>
+            <select id="supabaseTemplateGruppe" class="svg-editor-top-select" title="Gruppe filtern">
+                <option value="">Alle Gruppen</option>
+            </select>
+            <select id="supabaseTemplateSelect" class="svg-editor-top-select svg-editor-top-select--wide" title="Cover-Template aus Supabase" disabled>
+                <option value="">— Supabase verbinden —</option>
+            </select>
+            <button type="button" class="btn btn-primary" id="btnLoadSupabaseTemplate" disabled>Laden</button>
+            <button type="button" class="btn btn-icon" id="btnRefreshSupabaseTemplates" title="Liste neu laden" disabled>↻</button>
+            <div class="svg-editor-top-divider" aria-hidden="true"></div>
+            <label class="btn" for="fileSvg" title="SVG von Festplatte laden">📂 Lokal</label>
+            <input type="file" id="fileSvg" accept=".svg,image/svg+xml">
+        </div>
+
+        <div class="svg-editor-top-sep" aria-hidden="true"></div>
+
+        <!-- Export -->
+        <div class="svg-editor-export-group">
+            <span class="svg-editor-supabase-label">Export</span>
+            <button type="button" class="btn" id="btnExportEditor" title="Inkscape-kompatibel, mit Metadaten">↓ Editor</button>
+            <button type="button" class="btn btn-primary" id="btnExportProd" title="Schlank, Google Fonts inline">↓ Produktion</button>
+        </div>
+
+        <div class="svg-editor-top-sep" aria-hidden="true"></div>
+
+        <!-- Modus-Umschalter -->
+        <div class="svg-editor-mode-toggle" role="group" aria-label="Ansicht wechseln">
+            <button type="button" class="svg-editor-mode-btn active" data-mode="editor" title="Template bearbeiten">
+                ✏ Editor
+            </button>
+            <button type="button" class="svg-editor-mode-btn" data-mode="settings" title="Globale Einstellungen">
+                ⚙ Einstellungen
+            </button>
+        </div>
+
+        <p class="svg-editor-hint" id="topHint">Aus dem Dashboard öffnen, damit Supabase-Verbindung aktiv ist.</p>
+    </header>
+
+    <!-- ══════════════════════════════════════════════════ EDITOR-MODUS -->
+    <div class="svg-editor-main" id="panelModeEditor">
+
+        <!-- SVG-Vorschau -->
+        <section class="svg-editor-preview-column" aria-label="SVG-Vorschau">
+            <div class="svg-editor-preview-caption">
+                <span>Vorschau</span>
+                <span class="svg-editor-template-name" id="previewTemplateName"></span>
+                <span class="svg-editor-scale-hint" id="scaleHint"></span>
+            </div>
+            <div class="svg-editor-preview-wrap">
+                <div class="svg-editor-ruler-grid" id="rulerGrid">
+                    <div class="svg-editor-ruler-corner" aria-hidden="true">mm</div>
+                    <canvas id="rulerTop" class="svg-editor-ruler svg-editor-ruler--top" width="0" height="0"></canvas>
+                    <canvas id="rulerLeft" class="svg-editor-ruler svg-editor-ruler--left" width="0" height="0"></canvas>
+                    <div class="svg-editor-preview-host" id="svgPreviewHost">
+                        <!-- Empty State (verschwindet sobald SVG geladen) -->
+                        <div class="svg-editor-empty-state" id="previewEmptyState">
+                            <svg class="svg-editor-empty-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <rect x="8" y="4" width="36" height="48" rx="4" stroke="currentColor" stroke-width="2" fill="none"/>
+                                <polyline points="44,4 44,16 56,16" stroke="currentColor" stroke-width="2" fill="none"/>
+                                <line x1="18" y1="26" x2="38" y2="26" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                <line x1="18" y1="32" x2="34" y2="32" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                <line x1="18" y1="38" x2="30" y2="38" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            <p class="svg-editor-empty-title">Kein Template geladen</p>
+                            <p class="svg-editor-empty-sub">Template aus Supabase wählen oder SVG lokal öffnen.<br>Datei hier hineinziehen zum schnellen Öffnen.</p>
+                            <div class="svg-editor-empty-actions">
+                                <label class="btn btn-primary" for="fileSvgEmpty">📂 Lokal öffnen</label>
+                                <input type="file" id="fileSvgEmpty" accept=".svg,image/svg+xml">
+                            </div>
+                        </div>
+                        <!-- Drag-Overlay (über gesamtem Host, auch wenn SVG geladen) -->
+                        <div class="svg-editor-drop-overlay" id="dropOverlay" aria-hidden="true">
+                            <span>SVG loslassen zum Öffnen</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Seiten-Panel mit Tabs -->
+        <aside class="svg-editor-side" aria-label="Template-Eigenschaften">
+            <nav class="svg-editor-tabs" role="tablist">
+                <button type="button" class="active" data-tab="elements" role="tab" title="Text-IDs zuweisen">✏ Felder</button>
+                <button type="button" data-tab="colors"   role="tab" title="Farbrollen zuweisen">◈ Farben</button>
+                <button type="button" data-tab="palette"  role="tab" title="Welche Farbpaare kann der Kunde für dieses Template wählen?">🎨 Auswahl</button>
+                <button type="button" data-tab="preflight" role="tab" title="SVG gegen Schema prüfen">✓ Check</button>
+                <button type="button" data-tab="export"   role="tab" title="Exportieren / Hochladen">↑ Upload</button>
+            </nav>
+
+            <!-- ─── Tab: Felder ─────────────────────────────────────── -->
+            <div class="svg-editor-tab-panel" id="panelElements" role="tabpanel">
+                <p class="schema-status" id="schemaStatus">Schema: nicht geladen…</p>
+                <details class="elements-hint-details">
+                    <summary>ℹ Wie funktioniert die Felderkennung?</summary>
+                    <p class="elements-hint">Nur <strong>Textfelder</strong>. Gruppen: <strong>Vorderseite</strong> und <strong>Buchrücken</strong> (ID endet auf <code>-spine</code> oder beginnt mit <code>spine-</code>). <strong>Schema-Feld</strong> setzt <code>id</code> und <code>data-label</code>. <strong>Mehrzeilig</strong> = türkises ↵-Badge.</p>
+                </details>
+                <div id="elementsTableWrap"></div>
+            </div>
+
+            <!-- ─── Tab: Farben ─────────────────────────────────────── -->
+            <div class="svg-editor-tab-panel hidden" id="panelColors" role="tabpanel">
+                <p class="schema-status"><strong>color-1</strong> = Hauptfarbe &nbsp;·&nbsp; <strong>color-2</strong> = Akzentfarbe.<br>Jedes SVG-Element einer Farbkategorie zuweisen.</p>
+                <div id="farbpaareRefWrap" class="farbpaare-ref-wrap"></div>
+                <div id="colorsWrap" class="color-swatches"></div>
+            </div>
+
+            <!-- ─── Tab: Palette ────────────────────────────────────── -->
+            <div class="svg-editor-tab-panel hidden" id="panelPalette" role="tabpanel">
+                <p class="schema-status">Welche Farbpaare kann der Kunde im Shop für <em>dieses Template</em> wählen?<br>Globale Farbpaare verwalten: <strong>⚙ Einstellungen → Farbpaare</strong>.</p>
+                <div id="palettePanelWrap"></div>
+            </div>
+
+            <!-- ─── Tab: Check ──────────────────────────────────────── -->
+            <div class="svg-editor-tab-panel hidden" id="panelPreflight" role="tabpanel">
+                <p class="schema-status">Prüft das geladene SVG gegen Schema, Pflichtfelder und Namens-Konventionen.</p>
+                <button type="button" class="btn btn-primary btn-preflight" id="btnPreflightRun">✓ Prüfung ausführen</button>
+                <div id="preflightList" class="preflight-list"></div>
+            </div>
+
+            <!-- ─── Tab: Upload ─────────────────────────────────────── -->
+            <div class="svg-editor-tab-panel hidden" id="panelExport" role="tabpanel">
+                <div class="export-info-cards">
+                    <div class="export-info-card">
+                        <strong>↓ Editor-SVG</strong>
+                        <span>Mit Inkscape-Metadaten und Annotationen. Für Weiterarbeit im Editor.</span>
+                    </div>
+                    <div class="export-info-card export-info-card--primary">
+                        <strong>↓ Produktion-SVG</strong>
+                        <span>Schlanke Version: keine Metadaten, Fonts inline. Direkt in den Shop.</span>
+                    </div>
+                </div>
+                <div class="export-block">
+                    <label for="googleFontsUrl">Google Fonts CSS-URL (für Produktion)</label>
+                    <input type="text" id="googleFontsUrl" spellcheck="false" value="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap">
+                </div>
+                <div class="export-block svg-editor-upload-block" id="supabaseUploadBlock">
+                    <h3 class="svg-editor-upload-title">↑ In Supabase hochladen</h3>
+                    <p class="schema-status" id="supabaseUploadHint">Lädt das aktuelle SVG (Editor-Export mit Annotationen) in den Storage-Bucket <code>cover-templates</code>. Erfordert Admin-Secret.</p>
+                    <div id="supabaseUploadFormWrap">
+                        <div class="svg-editor-upload-modes">
+                            <label class="svg-editor-upload-radio"><input type="radio" name="supabaseUploadMode" value="new" id="supabaseUploadModeNew" checked> Neues Template</label>
+                            <label class="svg-editor-upload-radio"><input type="radio" name="supabaseUploadMode" value="replace" id="supabaseUploadModeReplace" disabled> Bestehenden Eintrag ersetzen</label>
+                        </div>
+                        <p class="schema-status ok hidden" id="supabaseUploadReplaceInfo"></p>
+                        <div id="supabaseUploadFieldsNew" class="svg-editor-upload-fields">
+                            <div class="svg-shop-form-row">
+                                <label for="supabaseUploadDisplayName">Anzeigename</label>
+                                <input type="text" id="supabaseUploadDisplayName" class="svg-shop-input" placeholder="z. B. Wave Modern" />
+                            </div>
+                            <div class="svg-shop-form-row">
+                                <label for="supabaseUploadGruppe">Gruppe</label>
+                                <select id="supabaseUploadGruppe" class="svg-shop-select"></select>
+                            </div>
+                            <div class="svg-shop-form-row">
+                                <label for="supabaseUploadSort">Sortierung</label>
+                                <input type="number" id="supabaseUploadSort" class="svg-shop-input" min="0" value="0" />
+                            </div>
+                            <div class="svg-shop-form-row">
+                                <label for="supabaseUploadFilename">Dateiname (.svg)</label>
+                                <input type="text" id="supabaseUploadFilename" class="svg-shop-input" placeholder="mein-template.svg" />
+                            </div>
+                        </div>
+                        <div class="svg-shop-actions">
+                            <button type="button" class="btn btn-primary btn-upload-cta" id="btnSupabaseUpload">↑ Jetzt hochladen</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Legacy: Schema-Panel (versteckt, JS-Kompatibilität) -->
+            <div class="svg-editor-tab-panel hidden" id="panelSchema" role="tabpanel" aria-hidden="true" hidden></div>
+        </aside>
+    </div>
+
+    <!-- ══════════════════════════════════════════ EINSTELLUNGEN-MODUS -->
+    <div class="svg-editor-settings" id="panelModeSettings" hidden>
+
+        <nav class="svg-editor-settings-nav" role="tablist" aria-label="Einstellungen">
+            <button type="button" class="svg-editor-settings-tab active" data-settings-tab="schema-fields" role="tab">
+                📋 Schema-Felder
+            </button>
+            <button type="button" class="svg-editor-settings-tab" data-settings-tab="farbpaare" role="tab">
+                🎨 Farbpaare
+            </button>
+        </nav>
+
+        <div class="svg-editor-settings-body">
+
+            <!-- ─── Einstellungen: Schema-Felder ──────────────────── -->
+            <div class="svg-editor-settings-panel" id="settingsPanelFields">
+                <div class="settings-panel-header">
+                    <h2>Schema-Felder <code>(cover_schema_elements)</code></h2>
+                    <p class="schema-status" id="schemaManageHint">Globale Liste aller personalisierbaren Felder. Aktive Felder erscheinen im Shop-Editor.</p>
+                </div>
+                <div class="schema-toolbar">
+                    <button type="button" class="btn btn-primary btn-sm" id="btnSchemaNewField">＋ Neues Feld</button>
+                    <button type="button" class="btn btn-sm" id="btnSchemaReload">↻ Neu laden</button>
+                </div>
+                <div id="schemaFieldsWrap" class="schema-scroll"></div>
+            </div>
+
+            <!-- ─── Einstellungen: Farbpaare ──────────────────────── -->
+            <div class="svg-editor-settings-panel hidden" id="settingsPanelFarbpaare">
+                <div class="settings-panel-header">
+                    <h2>Globale Farbpaare <code>(cover_farbpaare)</code></h2>
+                    <p class="schema-status ok">Jedes Farbpaar ist eine atomare Einheit: Farbe 1 + Farbe 2 mit RGB, CMYK und Spot-Bezeichnung.</p>
+                </div>
+                <button type="button" class="btn btn-primary btn-sm" id="btnSvgFarbpaarAdd">＋ Neues Farbpaar</button>
+                <div id="svgFarbpaareList" class="svg-farbpaare-list"></div>
+                <div id="svgFarbpaareForm" class="svg-farbpaare-form hidden"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════ Legacy-IDs (JS-Kompatibilität) -->
+    <div hidden aria-hidden="true" style="display:none">
+        <div id="schemaShopWrap"></div>
+        <div id="schemaSubFields"></div>
+        <div id="schemaSubPalettes"></div>
+        <div id="schemaSubShop"></div>
+        <div id="schemaPalettesWrap"></div>
+        <button id="btnPaletteNew"></button>
+        <p id="farbpaareRefWrap" style="display:none"></p>
+    </div>
+
+</div>
+<!-- Toast-Benachrichtigungen -->
+<div class="svg-editor-toast-container" id="toastContainer" aria-live="polite" aria-atomic="false"></div>
+
+<script type="module" src="dashboard-svg-editor.js"></script>
+</body>
+</html>
