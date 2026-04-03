@@ -20,6 +20,20 @@ function sanitizeFilename(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/^_+|_+$/g, '') || 'template'
 }
 
+/**
+ * Multipart-Datei aus FormData: In Deno ist der Wert oft ein Blob (kein `instanceof File`),
+ * sonst liefert die Prüfung nur auf File fälschlich 400.
+ */
+function getFormDataFile(entry: FormDataEntryValue | null): { blob: Blob; filename: string } | null {
+  if (entry == null || typeof entry === 'string') return null
+  if (!(entry instanceof Blob) || entry.size === 0) return null
+  const filename =
+    typeof (entry as File).name === 'string' && (entry as File).name
+      ? (entry as File).name
+      : 'template.svg'
+  return { blob: entry, filename }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: corsHeaders })
@@ -71,22 +85,25 @@ Deno.serve(async (req) => {
 
     if (req.method === 'POST') {
       const formData = await req.formData()
-      const file = formData.get('file') as File | null
-      if (!file || !(file instanceof File)) {
+      const filePart = getFormDataFile(formData.get('file'))
+      if (!filePart) {
         return new Response(JSON.stringify({ error: 'Keine Datei im Feld "file".' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
-      const display_name = (formData.get('display_name') ?? formData.get('displayName') ?? '').toString().trim() || file.name
+      const { blob, filename: rawUploadName } = filePart
+      const display_name =
+        (formData.get('display_name') ?? formData.get('displayName') ?? '').toString().trim() ||
+        rawUploadName
       const gruppe = (formData.get('gruppe') ?? '').toString().trim()
       const sort_order = parseInt((formData.get('sort_order') ?? '0').toString(), 10) || 0
-      const baseName = file.name.replace(/\.[^.]+$/, '') || 'template'
-      const ext = file.name.includes('.') ? file.name.slice(file.name.lastIndexOf('.')) : '.svg'
+      const baseName = rawUploadName.replace(/\.[^.]+$/, '') || 'template'
+      const ext = rawUploadName.includes('.') ? rawUploadName.slice(rawUploadName.lastIndexOf('.')) : '.svg'
       const filename = sanitizeFilename(baseName) + (ext.toLowerCase() === '.svg' ? '.svg' : ext)
       const storage_path = gruppe ? `${gruppe}/${filename}` : filename
 
-      const fileBytes = await file.arrayBuffer()
+      const fileBytes = await blob.arrayBuffer()
       const { error: uploadErr } = await supabase.storage
         .from(BUCKET)
         .upload(storage_path, fileBytes, { contentType: 'image/svg+xml', upsert: true })
@@ -129,14 +146,14 @@ Deno.serve(async (req) => {
       if (contentType.includes('multipart/form-data')) {
         const formData = await req.formData()
         const id = (formData.get('id') ?? '').toString().trim()
-        const file = formData.get('file')
+        const filePart = getFormDataFile(formData.get('file'))
         if (!id) {
           return new Response(JSON.stringify({ error: 'id erforderlich.' }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           })
         }
-        if (!file || !(file instanceof File)) {
+        if (!filePart) {
           return new Response(JSON.stringify({ error: 'Keine Datei im Feld "file".' }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -155,7 +172,7 @@ Deno.serve(async (req) => {
           })
         }
 
-        const fileBytes = await file.arrayBuffer()
+        const fileBytes = await filePart.blob.arrayBuffer()
         const { error: uploadErr } = await supabase.storage
           .from(BUCKET)
           .upload(existing.storage_path, fileBytes, { contentType: 'image/svg+xml', upsert: true })

@@ -20,6 +20,78 @@ const INTERESTING = new Set([
     'use',
 ]);
 
+// ─── Font-Embedding ───────────────────────────────────────────────────────────
+const IGNORE_FONTS = new Set([
+    'serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'system-ui',
+    'arial', 'helvetica', 'times', 'times new roman', 'georgia', 'verdana',
+    'courier', 'courier new', 'inherit', 'initial', 'unset',
+]);
+
+function normalizeFontWeight(w) {
+    const map = { bold: '700', normal: '400', regular: '400', light: '300',
+                  medium: '500', semibold: '600', 'extra-bold': '800', black: '900' };
+    return map[(w || '').toLowerCase()] ?? (/^\d+$/.test(String(w)) ? String(w) : '400');
+}
+
+function scanSvgFonts(doc) {
+    const fontMap = new Map();
+    for (const el of doc.querySelectorAll('text, tspan, flowPara, flowSpan')) {
+        const style = el.getAttribute('style') || '';
+        let family = el.getAttribute('font-family') || (style.match(/font-family:\s*([^;"]+)/)?.[1] ?? '');
+        family = family.split(',')[0].replace(/['"]/g, '').trim();
+        if (!family || IGNORE_FONTS.has(family.toLowerCase())) continue;
+        let weight = el.getAttribute('font-weight') || (style.match(/font-weight:\s*([^;"]+)/)?.[1]?.trim() ?? '400');
+        weight = normalizeFontWeight(weight);
+        const italic = el.getAttribute('font-style') === 'italic' || /font-style:\s*italic/.test(style);
+        if (!fontMap.has(family)) fontMap.set(family, new Set());
+        fontMap.get(family).add(weight + (italic ? 'italic' : ''));
+    }
+    return fontMap;
+}
+
+async function fetchGoogleFontsCss(family, variantsSet) {
+    const tuples = [...variantsSet].map(v => {
+        const italic = v.endsWith('italic') ? 1 : 0;
+        return [italic, parseInt(v.replace('italic', '')) || 400];
+    }).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    const axisStr = tuples.map(t => `${t[0]},${t[1]}`).join(';');
+    const url = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:ital,wght@${axisStr}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Google Fonts: ${res.status} für „${family}"`);
+    return res.text();
+}
+
+async function inlineWoff2Urls(cssText) {
+    const urlRe = /url\(['"]?(https:\/\/[^'")\s]+)['"]?\)/g;
+    const seen = new Map();
+    for (const [, url] of cssText.matchAll(urlRe)) {
+        if (!seen.has(url)) seen.set(url, url);
+    }
+    await Promise.all([...seen.keys()].map(async url => {
+        try {
+            const blob = await fetch(url).then(r => r.blob());
+            const b64 = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(blob); });
+            seen.set(url, b64);
+        } catch { /* keep original URL */ }
+    }));
+    return cssText.replace(/url\(['"]?(https:\/\/[^'")\s]+)['"]?\)/g, (_, url) => `url('${seen.get(url) ?? url}')`);
+}
+
+async function buildEmbeddedFontsCss(doc) {
+    const fontMap = scanSvgFonts(doc);
+    if (!fontMap.size) return '';
+    let css = '';
+    for (const [family, variants] of fontMap) {
+        try {
+            const raw = await fetchGoogleFontsCss(family, variants);
+            css += await inlineWoff2Urls(raw) + '\n';
+        } catch (e) {
+            console.warn('[FontEmbed]', e.message);
+        }
+    }
+    return css;
+}
+
 /** @type {{ supabaseUrl?: string, anonKey?: string, adminSecret?: string }} */
 let toolConfig = {};
 /** @type {SVGSVGElement | null} */
@@ -950,7 +1022,14 @@ async function submitSupabaseUpload() {
         showToast('Admin-Secret erforderlich – Tool über das Dashboard öffnen.', 'error');
         return;
     }
-    const svgStr = getEditorSvgString();
+    showToast('Fonts werden eingebettet…', 'info', 10000);
+    let svgStr;
+    try {
+        svgStr = await buildProductionSvgString();
+    } catch (e) {
+        showToast('SVG-Aufbereitung fehlgeschlagen: ' + (e?.message ?? String(e)), 'error');
+        return;
+    }
     if (!svgStr) {
         showToast('SVG-Inhalt leer.', 'error');
         return;
@@ -2186,7 +2265,7 @@ function loadSvgFromText(text, filename, sourceNote) {
     }
     host.appendChild(svgEl);
     host.classList.add('has-svg');
-    svgRoot = host.querySelector('svg');
+    svgRoot = svgEl;
 
     walkCollect(svgRoot, 'unknown', false);
 
@@ -2561,7 +2640,7 @@ function stripEditorOnlyClasses(doc) {
 /**
  * @param {Document} doc
  */
-function stripProductionSvg(doc, googleFontsUrl) {
+function stripProductionSvg(doc) {
     const svg = doc.documentElement;
     if (!svg || svg.localName !== 'svg') return;
 
@@ -2599,15 +2678,23 @@ function stripProductionSvg(doc, googleFontsUrl) {
         if (svg.hasAttribute(name)) svg.removeAttribute(name);
     }
 
-    const style = doc.createElementNS(SVG_NS, 'style');
-    const safeUrl = googleFontsUrl.replace(/\\/g, '/').replace(/'/g, "\\'");
-    style.textContent = `@import url('${safeUrl}');`;
-    svg.insertBefore(style, svg.firstChild);
 }
 
-function getGoogleFontsUrl() {
-    return (document.getElementById('googleFontsUrl').value || '').trim() ||
-        "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap";
+async function buildProductionSvgString() {
+    if (!svgRoot) return null;
+    const xml = new XMLSerializer().serializeToString(svgRoot);
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xml, 'image/svg+xml');
+    applyAnnotationsToDoc(doc);
+    stripEditorOnlyClasses(doc);
+    stripProductionSvg(doc);
+    const fontCss = await buildEmbeddedFontsCss(doc);
+    if (fontCss) {
+        const styleEl = doc.createElementNS(SVG_NS, 'style');
+        styleEl.textContent = fontCss;
+        doc.documentElement.insertBefore(styleEl, doc.documentElement.firstChild);
+    }
+    return new XMLSerializer().serializeToString(doc);
 }
 
 /**
@@ -2634,20 +2721,17 @@ function exportEditorSvg() {
     showToast('Editor-SVG exportiert.', 'success', 2500);
 }
 
-function exportProductionSvg() {
-    if (!svgRoot) {
-        showToast('Zuerst ein SVG laden.', 'warn');
-        return;
+async function exportProductionSvg() {
+    if (!svgRoot) { showToast('Zuerst ein SVG laden.', 'warn'); return; }
+    showToast('Fonts werden eingebettet…', 'info', 10000);
+    try {
+        const out = await buildProductionSvgString();
+        if (!out) { showToast('SVG-Inhalt leer.', 'error'); return; }
+        downloadBlob(out, 'cover-produktion.svg', 'image/svg+xml');
+        showToast('Produktion-SVG gespeichert – Fonts eingebettet.', 'success', 3500);
+    } catch (e) {
+        showToast('Export fehlgeschlagen: ' + (e?.message ?? String(e)), 'error');
     }
-    const xml = new XMLSerializer().serializeToString(svgRoot);
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(xml, 'image/svg+xml');
-    applyAnnotationsToDoc(doc);
-    stripEditorOnlyClasses(doc);
-    stripProductionSvg(doc, getGoogleFontsUrl());
-    const out = new XMLSerializer().serializeToString(doc);
-    downloadBlob(out, 'cover-produktion.svg', 'image/svg+xml');
-    showToast('Produktion-SVG exportiert (Fonts inline, Metadaten entfernt).', 'success', 3000);
 }
 
 /**

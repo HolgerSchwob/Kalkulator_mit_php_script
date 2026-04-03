@@ -2276,3 +2276,40 @@ html.svg-editor-embed body {
     padding-top: 6px;
     border-top: 1px solid var(--border);
 }
+
+/* ─── Export-Tab: Lokal & Upload ─────────────────────────────────────── */
+.export-section {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+}
+.export-section:last-child { border-bottom: none; }
+
+.export-section-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 0 0 10px;
+}
+
+.export-local-row {
+    display: flex;
+    gap: 8px;
+}
+
+.export-local-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 10px 8px;
+    font-size: 13px;
+    line-height: 1.2;
+}
+.export-local-btn small {
+    font-size: 10px;
+    opacity: .65;
+    font-weight: 400;
+}

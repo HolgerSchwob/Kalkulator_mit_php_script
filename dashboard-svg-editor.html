@@ -6,7 +6,7 @@
     <title>SCG-Editor – bamadi</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Roboto:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="dashboard-svg-editor.css">
 </head>
 <body>
@@ -34,17 +34,6 @@
             <label class="btn" for="fileSvg" title="SVG von Festplatte laden">📂 Lokal</label>
             <input type="file" id="fileSvg" accept=".svg,image/svg+xml">
         </div>
-
-        <div class="svg-editor-top-sep" aria-hidden="true"></div>
-
-        <!-- Export -->
-        <div class="svg-editor-export-group">
-            <span class="svg-editor-supabase-label">Export</span>
-            <button type="button" class="btn" id="btnExportEditor" title="Inkscape-kompatibel, mit Metadaten">↓ Editor</button>
-            <button type="button" class="btn btn-primary" id="btnExportProd" title="Schlank, Google Fonts inline">↓ Produktion</button>
-        </div>
-
-        <div class="svg-editor-top-sep" aria-hidden="true"></div>
 
         <!-- Modus-Umschalter -->
         <div class="svg-editor-mode-toggle" role="group" aria-label="Ansicht wechseln">
@@ -107,7 +96,7 @@
                 <button type="button" data-tab="colors"   role="tab" title="Farbrollen zuweisen">◈ Farben</button>
                 <button type="button" data-tab="palette"  role="tab" title="Welche Farbpaare kann der Kunde für dieses Template wählen?">🎨 Auswahl</button>
                 <button type="button" data-tab="preflight" role="tab" title="SVG gegen Schema prüfen">✓ Check</button>
-                <button type="button" data-tab="export"   role="tab" title="Exportieren / Hochladen">↑ Upload</button>
+                <button type="button" data-tab="export"   role="tab" title="Exportieren &amp; Hochladen">↑ Export</button>
             </nav>
 
             <!-- ─── Tab: Felder ─────────────────────────────────────── -->
@@ -140,29 +129,32 @@
                 <div id="preflightList" class="preflight-list"></div>
             </div>
 
-            <!-- ─── Tab: Upload ─────────────────────────────────────── -->
+            <!-- ─── Tab: Export & Upload ────────────────────────────── -->
             <div class="svg-editor-tab-panel hidden" id="panelExport" role="tabpanel">
-                <div class="export-info-cards">
-                    <div class="export-info-card">
-                        <strong>↓ Editor-SVG</strong>
-                        <span>Mit Inkscape-Metadaten und Annotationen. Für Weiterarbeit im Editor.</span>
-                    </div>
-                    <div class="export-info-card export-info-card--primary">
-                        <strong>↓ Produktion-SVG</strong>
-                        <span>Schlanke Version: keine Metadaten, Fonts inline. Direkt in den Shop.</span>
+
+                <!-- Lokal speichern -->
+                <div class="export-section">
+                    <p class="export-section-label">Lokal speichern</p>
+                    <div class="export-local-row">
+                        <button type="button" class="btn export-local-btn" id="btnExportEditor">
+                            ↓ Editor-SVG
+                            <small>Inkscape-Daten erhalten</small>
+                        </button>
+                        <button type="button" class="btn btn-primary export-local-btn" id="btnExportProd">
+                            ↓ Produktion
+                            <small>Fonts eingebettet · RIP-ready</small>
+                        </button>
                     </div>
                 </div>
-                <div class="export-block">
-                    <label for="googleFontsUrl">Google Fonts CSS-URL (für Produktion)</label>
-                    <input type="text" id="googleFontsUrl" spellcheck="false" value="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap">
-                </div>
-                <div class="export-block svg-editor-upload-block" id="supabaseUploadBlock">
-                    <h3 class="svg-editor-upload-title">↑ In Supabase hochladen</h3>
-                    <p class="schema-status" id="supabaseUploadHint">Lädt das aktuelle SVG (Editor-Export mit Annotationen) in den Storage-Bucket <code>cover-templates</code>. Erfordert Admin-Secret.</p>
+
+                <!-- Supabase hochladen -->
+                <div class="export-section svg-editor-upload-block" id="supabaseUploadBlock">
+                    <p class="export-section-label">Supabase hochladen</p>
+                    <p class="schema-status" id="supabaseUploadHint">Speichert die Produktion-SVG (Fonts eingebettet) im Storage-Bucket <code>cover-templates</code>. Erfordert Admin-Secret.</p>
                     <div id="supabaseUploadFormWrap">
                         <div class="svg-editor-upload-modes">
                             <label class="svg-editor-upload-radio"><input type="radio" name="supabaseUploadMode" value="new" id="supabaseUploadModeNew" checked> Neues Template</label>
-                            <label class="svg-editor-upload-radio"><input type="radio" name="supabaseUploadMode" value="replace" id="supabaseUploadModeReplace" disabled> Bestehenden Eintrag ersetzen</label>
+                            <label class="svg-editor-upload-radio"><input type="radio" name="supabaseUploadMode" value="replace" id="supabaseUploadModeReplace" disabled> Ersetzen</label>
                         </div>
                         <p class="schema-status ok hidden" id="supabaseUploadReplaceInfo"></p>
                         <div id="supabaseUploadFieldsNew" class="svg-editor-upload-fields">
@@ -184,7 +176,7 @@
                             </div>
                         </div>
                         <div class="svg-shop-actions">
-                            <button type="button" class="btn btn-primary btn-upload-cta" id="btnSupabaseUpload">↑ Jetzt hochladen</button>
+                            <button type="button" class="btn btn-primary btn-upload-cta" id="btnSupabaseUpload">↑ Hochladen</button>
                         </div>
                     </div>
                 </div>
