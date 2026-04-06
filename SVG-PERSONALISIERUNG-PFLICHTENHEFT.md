@@ -38,7 +38,7 @@ Alle Schema-Definitionen (Element-IDs, Feldbezeichnungen, Mustertexte, Farbpalet
 - **Layout-Gruppen (Pflicht):** `id="tpl-group-u1"` (Vorderseite), `id="tpl-group-spine"` (Buchrücken), `id="tpl-group-u4"` (Rückseite). Ohne passende Gruppe erscheint der Text im Webshop nicht im Formular.
 - **Nicht-formularrelevante Flächen/Linien:** freie IDs (z. B. `bg-u4-spine-wrap`, `deco-divider-horizontal`).
 
-**Legacy (nicht für neue Templates):** ältere Muster `front-text-*` / `spine-text-*` — siehe Migration `021_ssot_schema_element_ids_tpl.sql`.
+**Legacy (nicht für neue Templates):** ältere Muster `front-text-*` / `spine-text-*` — siehe Migration `024_ssot_schema_element_ids_tpl.sql`.
 
 **Beispiele:**
 ```
@@ -78,7 +78,7 @@ Der Postprocessor erkennt diese automatisch und schreibt `data-layer="front"` / 
 
 ### 2.1 `cover_schema_elements` – Das Vokabular aller personalisierbaren Felder
 
-**Single Source of Truth für IDs und Layout:** `docs/SSOT_SVG_COVER_TEMPLATES.md`. `element_id` entspricht der SVG-`id` (Präfix `tpl-`). Bestehende Deployments: Migration `021_ssot_schema_element_ids_tpl.sql` mappt alte `front-text-*`-IDs auf `tpl-*`.
+**Single Source of Truth für IDs und Layout:** `docs/SSOT_SVG_COVER_TEMPLATES.md`. `element_id` entspricht der SVG-`id` (Präfix `tpl-`). Bestehende Deployments: Migration `024_ssot_schema_element_ids_tpl.sql` mappt alte `front-text-*`-IDs auf `tpl-*`.
 
 ```sql
 CREATE TABLE cover_schema_elements (
@@ -108,7 +108,7 @@ CREATE TRIGGER cover_schema_elements_updated_at
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 ```
 
-**Initial-Daten (kanonisch `tpl-*`; historisch in Migration 020 zuerst `front-text-*`, dann 021 auf SSOT):**
+**Initial-Daten (kanonisch `tpl-*`; historisch in Migration 020 zuerst `front-text-*`, dann 024 auf SSOT):**
 ```sql
 INSERT INTO cover_schema_elements (element_id, label, placeholder, element_type, required, layer, sort_order) VALUES
   ('tpl-title',       'Titel der Arbeit',        'Auswirkungen der Digitalisierung auf...', 'text', true,  'front', 10),

@@ -14,7 +14,7 @@
 
 - **`element_id` in Supabase** = **`id`-Attribut** der zugehörigen SVG-Elemente (Text `text`, Logo `rect`).
 - Präfix für alle personalisierbaren Felder: **`tpl-`** — so filtert der Webshop-Editor zuverlässig (`text[id^="tpl-"]`, `rect[id^="tpl-logo"]`).
-- **Legacy-IDs** (`front-text-title`, …) sind durch Migration `021` ersetzt; in neuen Templates nicht mehr verwenden.
+- **Legacy-IDs** (`front-text-title`, …) sind durch Migration `024_ssot_schema_element_ids_tpl.sql` ersetzt; in neuen Templates nicht mehr verwenden.
 
 ---
 
