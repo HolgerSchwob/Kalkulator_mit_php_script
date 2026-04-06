@@ -26,42 +26,29 @@ Dieses Dokument beschreibt das vollständige SVG-Personalisierungssystem für Ha
 ```
 
 **Grundprinzip SSOT:**  
-Alle Schema-Definitionen (Element-IDs, Feldbezeichnungen, Mustertexte, Farbpaletten) leben in Supabase. Sowohl der Personalisierungseditor (intern) als auch der HardcoverEditor (Kundenseite) greifen auf dieselben Tabellen zu.
+Alle Schema-Definitionen (Element-IDs, Feldbezeichnungen, Mustertexte, Farbpaletten) leben in Supabase. Sowohl der Personalisierungseditor (intern) als auch der HardcoverEditor (Kundenseite) greifen auf dieselben Tabellen zu. **Kanonische ID- und Gruppenregeln:** `docs/SSOT_SVG_COVER_TEMPLATES.md`.
 
 ---
 
-## 1. Namenskonventionen (unveränderlich)
+## 1. Namenskonventionen
 
-### 1.1 Element-IDs im SVG
+### 1.1 Element-IDs im SVG (Webshop & Supabase)
 
-Format: `{layer}-{typ}-{name}`
+- **Personalisierbare Text-/Bildfelder:** Präfix **`tpl-`**, z. B. `tpl-title`, `tpl-name-spine`, `tpl-logo-main`. Die **`id`** muss mit **`cover_schema_elements.element_id`** übereinstimmen.
+- **Layout-Gruppen (Pflicht):** `id="tpl-group-u1"` (Vorderseite), `id="tpl-group-spine"` (Buchrücken), `id="tpl-group-u4"` (Rückseite). Ohne passende Gruppe erscheint der Text im Webshop nicht im Formular.
+- **Nicht-formularrelevante Flächen/Linien:** freie IDs (z. B. `bg-u4-spine-wrap`, `deco-divider-horizontal`).
 
-| Layer-Prefix | Bedeutung |
-|---|---|
-| `front-` | Vorderseite |
-| `spine-` | Rücken |
-| `back-` | Rückseite |
-
-| Typ | Verwendung |
-|---|---|
-| `text-` | Textelement |
-| `img-` | Bild/Logo-Zone |
-| `zone-` | Positionierungszone (unsichtbar, nur Bounding Box) |
-| `bg-` | Hintergrundfläche (kein Formularfeld) |
-| `deco-` | Dekoration (kein Formularfeld) |
+**Legacy (nicht für neue Templates):** ältere Muster `front-text-*` / `spine-text-*` — siehe Migration `021_ssot_schema_element_ids_tpl.sql`.
 
 **Beispiele:**
 ```
-front-text-title
-front-text-author
-front-text-degree
-front-text-university
-front-img-logo
-spine-text-title
-spine-text-author
-back-text-abstract
-front-bg-main
-front-deco-line
+tpl-title
+tpl-name
+tpl-logo-main
+tpl-title-spine
+tpl-abstract
+tpl-group-u1
+deco-divider-horizontal
 ```
 
 ### 1.2 Layer-Namen in Inkscape
@@ -80,7 +67,7 @@ Der Postprocessor erkennt diese automatisch und schreibt `data-layer="front"` / 
 
 | Attribut | Wert | Beschreibung |
 |---|---|---|
-| `data-label` | `front-text-title` | Verknüpfung mit Schema-Element-ID |
+| `data-label` | `tpl-title` | Verknüpfung mit Schema-Element-ID (oft gleich `id`) |
 | `data-layer` | `front` / `spine` / `back` | Automatisch aus Inkscape-Layer |
 | `data-color-role` | `color-1` / `color-2` | Farbrolle für Kundenpersonalisierung |
 | `data-placeholder` | `„Meine Bachelorarbeit..."` | Mustertext (aus Schema, wird eingefügt) |
@@ -91,10 +78,12 @@ Der Postprocessor erkennt diese automatisch und schreibt `data-layer="front"` / 
 
 ### 2.1 `cover_schema_elements` – Das Vokabular aller personalisierbaren Felder
 
+**Single Source of Truth für IDs und Layout:** `docs/SSOT_SVG_COVER_TEMPLATES.md`. `element_id` entspricht der SVG-`id` (Präfix `tpl-`). Bestehende Deployments: Migration `021_ssot_schema_element_ids_tpl.sql` mappt alte `front-text-*`-IDs auf `tpl-*`.
+
 ```sql
 CREATE TABLE cover_schema_elements (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  element_id      text UNIQUE NOT NULL,   -- z.B. "front-text-title"
+  element_id      text UNIQUE NOT NULL,   -- z.B. "tpl-title"
   label           text NOT NULL,          -- z.B. "Titel der Arbeit"
   placeholder     text NOT NULL DEFAULT '', -- Mustertext für Tests & Fallback
   element_type    text NOT NULL CHECK (element_type IN ('text','image','zone')),
@@ -119,20 +108,20 @@ CREATE TRIGGER cover_schema_elements_updated_at
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 ```
 
-**Initial-Daten:**
+**Initial-Daten (kanonisch `tpl-*`; historisch in Migration 020 zuerst `front-text-*`, dann 021 auf SSOT):**
 ```sql
 INSERT INTO cover_schema_elements (element_id, label, placeholder, element_type, required, layer, sort_order) VALUES
-  ('front-text-title',      'Titel der Arbeit',        'Auswirkungen der Digitalisierung auf...', 'text', true,  'front', 10),
-  ('front-text-subtitle',   'Untertitel',              'Eine empirische Untersuchung',              'text', false, 'front', 20),
-  ('front-text-author',     'Autor / Verfasser',       'Max Mustermann',                           'text', true,  'front', 30),
-  ('front-text-degree',     'Studiengang / Abschluss', 'Bachelorarbeit Wirtschaftsinformatik',     'text', false, 'front', 40),
-  ('front-text-university', 'Hochschule',              'Hochschule Fulda',                         'text', false, 'front', 50),
-  ('front-text-year',       'Jahr',                    '2024',                                     'text', false, 'front', 60),
-  ('front-img-logo',        'Logo (Hochschule)',       '',                                          'image',false, 'front', 70),
-  ('spine-text-title',      'Rücken: Titel',           'Auswirkungen der Digitalisierung',         'text', false, 'spine', 80),
-  ('spine-text-author',     'Rücken: Autor',           'Mustermann',                               'text', false, 'spine', 90),
-  ('spine-text-year',       'Rücken: Jahr',            '2024',                                     'text', false, 'spine', 100),
-  ('back-text-abstract',    'Kurzfassung (Rückseite)', 'Kurze Beschreibung der Arbeit...',         'text', false, 'back',  110);
+  ('tpl-title',       'Titel der Arbeit',        'Auswirkungen der Digitalisierung auf...', 'text', true,  'front', 10),
+  ('tpl-subtitle',    'Untertitel',              'Eine empirische Untersuchung',              'text', false, 'front', 20),
+  ('tpl-name',        'Autor / Verfasser',       'Max Mustermann',                           'text', true,  'front', 30),
+  ('tpl-degree',      'Studiengang / Abschluss', 'Bachelorarbeit Wirtschaftsinformatik',     'text', false, 'front', 40),
+  ('tpl-university',  'Hochschule',              'Hochschule Fulda',                         'text', false, 'front', 50),
+  ('tpl-year',        'Jahr',                    '2024',                                     'text', false, 'front', 60),
+  ('tpl-logo-main',   'Logo (Hochschule)',       '',                                          'image', false, 'front', 70),
+  ('tpl-title-spine', 'Rücken: Titel',           'Auswirkungen der Digitalisierung',         'text', false, 'spine', 80),
+  ('tpl-name-spine',  'Rücken: Autor',           'Mustermann',                               'text', false, 'spine', 90),
+  ('tpl-year-spine',  'Rücken: Jahr',            '2024',                                     'text', false, 'spine', 100),
+  ('tpl-abstract',    'Kurzfassung (Rückseite)', 'Kurze Beschreibung der Arbeit...',         'text', false, 'back',  110);
 ```
 
 ---
@@ -233,7 +222,7 @@ Tabelle aller `cover_schema_elements`, editierbar:
 
 | Spalte | Editierbar | Beschreibung |
 |---|---|---|
-| element_id | Ja (bei Neuanlage) | `front-text-title` etc. |
+| element_id | Ja (bei Neuanlage) | `tpl-title` etc. (siehe SSOT) |
 | label | Ja | Feldbezeichnung für Kunden |
 | placeholder | Ja | Mustertext / Fallback |
 | element_type | Ja | text / image / zone |
@@ -412,7 +401,7 @@ try {
 } catch (e) { /* Schema nicht verfügbar → kein Problem, Fallback greift */ }
 
 // Beim Bauen eines Formularfelds aus data-label:
-const elementId = svgEl.getAttribute('data-label');  // z.B. "front-text-title"
+const elementId = svgEl.getAttribute('data-label');  // z.B. "tpl-title"
 const schemaDef = schemaLookup[elementId];
 
 // Anzeige:

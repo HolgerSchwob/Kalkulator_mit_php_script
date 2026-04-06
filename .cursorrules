@@ -12,6 +12,8 @@ Wichtige Referenzdokumente
 
 Lies IMMER die folgenden Dokumente, bevor du SVG-Templates generierst oder den Editor-Code anpasst:
 
+SSOT (IDs, Schema, tpl-group-*): @docs/SSOT_SVG_COVER_TEMPLATES.md
+
 Für technische SVG-Regeln (BBox, Spine-Anker, Kaschiersicherheit): @docs/ai_skills/SKILL_01_TECHNICAL.md
 
 Für Design, Typografie & Zielgruppen: @docs/ai_skills/SKILL_02_DESIGN.md

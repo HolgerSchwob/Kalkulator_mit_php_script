@@ -397,7 +397,8 @@ export class HardcoverEditor extends BaseEditor {
 
         const accordionGroups = {
             front: { title: 'Beschriftung Vorderseite', elements: [], isOpen: true },
-            spine: { title: 'Beschriftung Buchrücken', elements: [], isOpen: false }
+            spine: { title: 'Beschriftung Buchrücken', elements: [], isOpen: false },
+            back: { title: 'Beschriftung Rückseite', elements: [], isOpen: false },
         };
 
         allTextElements.forEach(el => {
@@ -405,6 +406,8 @@ export class HardcoverEditor extends BaseEditor {
                 accordionGroups.front.elements.push(el);
             } else if (el.closest('#tpl-group-spine')) {
                 accordionGroups.spine.elements.push(el);
+            } else if (el.closest('#tpl-group-u4')) {
+                accordionGroups.back.elements.push(el);
             }
         });
 

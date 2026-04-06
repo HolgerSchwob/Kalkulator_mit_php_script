@@ -222,17 +222,23 @@
                                         <details class="settings-hint" style="margin-top:6px;">
                                             <summary>Konventionen für SVG-Templates (Felder &amp; IDs)</summary>
                                             <div style="margin-top:4px;font-size:0.9em;">
+                                                <p>Single Source of Truth: <code>docs/SSOT_SVG_COVER_TEMPLATES.md</code> (Supabase-<code>element_id</code> = SVG-<code>id</code>).</p>
+                                                <p><strong>Layout-Gruppen (Webshop-Formular)</strong></p>
+                                                <ul>
+                                                    <li>Texte in <code>#tpl-group-u1</code> (Vorderseite), <code>#tpl-group-spine</code> (Buchrücken), <code>#tpl-group-u4</code> (Rückseite).</li>
+                                                </ul>
                                                 <p><strong>Pflicht-Attribute im SVG</strong></p>
                                                 <ul>
-                                                    <li><code>data-label</code> an jedem <code>tpl-*</code>-Textfeld und jedem <code>tpl-logo-*</code>-Rechteck – definiert den Feldnamen im Kundenformular.</li>
+                                                    <li><code>data-label</code> an jedem <code>tpl-*</code>-Textfeld und jedem Logo-<code>rect</code> – definiert den Feldnamen im Kundenformular.</li>
                                                     <li><code>colorselector="color1"</code> oder <code>colorselector="color2"</code> an allen Elementen, die über die Farbpaare gesteuert werden.</li>
                                                     <li><code>data-multiline="true"</code> + <code>data-max-lines="N"</code> für mehrzeilige Textfelder (z.&nbsp;B. <code>tpl-topic</code>).</li>
                                                 </ul>
-                                                <p><strong>Standard-IDs</strong></p>
+                                                <p><strong>Standard-IDs (Auszug)</strong></p>
                                                 <ul>
-                                                    <li>Vorderseite: <code>tpl-title</code>, <code>tpl-subtitle</code>, <code>tpl-name</code>, <code>tpl-mat-nr</code>, <code>tpl-year</code>, <code>tpl-topic</code></li>
-                                                    <li>Buchrücken: <code>tpl-title-spine</code>, <code>tpl-name-spine</code>, <code>tpl-topic-spine</code></li>
-                                                    <li>Logoslots: <code>tpl-logo-Logo1</code>, <code>tpl-logo-Logo2</code> (weitere nach Bedarf möglich).</li>
+                                                    <li>Vorderseite: <code>tpl-title</code>, <code>tpl-subtitle</code>, <code>tpl-name</code>, <code>tpl-degree</code>, <code>tpl-year</code>, <code>tpl-topic</code>, …</li>
+                                                    <li>Buchrücken: <code>tpl-title-spine</code>, <code>tpl-name-spine</code>, <code>tpl-year-spine</code></li>
+                                                    <li>Rückseite: z.&nbsp;B. <code>tpl-abstract</code></li>
+                                                    <li>Logo: z.&nbsp;B. <code>tpl-logo-main</code> oder <code>tpl-logo-Logo1</code></li>
                                                 </ul>
                                             </div>
                                         </details>

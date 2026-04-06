@@ -24,7 +24,7 @@
     <rect id="bg-u1-bottom" x="295" y="180" width="205" height="150" colorselector="color1" style="fill:#2C3539;stroke:none" />
   </g>
 
-  <g inkscape:groupmode="layer" inkscape:label="Spine" id="layer-spine" data-layer="spine">
+  <g inkscape:groupmode="layer" inkscape:label="Spine" id="tpl-group-spine" data-layer="spine">
     <text id="tpl-title-spine" data-label="Titel (Buchrücken)" transform="rotate(-90, 250, 165)" text-anchor="start" style="font-family:'Montserrat',sans-serif;font-size:4.5px;font-weight:700;fill:#FFFFFF" x="250" y="165">
       <tspan x="250" y="165">Entwicklung einer Automatisierungsanlage</tspan>
     </text>
@@ -37,7 +37,7 @@
     </text>
   </g>
 
-  <g inkscape:groupmode="layer" inkscape:label="Front" id="layer-front" data-layer="front">
+  <g inkscape:groupmode="layer" inkscape:label="Front" id="tpl-group-u1" data-layer="front">
 
     <rect id="tpl-img-hero" data-label="Titelbild / Projektfoto" x="295" y="0" width="205" height="180" style="fill:#E0E0E0;stroke:none" />
 

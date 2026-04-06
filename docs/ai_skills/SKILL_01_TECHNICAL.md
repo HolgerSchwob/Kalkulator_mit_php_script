@@ -5,6 +5,8 @@ SVG-Buchdecken: Technisches Fundament & Web2Print (CORE)
 
 Dieses Modul definiert die technischen Leitplanken für den bamadi.de HardcoverEditor.
 
+**SSOT (IDs, Schema, Gruppen):** `docs/SSOT_SVG_COVER_TEMPLATES.md` — `element_id` in Supabase entspricht immer der SVG-`id`; personalisierbare Felder nutzen **`tpl-`**. Jeder Text muss in **`#tpl-group-u1`**, **`#tpl-group-spine`** oder **`#tpl-group-u4`** liegen, sonst fehlt er im Webshop-Formular.
+
 1. DOKUMENTSPEZIFIKATIONEN & MASZE
 
 1.1 Hardcover-Buchdecke (Vollumschlag: U4 + Spine + U1)

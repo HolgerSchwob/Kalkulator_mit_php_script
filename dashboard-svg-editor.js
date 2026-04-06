@@ -185,11 +185,12 @@ function setConnectionStatus(status, title) {
     if (title) dot.title = title;
 }
 
-/** Textfeld-Liste: nur zwei Bereiche – Vorderseite vs. Buchrücken */
-const TEXT_GROUP_ORDER = ['front', 'spine'];
+/** Textfeld-Liste: Vorderseite, Buchrücken, Rückseite (SSOT: tpl-group-u1 / -spine / -u4) */
+const TEXT_GROUP_ORDER = ['front', 'spine', 'back'];
 const TEXT_GROUP_LABELS = {
     front: 'Vorderseite',
     spine: 'Buchrücken',
+    back: 'Rückseite',
 };
 
 /** Reihenfolge der Schema-Layer im Dropdown (wird pro Akkordeon mit preferredLayer rotiert) */
@@ -214,7 +215,7 @@ function schemaLayerKey(se) {
 
 /**
  * HTML für &lt;select&gt;: kein Schema + optgroups nach layer, sort_order innerhalb der Gruppe.
- * @param {'front' | 'spine' | null} [preferredLayer] – Gruppe dieses Akkordeons zuerst (schneller finden)
+ * @param {'front' | 'spine' | 'back' | null} [preferredLayer] – Gruppe dieses Akkordeons zuerst (schneller finden)
  */
 function buildSchemaSelectOptionsHtml(preferredLayer) {
     const parts = ['<option value="">— kein Schema —</option>'];
@@ -229,7 +230,7 @@ function buildSchemaSelectOptionsHtml(preferredLayer) {
         arr.sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0));
     }
     let order = [...SCHEMA_LAYER_BASE_ORDER];
-    if (preferredLayer === 'front' || preferredLayer === 'spine') {
+    if (['front', 'spine', 'back'].includes(preferredLayer)) {
         order = [preferredLayer, ...SCHEMA_LAYER_BASE_ORDER.filter((k) => k !== preferredLayer)];
     }
     for (const layerKey of order) {
@@ -259,6 +260,16 @@ function isSpineTextRow(r) {
     const lower = id.toLowerCase();
     if (lower.startsWith('spine-')) return true;
     return /(?:^|[-_])spine$/i.test(id);
+}
+
+/**
+ * Zuordnung Textzeile → Akkordeon (Vorderseite / Buchrücken / Rückseite).
+ * @param {{ el: Element, layer: string }} r
+ */
+function textRowGroupKey(r) {
+    if ((r.layer || '').toLowerCase() === 'back') return 'back';
+    if (isSpineTextRow(r)) return 'spine';
+    return 'front';
 }
 
 const RULER_PX = 36;
@@ -764,8 +775,13 @@ function resolveColorRoleFromElement(el) {
 }
 
 function idConventionOk(id) {
-    if (!id || !id.trim()) return false;
-    return /^(front|spine|back)-(text|img|zone|bg|deco)-[a-z0-9-]+$/i.test(id.trim());
+    const s = (id || '').trim();
+    if (!s) return false;
+    // SSOT: Webshop (HardcoverEditor) — tpl-* für Texte und Bild-/Logo-Platzhalter
+    if (/^tpl-[a-z0-9-]+$/i.test(s)) return true;
+    // Legacy (Migration 020 / alte SVGs)
+    if (/^(front|spine|back)-(text|img|zone|bg|deco)-[a-z0-9-]+$/i.test(s)) return true;
+    return false;
 }
 
 function hasAdminSecret() {
@@ -2376,7 +2392,7 @@ function renderElementsTable() {
     let firstOpen = true;
     let html = '';
     for (const groupKey of TEXT_GROUP_ORDER) {
-        const rows = textRows.filter((r) => (isSpineTextRow(r) ? 'spine' : 'front') === groupKey);
+        const rows = textRows.filter((r) => textRowGroupKey(r) === groupKey);
         if (!rows.length) continue;
         const optsHtml = buildSchemaSelectOptionsHtml(groupKey);
         const openAttr = firstOpen ? ' open' : '';
@@ -2401,7 +2417,7 @@ function renderElementsTable() {
                 : '';
             html += `<tr data-uid-row="${escapeAttr(r.uid)}" class="${active}"${mlAttr}>`;
             html += `<td class="td-schema-select">${badgeHtml}<select class="row-label" data-uid="${escapeAttr(r.uid)}">${optsHtml}</select></td>`;
-            html += `<td><input type="text" class="row-id${idClass}" data-uid="${escapeAttr(r.uid)}" value="${escapeAttr(idVal)}" placeholder="z. B. front-text-title" title="Wird bei Schema-Auswahl gesetzt, manuell editierbar"></td>`;
+            html += `<td><input type="text" class="row-id${idClass}" data-uid="${escapeAttr(r.uid)}" value="${escapeAttr(idVal)}" placeholder="z. B. tpl-title" title="Wird bei Schema-Auswahl gesetzt, manuell editierbar (SSOT: docs/SSOT_SVG_COVER_TEMPLATES.md)"></td>`;
             html += '</tr>';
         }
         html += '</tbody></table></div></details>';
@@ -2416,7 +2432,7 @@ function renderElementsTable() {
         if (!row) return;
         sel.value = getSchemaSelectValue(row);
         sel.addEventListener('change', () => {
-            const wasSpine = isSpineTextRow(row);
+            const wasGroup = textRowGroupKey(row);
             const val = sel.value.trim();
             const idInput = wrap.querySelector(`input.row-id[data-uid="${uid}"]`);
             if (val) {
@@ -2441,8 +2457,8 @@ function renderElementsTable() {
                     idInput.classList.add('id-warn');
                 }
             }
-            const nowSpine = isSpineTextRow(row);
-            if (wasSpine !== nowSpine) {
+            const nowGroup = textRowGroupKey(row);
+            if (wasGroup !== nowGroup) {
                 renderElementsTable();
             }
             renderColors();
@@ -2454,7 +2470,7 @@ function renderElementsTable() {
             const uid = inp.getAttribute('data-uid');
             const row = elementRows.find((x) => x.uid === uid);
             if (!row) return;
-            const wasSpine = isSpineTextRow(row);
+            const wasGroup = textRowGroupKey(row);
             const v = inp.value.trim();
             if (v) {
                 row.el.setAttribute('id', v);
@@ -2471,8 +2487,8 @@ function renderElementsTable() {
                 row.el.removeAttribute('id');
             }
             inp.classList.toggle('id-warn', !idConventionOk(v));
-            const nowSpine = isSpineTextRow(row);
-            if (wasSpine !== nowSpine) {
+            const nowGroup = textRowGroupKey(row);
+            if (wasGroup !== nowGroup) {
                 renderElementsTable();
             }
         });
