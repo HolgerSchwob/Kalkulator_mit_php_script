@@ -89,4 +89,25 @@ Zusätzliche projektspezifische Felder: weiterhin **`tpl-` + Kleinbuchstaben/Zif
 
 ---
 
+## 9. Ablauf: KI → `Templates/ai_generated` → Dashboard → Supabase → Webshop
+
+Zielbild: Du lässt ein SVG nach Vorgaben erzeugen, speicherst es lokal unter **`Templates/ai_generated/`**, prüfst es im **Dashboard** (SVG-Personalisierung / Preflight), lädst es nach **Supabase** hoch — danach soll es im **Kalkulator/Webshop** für passende Bindungen nutzbar sein.
+
+| Schritt | Was du tun musst / was passiert |
+|--------|----------------------------------|
+| 1. Generierung | KI hält **SKILL_01**, **SKILL_02** und diese **SSOT** ein: `tpl-*`-IDs, `tpl-group-u1` / `-spine` / `-u4`, `colorselector`, BBox in `defs`, `guide-sichtbereich`. |
+| 2. Datei | SVG liegt unter **`Templates/ai_generated/name.svg`**. |
+| 3. Dashboard | Datei öffnen, **Felder** mit Schema abgleichen, **Check** (Preflight) ohne harte Fehler; bei Bedarf **Farben** zuweisen. |
+| 4. Upload | Template hochladen mit **`gruppe`** = der Gruppe der Bindung (z. B. `hardcover_modern` — muss zu `editorConfig.templateGroup` im Shop passen, siehe `editorHandler.mjs`). |
+| 5. Farbpaare | Unter **Template-Zuordnung** mindestens ein **Farbpaar** pro Template wählen — sonst lädt der Editor zwar das SVG, die **Farbwahl** kann leer sein (`HardcoverEditor._loadPaletteFromSupabase`). |
+| 6. Webshop | Kunde wählt Bindung → Editor lädt Template-Liste per `get-cover-templates?gruppe=…` und das SVG per öffentlicher URL. |
+
+**Hinweise (keine „alten“ Konflikte, aber manuelle Pflichten):**
+
+- **`cover_schema_elements`** nutzt nach Migration **024** durchgängig **`tpl-*`**; SVG-`id`s müssen dazu passen.  
+- **Druck:** Webfonts im SVG (`@import`) sind für die Vorschau üblich; für belastbaren Druck ggf. **SVG Productioner** (Fonts einbetten) — separates Tool.  
+- **Migration 020** seedet historisch noch `front-text-*`; auf einer frischen DB mit 020+024 sind die Zeilen **`tpl-*`**. Neue Repos: `supabase db reset` wendet die Kette in der richtigen Reihenfolge an.
+
+---
+
 *Letzte strukturelle Aktualisierung: SSOT-Einführung (Repo).*
