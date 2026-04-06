@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="500mm"
+   height="330mm"
+   viewBox="0 0 500 330"
+   version="1.1"
+   id="svg-template-visual-project"
+   xml:space="preserve"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.0"
+   xmlns="http://www.w3.org/2000/svg">
+
+  <defs id="defs1">
+    <style type="text/css">
+      @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&amp;family=Inter:wght@300;400;600&amp;display=swap');
+    </style>
+    
+    <rect id="tpl-title_bbox" x="315" y="200" width="165" height="50" style="fill:none;stroke:none" />
+    <rect id="tpl-topic_bbox" x="315" y="260" width="165" height="40" style="fill:none;stroke:none" />
+  </defs>
+
+  <g inkscape:groupmode="layer" inkscape:label="Back and Spine" id="layer-back-spine" data-layer="back">
+    <rect id="bg-u4-spine-wrap" x="0" y="0" width="295" height="330" colorselector="color1" style="fill:#2C3539;stroke:none" />
+    <rect id="bg-u1-bottom" x="295" y="180" width="205" height="150" colorselector="color1" style="fill:#2C3539;stroke:none" />
+  </g>
+
+  <g inkscape:groupmode="layer" inkscape:label="Spine" id="layer-spine" data-layer="spine">
+    <text id="tpl-title-spine" data-label="Titel (Buchrücken)" transform="rotate(-90, 250, 165)" text-anchor="start" style="font-family:'Montserrat',sans-serif;font-size:4.5px;font-weight:700;fill:#FFFFFF" x="250" y="165">
+      <tspan x="250" y="165">Entwicklung einer Automatisierungsanlage</tspan>
+    </text>
+
+    <text id="tpl-name-spine" data-label="Name (Buchrücken)" transform="rotate(-90, 250, 275)" text-anchor="start" style="font-family:'Inter',sans-serif;font-size:4px;font-weight:600;fill:#E06D53" colorselector="color2" x="250" y="275">
+      <tspan x="250" y="275">MÜLLER</tspan>
+    </text>
+    <text id="tpl-year-spine" data-label="Jahr (Buchrücken)" transform="rotate(-90, 250, 295)" text-anchor="start" style="font-family:'Inter',sans-serif;font-size:3.5px;font-weight:400;fill:#FFFFFF;fill-opacity:0.6" x="250" y="295">
+      <tspan x="250" y="295">2026</tspan>
+    </text>
+  </g>
+
+  <g inkscape:groupmode="layer" inkscape:label="Front" id="layer-front" data-layer="front">
+
+    <rect id="tpl-img-hero" data-label="Titelbild / Projektfoto" x="295" y="0" width="205" height="180" style="fill:#E0E0E0;stroke:none" />
+
+    <rect id="deco-divider-horizontal" x="295" y="180" width="205" height="2" colorselector="color2" style="fill:#E06D53;stroke:none" />
+    <rect id="deco-divider-vertical" x="295" y="0" width="2" height="330" colorselector="color2" style="fill:#E06D53;stroke:none" />
+
+    <text id="tpl-subtitle" data-label="Art der Arbeit" colorselector="color2" text-anchor="start" style="font-family:'Inter',sans-serif;font-size:5px;font-weight:600;letter-spacing:0.15em;fill:#E06D53" x="315" y="195">
+      <tspan x="315" y="195">PROJEKTARBEIT</tspan>
+    </text>
+
+    <text id="tpl-title" data-label="Titel der Arbeit" text-anchor="start" style="font-family:'Montserrat',sans-serif;font-size:14px;font-weight:900;fill:#FFFFFF" x="315" y="220">
+      <tspan x="315" y="220">Entwicklung einer</tspan>
+      <tspan x="315" y="238.2">Automatisierungs-</tspan>
+      <tspan x="315" y="256.4">anlage</tspan>
+    </text>
+
+    <text id="tpl-topic" data-label="Thema / Fach" data-multiline="true" data-max-lines="3" text-anchor="start" style="font-family:'Inter',sans-serif;font-size:4.5px;font-weight:300;fill:#FFFFFF;fill-opacity:0.8" x="315" y="275">
+      <tspan x="315" y="275">Konzeption und Implementierung</tspan>
+      <tspan x="315" y="280.8">für die industrielle Fertigung</tspan>
+    </text>
+
+    <text id="tpl-name" data-label="Name" text-anchor="start" style="font-family:'Inter',sans-serif;font-size:6.5px;font-weight:600;fill:#FFFFFF" x="315" y="305">
+      <tspan x="315" y="305">Anna Müller</tspan>
+    </text>
+
+    <text id="tpl-university" data-label="Hochschule" text-anchor="start" style="font-family:'Inter',sans-serif;font-size:3.8px;font-weight:400;fill:#FFFFFF;fill-opacity:0.5" x="420" y="295">
+      <tspan x="420" y="295">Hochschule Fulda</tspan>
+    </text>
+
+    <text id="tpl-year" data-label="Jahr" text-anchor="start" style="font-family:'Inter',sans-serif;font-size:3.8px;font-weight:400;fill:#FFFFFF;fill-opacity:0.5" x="420" y="305">
+      <tspan x="420" y="305">2026</tspan>
+    </text>
+  </g>
+
+  <g id="guide-sichtbereich" style="opacity:0.4">
+    <rect x="15" y="15" width="212" height="300" style="fill:none;stroke:#FF00FF;stroke-width:0.3" />
+    <rect x="235" y="15" width="30" height="300" style="fill:none;stroke:#FF00FF;stroke-width:0.3" />
+    <rect x="273" y="15" width="212" height="300" style="fill:none;stroke:#FF00FF;stroke-width:0.3" />
+  </g>
+
+</svg>

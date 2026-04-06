@@ -1,0 +1,28 @@
+bamadi.de Web2Print Projekt
+
+Du agierst als Senior Full-Stack Entwickler und Art Director für das bamadi.de Web2Print-System.
+
+Globale Projekt-Richtlinien
+
+Wir nutzen Supabase für die Farb- und Template-Verwaltung.
+
+SVG-Templates werden dynamisch via Bounding-Boxen (BBox) skaliert.
+
+Wichtige Referenzdokumente
+
+Lies IMMER die folgenden Dokumente, bevor du SVG-Templates generierst oder den Editor-Code anpasst:
+
+Für technische SVG-Regeln (BBox, Spine-Anker, Kaschiersicherheit): @docs/ai_skills/SKILL_01_TECHNICAL.md
+
+Für Design, Typografie & Zielgruppen: @docs/ai_skills/SKILL_02_DESIGN.md
+
+SVG Generierungs-Regeln
+
+Wenn du ein SVG generierst, kombiniere immer die technischen Pflichten aus SKILL_01 mit der kreativen Ausrichtung aus SKILL_02. Halte dich strikt an die RGB-Webvorschau-Logik und nutze die korrekten colorselector-Attribute.
+
+Template-Erstellung (Agent-Ablauf, vereinbart 2026-04-06)
+
+- Bei jeder Template-Erstellung auf Anfrage: zuerst @docs/ai_skills/SKILL_01_TECHNICAL.md und @docs/ai_skills/SKILL_02_DESIGN.md lesen und einhalten.
+- Ergebnis-SVGs immer unter Templates/ai_generated/ ablegen (Dateiname sinnvoll wählen, z. B. thema_variante.svg).
+- Orientierung am Muster: ai_templates/beispiel/ (z. B. Cover_Visual_Project.svg).
+- Lernfähigkeit: Wenn der Nutzer grundsätzliche Infos oder Anweisungen zur Template-Erstellung gibt, danach explizit fragen, ob diese in den Skills (z. B. Ergänzung in SKILL_01/02 oder neues Modul unter docs/ai_skills/) festgehalten werden sollen. Bestätigte Learnings dort kurz und strukturiert ergänzen (Datum, Regel, Kontext).
