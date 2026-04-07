@@ -92,6 +92,7 @@ function mapBindingIdToEditorType(bindingId) {
     const mapping = {
         'hardcover_modern_fullcolor': 'hardcover',
         'hardcover_efalin_fullcolor': 'hardcover',
+        'softcover_foil': 'hardcover',
         'paperback_perfect': 'hardcover',
         'paperback_modern': 'hardcover',
         'paperback_classic': 'hardcover',
@@ -106,6 +107,7 @@ function deriveTemplateGroupFromBindingId(bindingId) {
     const known = {
         hardcover_modern_fullcolor: 'hardcover_modern',
         hardcover_efalin_fullcolor: 'hardcover_efalin',
+        softcover_foil: 'paperback_foil',
         paperback_perfect: 'paperback_modern',
         paperback_modern: 'paperback_modern',
         paperback_classic: 'paperback_classic',

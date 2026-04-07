@@ -32,7 +32,23 @@
             "pricePerItem": 4.50,
             "minBlockThicknessMm": 2.00,
             "maxBlockThicknessMm": 30.00,
-            "requiresPersonalization": false,
+            "requiresPersonalization": true,
+            "personalizationInterface": "coverEditor",
+            "editorConfig": {
+                "templateSource": "supabase",
+                "templateGroup": "paperback_foil",
+                "templatePath": "templates/paperback_foil/",
+                "usesPdfPreviewAsCover": true,
+                "dimensions": {
+                    "u1Width": 204.0,
+                    "u4Width": 204.0,
+                    "visibleCoverHeight": 297.0,
+                    "svgTotalWidth": 500.0,
+                    "svgTotalHeight": 330.0,
+                    "svgCenterX": 250.0,
+                    "falzZoneWidth": 6.0
+                }
+            },
             "options": [
                 { 
                     "name": "Folientyp", 
