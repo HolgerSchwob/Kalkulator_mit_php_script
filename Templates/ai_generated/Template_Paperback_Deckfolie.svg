@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
      width="500mm" height="330mm" viewBox="0 0 500 330">
-  <title>Paperback Deckfolie  Visualisierung</title>
-  <desc>Bindetyp Folie: Karton color1 (U4+Falz+Spine+Falz), U1: Seite-1-Preview + Folie color2. Referenz-Rücken 35 mm; U1/U4 204 mm, Falz 6 mm, Höhe sichtbar 297 mm.</desc>
+  <title>Paperback Deckfolie - Visualisierung</title>
+  <desc>Folien-Paperback: Karton color1, U1 mit Seite-1-Preview und Folie color2. Referenz-Ruecken 35 mm.</desc>
 
-  <!-- Hilfslinien (Webshop entfernt typischerweise id guide-*) -->
+  <!-- Hilfslinien (Webshop entfernt id guide-*) -->
   <g id="guide-pappen" fill="none" stroke="#c026d3" stroke-width="0.2" opacity="0.45" style="pointer-events:none">
     <rect id="guide-pappe-u4" x="22.5" y="16.5" width="204" height="297"/>
     <rect id="guide-falz-left" x="226.5" y="16.5" width="6" height="297"/>
@@ -13,7 +13,7 @@
     <rect id="guide-pappe-u1" x="273.5" y="16.5" width="204" height="297"/>
   </g>
 
-  <!-- Durchgefärbter Karton: U4 + beide Falzzonen + Rücken (ohne U1) -->
+  <!-- Karton U4 + Falz + Spine + Falz -->
   <rect id="tpl-bg-karton"
         x="22.5" y="16.5" width="251" height="297"
         data-color-role="color-1" fill="#6B7280"/>
@@ -30,7 +30,6 @@
 
   <g id="layer-front">
     <g id="tpl-group-u1" transform="translate(273.5,16.5)">
-      <!-- Erste Seite Buchblock (Editor: href aus PDF-Preview, Phase B) -->
       <image id="tpl-pdf-page1" x="0" y="5" width="204" height="287"
              preserveAspectRatio="xMidYMid slice"
              href="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"

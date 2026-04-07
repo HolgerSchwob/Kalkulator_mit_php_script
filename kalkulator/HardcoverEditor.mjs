@@ -366,8 +366,11 @@ export class HardcoverEditor extends BaseEditor {
 
         const parserError = this.svgDoc.getElementsByTagName("parsererror");
         if (parserError.length > 0) {
-            console.error("Parser Error:", parserError[0].textContent);
-            throw new Error(`Fehler beim Parsen von ${fileName}.`);
+            const detail = (parserError[0].textContent || '').trim().slice(0, 400);
+            console.error("Parser Error:", detail);
+            throw new Error(
+                `Fehler beim Parsen von ${fileName}. Ungültiges XML/SVG (z. B. Steuerzeichen in Texten). ${detail ? 'Details: ' + detail : ''}`
+            );
         }
 
         this.svgNode = this.svgDoc.documentElement;
