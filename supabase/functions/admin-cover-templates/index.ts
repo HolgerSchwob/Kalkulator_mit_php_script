@@ -123,14 +123,26 @@ Deno.serve(async (req) => {
           gruppe,
           sort_order,
           storage_path,
+          active: true,
         })
         .select()
         .single()
 
       if (insertErr) {
         await supabase.storage.from(BUCKET).remove([storage_path])
-        return new Response(JSON.stringify({ error: insertErr.message }), {
-          status: 500,
+        const msg = insertErr.message || ''
+        let hint = msg
+        if (/duplicate key|23505/i.test(msg) && /filename|gruppe/i.test(msg)) {
+          hint =
+            'Eintrag existiert bereits: gleicher Dateiname in dieser Template-Gruppe. ' +
+            'Hinweis: Nach DB-Migration 029 ist die Eindeutigkeit nur noch pro Gruppe; ' +
+            'bei weiterem Konflikt anderen Dateinamen wählen oder bestehendes Template ersetzen (PATCH). ' +
+            `(${msg})`
+        } else if (/duplicate key|23505/i.test(msg)) {
+          hint = `Datenbank: doppelter Schlüssel. ${msg}`
+        }
+        return new Response(JSON.stringify({ error: hint }), {
+          status: 409,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
@@ -216,6 +228,7 @@ Deno.serve(async (req) => {
         display_name?: string
         gruppe?: string
         sort_order?: number
+        active?: boolean
         file?: string
       }
       const id = (body.id ?? '').trim()
@@ -242,6 +255,7 @@ Deno.serve(async (req) => {
       if (body.display_name !== undefined) updates.display_name = String(body.display_name).trim()
       if (body.gruppe !== undefined) updates.gruppe = String(body.gruppe).trim()
       if (typeof body.sort_order === 'number') updates.sort_order = body.sort_order
+      if (typeof body.active === 'boolean') updates.active = body.active
 
       const { data: updated, error: updateErr } = await supabase
         .from('cover_templates')
