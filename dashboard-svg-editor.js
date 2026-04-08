@@ -116,15 +116,227 @@ let coverTemplatesList = [];
 let supabaseTemplatesCache = [];
 /** UUID aus admin-cover-templates, wenn currentSvgFilename einem Eintrag entspricht (Upload „ersetzen") */
 let currentCoverTemplateId = null;
+/** Template-Gruppe (`cover_templates.gruppe`) für eindeutige Zuordnung bei gleichem Dateinamen in mehreren Gruppen */
+let currentTemplateGruppe = null;
 
-/** Template-Gruppen (cover_template_groups) */
-const TEMPLATE_GROUPS = [
+/** Fallback wenn Admin-API nicht erreichbar (z. B. ohne Secret) */
+const TEMPLATE_GROUPS_FALLBACK = [
     { id: 'hardcover_modern', name: 'Hardcover Modern' },
     { id: 'hardcover_efalin', name: 'Hardcover Klassik (Efalin)' },
     { id: 'paperback_modern', name: 'Paperback Modern' },
     { id: 'paperback_classic', name: 'Paperback Classic' },
     { id: 'paperback', name: 'Paperback (Legacy)' },
 ];
+
+/** Rohe Zeilen aus GET admin-cover-template-groups */
+let templateGroupsRowsCache = [];
+/** Bis zum ersten erfolgreichen API-Lauf Fallback-Dropdowns nutzen */
+let templateGroupsLoadFailed = true;
+
+/**
+ * @returns {Array<{ id: string, name: string }>}
+ */
+function getTemplateGroupsList() {
+    if (templateGroupsRowsCache.length) {
+        return templateGroupsRowsCache.map((r) => ({
+            id: r.id,
+            name: String(r.display_name || r.id || '').trim() || r.id,
+        }));
+    }
+    return templateGroupsLoadFailed ? [...TEMPLATE_GROUPS_FALLBACK] : [];
+}
+
+function refillTemplateGroupDropdowns() {
+    const list = getTemplateGroupsList();
+    const optsFromList =
+        list.map((g) => `<option value="${escapeAttr(g.id)}">${escapeHtml(g.name)}</option>`).join('');
+    const gruppeEl = document.getElementById('supabaseTemplateGruppe');
+    if (gruppeEl) {
+        const v = gruppeEl.value;
+        gruppeEl.innerHTML = '<option value="">Alle Gruppen</option>' + optsFromList;
+        if (v && [...gruppeEl.options].some((o) => o.value === v)) gruppeEl.value = v;
+    }
+    const filt = document.getElementById('tmplOverviewGruppeFilter');
+    if (filt) {
+        const fv = filt.value;
+        filt.innerHTML = '<option value="">Alle Gruppen</option>' + optsFromList;
+        if (fv && [...filt.options].some((o) => o.value === fv)) filt.value = fv;
+    }
+    const uploadSel = document.getElementById('supabaseUploadGruppe');
+    if (uploadSel) {
+        const uv = uploadSel.value;
+        uploadSel.innerHTML = optsFromList;
+        if (uv && [...uploadSel.options].some((o) => o.value === uv)) uploadSel.value = uv;
+        else if (list.length && !uv) uploadSel.selectedIndex = 0;
+    }
+}
+
+async function refreshTemplateGroupsCache() {
+    if (!hasAdminSecret() || !(toolConfig.supabaseUrl || '').trim()) {
+        templateGroupsRowsCache = [];
+        templateGroupsLoadFailed = true;
+        refillTemplateGroupDropdowns();
+        renderTemplateGroupsSettingsTable();
+        return;
+    }
+    try {
+        const d = await apiFetchEdge('GET', '/functions/v1/admin-cover-template-groups');
+        templateGroupsRowsCache = Array.isArray(d.data) ? d.data : [];
+        templateGroupsLoadFailed = false;
+    } catch (e) {
+        templateGroupsRowsCache = [];
+        templateGroupsLoadFailed = true;
+        console.warn('[Template-Gruppen]', e);
+    }
+    refillTemplateGroupDropdowns();
+    renderTemplateGroupsSettingsTable();
+    tmplOverviewRenderTable();
+}
+
+function renderTemplateGroupsSettingsTable() {
+    const wrap = document.getElementById('templateGroupsTableWrap');
+    if (!wrap) return;
+    if (!hasAdminSecret()) {
+        wrap.innerHTML = '<p class="schema-status err">Admin-Secret erforderlich (Tool über das Dashboard öffnen).</p>';
+        return;
+    }
+    const rows = templateGroupsRowsCache;
+    if (!rows.length) {
+        wrap.innerHTML =
+            '<p class="schema-status">' +
+            (templateGroupsLoadFailed
+                ? 'API nicht erreichbar – Fallback-Gruppen in den Dropdowns.'
+                : 'Keine Gruppen. Legen Sie eine neue Gruppe an oder „Neu laden“.') +
+            '</p>';
+        return;
+    }
+
+    const head =
+        '<table class="template-groups-table"><thead><tr>' +
+        '<th>Sort</th><th>id</th><th>Anzeigename</th><th>spine_off</th><th>Höhe</th><th>U1/U4</th>' +
+        '<th>Spine-Ref</th><th>Falz</th><th>svg_W</th><th>svg_H</th><th>center_X</th><th></th>' +
+        '</tr></thead><tbody>';
+    const body = rows
+        .map((r) => {
+            const id = escapeAttr(r.id);
+            const dims = r.dimensions && typeof r.dimensions === 'object' ? r.dimensions : {};
+            const sw = dims.svg_total_width ?? 500;
+            const sh = dims.svg_total_height ?? 330;
+            const cx = dims.svg_center_x ?? 250;
+            const dsp = escapeAttr(r.display_name || '');
+            const defSpine =
+                r.default_spine_width_mm != null && r.default_spine_width_mm !== ''
+                    ? String(r.default_spine_width_mm)
+                    : '';
+            return (
+                `<tr data-tg-id="${id}">` +
+                `<td><input type="number" class="tg-sort svg-shop-input" min="0" value="${Number(r.sort_order) || 0}" /></td>` +
+                `<td class="tg-id"><code>${escapeHtml(r.id)}</code></td>` +
+                `<td><input type="text" class="tg-display svg-shop-input tg-inp-wide" value="${dsp}" /></td>` +
+                `<td><input type="number" class="tg-spine-off svg-shop-input" step="0.1" value="${Number(r.spine_offset_mm) || 0}" /></td>` +
+                `<td><input type="number" class="tg-vis-h svg-shop-input" step="0.1" value="${Number(r.visible_cover_height_mm) || 0}" /></td>` +
+                `<td><input type="number" class="tg-u1 svg-shop-input" step="0.1" value="${Number(r.u1_width_mm) || 0}" /></td>` +
+                `<td><input type="number" class="tg-def-spine svg-shop-input" step="0.1" value="${defSpine}" placeholder="leer" /></td>` +
+                `<td><input type="number" class="tg-falz svg-shop-input" step="0.1" value="${Number(r.falz_zone_width_mm) || 0}" /></td>` +
+                `<td><input type="number" class="tg-svg-w svg-shop-input" step="0.1" value="${Number(sw) || 0}" /></td>` +
+                `<td><input type="number" class="tg-svg-h svg-shop-input" step="0.1" value="${Number(sh) || 0}" /></td>` +
+                `<td><input type="number" class="tg-svg-cx svg-shop-input" step="0.1" value="${Number(cx) || 0}" /></td>` +
+                `<td><button type="button" class="btn btn-sm btn-tg-open-templates" data-gruppe="${id}">Templates</button></td>` +
+                `</tr>`
+            );
+        })
+        .join('');
+    wrap.innerHTML = head + body + '</tbody></table>';
+}
+
+async function saveAllTemplateGroupsFromTable() {
+    const wrap = document.getElementById('templateGroupsTableWrap');
+    if (!wrap || !hasAdminSecret()) return;
+    const trs = wrap.querySelectorAll('tbody tr[data-tg-id]');
+    if (!trs.length) return;
+    try {
+        for (const tr of trs) {
+            const gid = tr.getAttribute('data-tg-id');
+            if (!gid) continue;
+            const parseNum = (sel, fallback) => {
+                const v = parseFloat(String(tr.querySelector(sel)?.value ?? '').replace(',', '.'));
+                return Number.isFinite(v) ? v : fallback;
+            };
+            const defRaw = (tr.querySelector('.tg-def-spine')?.value ?? '').trim();
+            const defSpineParsed = parseFloat(defRaw.replace(',', '.'));
+            const payload = {
+                id: gid,
+                display_name: (tr.querySelector('.tg-display')?.value ?? '').trim(),
+                sort_order: parseInt(tr.querySelector('.tg-sort')?.value ?? '0', 10) || 0,
+                spine_offset_mm: parseNum('.tg-spine-off', 0),
+                visible_cover_height_mm: parseNum('.tg-vis-h', 302),
+                u1_width_mm: parseNum('.tg-u1', 215),
+                falz_zone_width_mm: parseNum('.tg-falz', 8),
+                default_spine_width_mm: defRaw === '' ? null : (Number.isFinite(defSpineParsed) ? defSpineParsed : null),
+                dimensions: {
+                    svg_total_width: parseNum('.tg-svg-w', 500),
+                    svg_total_height: parseNum('.tg-svg-h', 330),
+                    svg_center_x: parseNum('.tg-svg-cx', 250),
+                },
+            };
+            await apiFetchEdge('PATCH', '/functions/v1/admin-cover-template-groups', payload);
+        }
+        showToast('Template-Gruppen gespeichert.', 'success');
+        await refreshTemplateGroupsCache();
+    } catch (e) {
+        showToast(e && e.message ? e.message : String(e), 'error');
+    }
+}
+
+async function createNewTemplateGroupFromForm() {
+    if (!hasAdminSecret()) {
+        showToast('Admin-Secret erforderlich.', 'error');
+        return;
+    }
+    const rawId = (document.getElementById('newGroupId')?.value ?? '').trim().toLowerCase();
+    const display_name = (document.getElementById('newGroupDisplayName')?.value ?? '').trim();
+    if (!rawId || !/^[a-z0-9_]+$/.test(rawId)) {
+        showToast('id: nur Kleinbuchstaben, Ziffern und Unterstrich.', 'warn');
+        return;
+    }
+    try {
+        await apiFetchEdge('POST', '/functions/v1/admin-cover-template-groups', {
+            id: rawId,
+            display_name: display_name || rawId,
+        });
+        showToast('Gruppe angelegt.', 'success');
+        const nid = document.getElementById('newGroupId');
+        const ndn = document.getElementById('newGroupDisplayName');
+        if (nid) nid.value = '';
+        if (ndn) ndn.value = '';
+        await refreshTemplateGroupsCache();
+    } catch (e) {
+        showToast(e && e.message ? e.message : String(e), 'error');
+    }
+}
+
+/**
+ * @param {string} gruppeId
+ */
+function switchToEditorTemplatesForGroup(gruppeId) {
+    document.querySelectorAll('.svg-editor-mode-btn').forEach((b) => {
+        b.classList.toggle('active', b.getAttribute('data-mode') === 'editor');
+    });
+    const editorPanel = document.getElementById('panelModeEditor');
+    const settingsPanel = document.getElementById('panelModeSettings');
+    if (editorPanel) editorPanel.hidden = false;
+    if (settingsPanel) settingsPanel.hidden = true;
+    const tabBtn = document.querySelector('.svg-editor-tabs button[data-tab="templates"]');
+    if (tabBtn) tabBtn.click();
+    const filt = document.getElementById('tmplOverviewGruppeFilter');
+    if (filt && gruppeId) {
+        if ([...filt.options].some((o) => o.value === gruppeId)) filt.value = gruppeId;
+        tmplOverviewRenderTable();
+    }
+    syncSupabaseUploadForm();
+    void renderTemplateOverview();
+}
+
 /** @type {Map<string, object>} */
 const schemaByElementId = new Map();
 let uidCounter = 0;
@@ -774,6 +986,44 @@ function resolveColorRoleFromElement(el) {
     return '';
 }
 
+/**
+ * Liest bestehende Zuweisungen aus dem SVG (data-color-role, colorselector) in die Map für den Tab „Farben“.
+ */
+function hydrateColorRolesFromSvg() {
+    if (!svgRoot) return;
+    /**
+     * @param {Element} el
+     * @returns {'' | 'color-1' | 'color-2'}
+     */
+    const roleFromElement = (el) => {
+        const dr = (el.getAttribute('data-color-role') || '').trim();
+        if (dr === 'color-1' || dr === 'color-2') return dr;
+        const cs = (el.getAttribute('colorselector') || '').trim().toLowerCase();
+        if (cs === 'color1' || cs === 'color-1') return 'color-1';
+        if (cs === 'color2' || cs === 'color-2') return 'color-2';
+        return '';
+    };
+    for (const r of elementRows) {
+        const role = roleFromElement(r.el);
+        if (!role) continue;
+        for (const hex of collectPaintHexesForElement(r.el)) {
+            colorRoleByHex.set(hex, role);
+        }
+    }
+}
+
+/**
+ * Schreibt die aktuelle Map als data-color-role auf die Live-DOM-Knoten (Shop-Konvention).
+ */
+function syncLiveDataColorRoles() {
+    if (!svgRoot) return;
+    for (const r of elementRows) {
+        const role = resolveColorRoleFromElement(r.el);
+        if (role) r.el.setAttribute('data-color-role', role);
+        else r.el.removeAttribute('data-color-role');
+    }
+}
+
 function idConventionOk(id) {
     const s = (id || '').trim();
     if (!s) return false;
@@ -902,6 +1152,10 @@ async function refreshSupabaseTemplateList() {
         if (btnLoad) btnLoad.disabled = true;
         if (btnRef) btnRef.disabled = false;
     }
+    const pTmpl = document.getElementById('panelTemplates');
+    if (pTmpl && !pTmpl.classList.contains('hidden')) {
+        void renderTemplateOverview();
+    }
 }
 
 async function loadSelectedSupabaseTemplate() {
@@ -922,7 +1176,10 @@ async function loadSelectedSupabaseTemplate() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const text = await res.text();
         const fname = (t.file || 'template.svg').trim() || 'template.svg';
-        loadSvgFromText(text, fname, 'Quelle: Supabase Storage');
+        await loadCoverTemplatesListIfNeeded();
+        const row = t.id ? coverTemplatesList.find((x) => x.id === t.id) : null;
+        const g = row?.gruppe ?? null;
+        loadSvgFromText(text, fname, 'Quelle: Supabase Storage', t.id || null, g);
     } catch (e) {
         showToast('Template konnte nicht geladen werden: ' + (e && e.message ? e.message : String(e)), 'error');
     }
@@ -930,13 +1187,7 @@ async function loadSelectedSupabaseTemplate() {
 
 function initSupabaseTemplateBar() {
     const gruppeEl = document.getElementById('supabaseTemplateGruppe');
-    if (gruppeEl && gruppeEl.options.length <= 1) {
-        gruppeEl.innerHTML =
-            '<option value="">Alle Gruppen</option>' +
-            TEMPLATE_GROUPS.map(
-                (g) => `<option value="${escapeAttr(g.id)}">${escapeHtml(g.name)}</option>`
-            ).join('');
-    }
+    refillTemplateGroupDropdowns();
     gruppeEl?.addEventListener('change', () => {
         void refreshSupabaseTemplateList();
     });
@@ -970,6 +1221,53 @@ async function apiAdminCoverTemplatesMultipart(method, formData) {
     return data;
 }
 
+/**
+ * Findet die cover_templates-Zeile zum Dateinamen (exakt, Groß/Klein, ohne _production).
+ * @param {string} filename
+ * @param {object[]} rows
+ * @param {string|null|undefined} [gruppe] – Wenn gesetzt, nur in dieser Template-Gruppe suchen (verhindert falsche Zeile bei gleichem Dateinamen).
+ * @returns {object | null}
+ */
+function findCoverTemplateRowForFilename(filename, rows, gruppe) {
+    const fn = String(filename || '').trim();
+    if (!fn || !Array.isArray(rows)) return null;
+    const norm = (s) => String(s || '').trim();
+    const gTrim = gruppe != null && String(gruppe).trim() !== '' ? String(gruppe).trim() : null;
+    const pool = gTrim ? rows.filter((t) => norm(t.gruppe) === gTrim) : rows;
+
+    const matchOne = (list) => {
+        let r = list.find((t) => norm(t.filename) === fn);
+        if (r) return r;
+        const lower = fn.toLowerCase();
+        r = list.find((t) => norm(t.filename).toLowerCase() === lower);
+        if (r) return r;
+        const m = fn.match(/^(.*)_production(\.svg)$/i);
+        if (m) {
+            const alt = m[1] + m[2];
+            r = list.find((t) => norm(t.filename) === alt || norm(t.filename).toLowerCase() === alt.toLowerCase());
+            if (r) return r;
+        }
+        return null;
+    };
+
+    if (gTrim) {
+        return matchOne(pool);
+    }
+
+    const matches = rows.filter((t) => {
+        const n = norm(t.filename);
+        if (n === fn || n.toLowerCase() === fn.toLowerCase()) return true;
+        const m = fn.match(/^(.*)_production(\.svg)$/i);
+        if (m) {
+            const alt = m[1] + m[2];
+            if (n === alt || n.toLowerCase() === alt.toLowerCase()) return true;
+        }
+        return false;
+    });
+    if (matches.length === 1) return matches[0];
+    return null;
+}
+
 async function resolveCurrentCoverTemplateId() {
     currentCoverTemplateId = null;
     if (!hasAdminSecret() || !(currentSvgFilename || '').trim()) {
@@ -979,7 +1277,10 @@ async function resolveCurrentCoverTemplateId() {
     try {
         const d = await apiFetchEdge('GET', '/functions/v1/admin-cover-templates');
         const rows = Array.isArray(d.data) ? d.data : [];
-        const row = rows.find((r) => (r.filename || '') === currentSvgFilename);
+        const uploadGruppe = document.getElementById('supabaseUploadGruppe')?.value?.trim() || '';
+        const gruppe =
+            (currentTemplateGruppe && String(currentTemplateGruppe).trim()) || uploadGruppe || null;
+        const row = findCoverTemplateRowForFilename(currentSvgFilename, rows, gruppe);
         if (row && row.id) currentCoverTemplateId = row.id;
     } catch (_) {
         currentCoverTemplateId = null;
@@ -1003,7 +1304,7 @@ function syncSupabaseUploadForm() {
         return;
     }
     hint.textContent =
-        'Speichert das aktuelle SVG wie „Editor-SVG" (Annotationen, data-color-role, ohne Editor-only-Klassen) in den Bucket cover-templates.';
+        'Produktions-SVG (Fonts eingebettet) aus dem aktuellen Editor in den Bucket cover-templates – siehe Formular unten im Tab „Templates“.';
     hint.className = 'schema-status';
     wrap.classList.remove('hidden');
     if (modeRep) {
@@ -1018,7 +1319,11 @@ function syncSupabaseUploadForm() {
         const showRep = mode === 'replace' && currentCoverTemplateId && (currentSvgFilename || '').trim();
         repInfo.classList.toggle('hidden', !showRep);
         if (showRep) {
-            repInfo.textContent = `Die Datei in Storage wird überschrieben (Metadaten in der Datenbank bleiben). Aktuell: ${currentSvgFilename}`;
+            const uploadGruppe = document.getElementById('supabaseUploadGruppe')?.value?.trim() || '';
+            const g = (currentTemplateGruppe && String(currentTemplateGruppe).trim()) || uploadGruppe || '—';
+            const idShort = currentCoverTemplateId ? String(currentCoverTemplateId).slice(0, 8) + '…' : '—';
+            repInfo.textContent =
+                `Storage-Datei wird überschrieben (DB-Zeile bleibt). Datei: ${currentSvgFilename} · Gruppe: ${g} · Template-ID: ${idShort}`;
         }
     }
     const fn = (currentSvgFilename || '').trim();
@@ -1027,6 +1332,124 @@ function syncSupabaseUploadForm() {
     const fnInp = document.getElementById('supabaseUploadFilename');
     if (disp && !disp.value.trim()) disp.value = baseName;
     if (fnInp && !fnInp.value.trim()) fnInp.value = fn || 'template.svg';
+}
+
+/** Cache für Tab „Templates“ (Admin-Liste). */
+let templateOverviewCache = [];
+
+function tmplOverviewGroupLabel(gruppeId) {
+    const g = getTemplateGroupsList().find((x) => x.id === gruppeId);
+    return g ? g.name : (gruppeId || '–');
+}
+
+function tmplOverviewRenderTable() {
+    const wrap = document.getElementById('tmplOverviewTableWrap');
+    const filterEl = document.getElementById('tmplOverviewGruppeFilter');
+    if (!wrap) return;
+    const gruppe = filterEl ? filterEl.value.trim() : '';
+    let rows = Array.isArray(templateOverviewCache) ? [...templateOverviewCache] : [];
+    if (gruppe) rows = rows.filter((r) => (r.gruppe || '') === gruppe);
+    if (gruppe) {
+        rows.sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0));
+    } else {
+        rows.sort((a, b) => {
+            const g = (a.gruppe || '').localeCompare(b.gruppe || '');
+            if (g !== 0) return g;
+            return (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0);
+        });
+    }
+
+    if (rows.length === 0) {
+        wrap.innerHTML =
+            '<p class="schema-status">' +
+            (templateOverviewCache.length === 0
+                ? 'Keine Templates in Supabase.'
+                : 'Keine Einträge für diese Gruppe.') +
+            '</p>';
+        return;
+    }
+
+    const head =
+        '<table class="tmpl-overview-table"><thead><tr>' +
+        '<th>Aktiv</th><th>Sort</th><th>Anzeigename</th><th>Dateiname</th><th>Gruppe</th><th>Aktionen</th>' +
+        '</tr></thead><tbody>';
+    const body = rows
+        .map((r) => {
+            const id = escapeAttr(r.id || '');
+            const url = escapeAttr(r.url || '');
+            const fn = escapeAttr(r.filename || '');
+            const fnRaw = String(r.filename || '');
+            const active = r.active !== false;
+            const so = Number(r.sort_order) || 0;
+            const disp = escapeAttr(r.display_name || '');
+            const gruppeOpts = getTemplateGroupsList()
+                .map(
+                    (g) =>
+                        `<option value="${escapeAttr(g.id)}" ${(r.gruppe || '') === g.id ? 'selected' : ''}>${escapeHtml(g.name)}</option>`
+                )
+                .join('');
+            const gruppeSelect =
+                gruppeOpts.length > 0
+                    ? `<select class="tmpl-gruppe svg-shop-select">${gruppeOpts}</select>`
+                    : `<span>${escapeHtml(tmplOverviewGroupLabel(r.gruppe))}</span>`;
+            const dataGruppe = escapeAttr(r.gruppe || '');
+            return (
+                `<tr data-id="${id}" data-url="${url}" data-filename="${fn}" data-gruppe="${dataGruppe}">` +
+                `<td style="text-align:center"><input type="checkbox" class="tmpl-act" ${active ? 'checked' : ''} title="Im Shop"></td>` +
+                `<td><input type="number" class="tmpl-sort svg-shop-input" min="0" value="${so}"></td>` +
+                `<td><input type="text" class="tmpl-disp svg-shop-input" value="${disp}"></td>` +
+                `<td><code class="tmpl-fn">${escapeHtml(fnRaw)}</code></td>` +
+                `<td>${gruppeSelect}</td>` +
+                `<td class="tmpl-overview-actions-cell">` +
+                `<button type="button" class="btn btn-sm tmpl-load">Laden</button> ` +
+                `<button type="button" class="btn btn-sm danger tmpl-del">Löschen</button>` +
+                `</td></tr>`
+            );
+        })
+        .join('');
+    wrap.innerHTML = head + body + '</tbody></table>';
+}
+
+async function renderTemplateOverview() {
+    const wrap = document.getElementById('tmplOverviewTableWrap');
+    if (!wrap) return;
+    if (!hasAdminSecret()) {
+        wrap.innerHTML = '<p class="schema-status err">Admin-Secret erforderlich (über das Dashboard öffnen).</p>';
+        return;
+    }
+    wrap.innerHTML = '<p class="schema-status">Lade…</p>';
+    try {
+        const d = await apiFetchEdge('GET', '/functions/v1/admin-cover-templates');
+        templateOverviewCache = Array.isArray(d.data) ? d.data : [];
+        tmplOverviewRenderTable();
+    } catch (e) {
+        wrap.innerHTML = '<p class="schema-status err">' + escapeHtml(e && e.message ? e.message : String(e)) + '</p>';
+    }
+}
+
+async function saveTemplateOverviewList() {
+    const wrap = document.getElementById('tmplOverviewTableWrap');
+    if (!wrap || !hasAdminSecret()) return;
+    const trs = wrap.querySelectorAll('tbody tr[data-id]');
+    if (!trs.length) return;
+    try {
+        for (const tr of trs) {
+            const id = tr.getAttribute('data-id');
+            if (!id) continue;
+            const active = !!tr.querySelector('.tmpl-act')?.checked;
+            const sort_order = parseInt(tr.querySelector('.tmpl-sort')?.value ?? '0', 10) || 0;
+            const display_name = (tr.querySelector('.tmpl-disp')?.value ?? '').trim();
+            const gruppeEl = tr.querySelector('.tmpl-gruppe');
+            const gruppe = gruppeEl ? (gruppeEl.value ?? '').trim() : undefined;
+            const patch = { id, active, sort_order, display_name };
+            if (gruppe !== undefined) patch.gruppe = gruppe;
+            await apiFetchEdge('PATCH', '/functions/v1/admin-cover-templates', patch);
+        }
+        showToast('Template-Liste gespeichert.', 'success');
+        await refreshSupabaseTemplateList();
+    } catch (e) {
+        showToast(e && e.message ? e.message : String(e), 'error');
+    }
 }
 
 async function submitSupabaseUpload() {
@@ -1069,7 +1492,10 @@ async function submitSupabaseUpload() {
                 document.getElementById('supabaseUploadDisplayName')?.value.trim() ||
                 (currentSvgFilename || 'template').replace(/\.svg$/i, '') ||
                 'Template';
-            const gruppe = document.getElementById('supabaseUploadGruppe')?.value || TEMPLATE_GROUPS[0].id;
+            const list = getTemplateGroupsList();
+            const gruppe =
+                document.getElementById('supabaseUploadGruppe')?.value ||
+                (list.length ? list[0].id : 'hardcover_modern');
             const sortEl = document.getElementById('supabaseUploadSort');
             const sort_order = parseInt(sortEl && sortEl.value ? sortEl.value : '0', 10) || 0;
             let fname = document.getElementById('supabaseUploadFilename')?.value.trim() || '';
@@ -1086,24 +1512,75 @@ async function submitSupabaseUpload() {
         await refreshSupabaseTemplateList();
         await resolveCurrentCoverTemplateId();
     } catch (e) {
-        showToast(e && e.message ? e.message : String(e), 'error');
+        showToast(e && e.message ? e.message : String(e), 'error', 14000);
     }
 }
 
 function initSupabaseUploadPanel() {
-    const sel = document.getElementById('supabaseUploadGruppe');
-    if (sel && sel.options.length === 0) {
-        sel.innerHTML = TEMPLATE_GROUPS.map(
-            (g) => `<option value="${escapeAttr(g.id)}">${escapeHtml(g.name)}</option>`
-        ).join('');
-    }
+    refillTemplateGroupDropdowns();
     document.querySelectorAll('input[name="supabaseUploadMode"]').forEach((r) => {
         r.addEventListener('change', () => syncSupabaseUploadForm());
+    });
+    document.getElementById('supabaseUploadGruppe')?.addEventListener('change', () => {
+        void resolveCurrentCoverTemplateId();
     });
     document.getElementById('btnSupabaseUpload')?.addEventListener('click', () => {
         void submitSupabaseUpload();
     });
     syncSupabaseUploadForm();
+}
+
+function initTemplateOverviewPanel() {
+    const filt = document.getElementById('tmplOverviewGruppeFilter');
+    refillTemplateGroupDropdowns();
+    filt?.addEventListener('change', () => tmplOverviewRenderTable());
+    document.getElementById('btnTmplOverviewRefresh')?.addEventListener('click', () => void renderTemplateOverview());
+    document.getElementById('btnTmplOverviewSaveList')?.addEventListener('click', () => void saveTemplateOverviewList());
+
+    document.getElementById('tmplOverviewTableWrap')?.addEventListener('click', (e) => {
+        const loadBtn = e.target.closest('.tmpl-load');
+        const delBtn = e.target.closest('.tmpl-del');
+        const tr = e.target.closest('tr[data-id]');
+        if (loadBtn && tr) {
+            const url = tr.getAttribute('data-url') || '';
+            const fname = (tr.getAttribute('data-filename') || 'template.svg').trim() || 'template.svg';
+            if (!url) {
+                showToast('Keine URL für dieses Template.', 'error');
+                return;
+            }
+            void (async () => {
+                try {
+                    const res = await fetch(url, { mode: 'cors', credentials: 'omit' });
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    const text = await res.text();
+                    const tid = tr.getAttribute('data-id');
+                    const gAttr = tr.getAttribute('data-gruppe');
+                    loadSvgFromText(text, fname, 'Quelle: Supabase Storage', tid || null, gAttr || null);
+                    showToast('Template im Editor geladen.', 'success');
+                } catch (err) {
+                    showToast('Laden fehlgeschlagen: ' + (err && err.message ? err.message : String(err)), 'error');
+                }
+            })();
+            return;
+        }
+        if (delBtn && tr) {
+            const id = tr.getAttribute('data-id');
+            if (!id || !hasAdminSecret()) return;
+            if (!confirm('Template wirklich löschen? Die Datei wird aus dem Storage entfernt.')) return;
+            void (async () => {
+                try {
+                    await apiFetchEdge('DELETE', '/functions/v1/admin-cover-templates', { id });
+                    showToast('Template gelöscht.', 'success');
+                    await renderTemplateOverview();
+                    await refreshSupabaseTemplateList();
+                    await resolveCurrentCoverTemplateId();
+                    syncSupabaseUploadForm();
+                } catch (err) {
+                    showToast(err && err.message ? err.message : String(err), 'error');
+                }
+            })();
+        }
+    });
 }
 
 /**
@@ -1231,8 +1708,22 @@ async function apiPostEdge(path, body) {
         },
         body: JSON.stringify(body),
     });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    const text = await res.text();
+    let data = {};
+    if (text && text.trim()) {
+        try {
+            data = JSON.parse(text);
+        } catch {
+            data = { _raw: text };
+        }
+    }
+    if (!res.ok) {
+        const msg =
+            data.error ||
+            data.message ||
+            (text ? undefined : `HTTP ${res.status} (leerer Antwort-Body)`);
+        throw new Error(msg || `HTTP ${res.status}`);
+    }
     return data;
 }
 
@@ -1244,18 +1735,33 @@ async function apiPostEdge(path, body) {
 async function apiFetchEdge(method, path, body) {
     const base = (toolConfig.supabaseUrl || '').replace(/\/$/, '');
     const key = toolConfig.anonKey || '';
+    const headers = {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        'x-admin-secret': toolConfig.adminSecret || '',
+    };
+    if (body !== undefined) headers['Content-Type'] = 'application/json';
     const res = await fetch(`${base}${path}`, {
         method,
-        headers: {
-            'Content-Type': 'application/json',
-            apikey: key,
-            Authorization: `Bearer ${key}`,
-            'x-admin-secret': toolConfig.adminSecret || '',
-        },
+        headers,
         body: body !== undefined ? JSON.stringify(body) : undefined,
     });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    const text = await res.text();
+    let data = {};
+    if (text && text.trim()) {
+        try {
+            data = JSON.parse(text);
+        } catch {
+            data = { _raw: text };
+        }
+    }
+    if (!res.ok) {
+        const msg =
+            data.error ||
+            data.message ||
+            (text ? undefined : `HTTP ${res.status} (leerer Antwort-Body)`);
+        throw new Error(msg || `HTTP ${res.status}`);
+    }
     return data;
 }
 
@@ -1362,17 +1868,26 @@ async function renderTemplatePalettePanel() {
         await loadCoverTemplatesListIfNeeded();
         await loadFarbpaareAdminList();
 
-        // Aktuell geladenes Template ermitteln
-        const currentTemplate = coverTemplatesList.find((t) => t.filename === currentSvgFilename) || null;
-        const templateId = currentTemplate?.id || '';
+        let templateId = (currentCoverTemplateId || '').trim();
+        let currentTemplate = templateId ? coverTemplatesList.find((t) => t.id === templateId) : null;
+        if (!currentTemplate && currentSvgFilename) {
+            currentTemplate = findCoverTemplateRowForFilename(
+                currentSvgFilename,
+                coverTemplatesList,
+                currentTemplateGruppe
+            );
+            if (currentTemplate?.id) templateId = currentTemplate.id;
+        }
         const templateName = currentTemplate?.display_name || currentTemplate?.filename || null;
 
         // Info-Box
         const infoHtml = `<div class="palette-template-info">
-            <span>Template:</span>
-            ${templateName
-                ? `<strong>${escapeHtml(templateName)}</strong>`
-                : `<span class="palette-no-template">Kein Template geladen — lade zuerst ein SVG.</span>`}
+            <span>Template (cover_templates):</span>
+            ${
+                templateName && templateId
+                    ? `<strong>${escapeHtml(templateName)}</strong> <code class="palette-tid">${escapeHtml(templateId)}</code>`
+                    : `<span class="palette-no-template">Kein Supabase-Template zugeordnet — SVG über die Kopfleiste oder Tab „Templates“ → „Laden“ öffnen, oder lokale Datei mit passendem Dateinamen in der DB.</span>`
+            }
         </div>`;
 
         if (!templateId) {
@@ -1450,10 +1965,17 @@ async function renderSvgShopPanels() {
         await loadCoverTemplatesListIfNeeded();
         await loadFarbpaareAdminList();
 
-        // Aktuell gewähltes Template (per Dateiname → UUID suchen)
-        const currentTemplate = coverTemplatesList.find((t) => t.filename === currentSvgFilename)
-            || coverTemplatesList[0]
-            || null;
+        let currentTemplate = currentCoverTemplateId
+            ? coverTemplatesList.find((t) => t.id === currentCoverTemplateId)
+            : null;
+        if (!currentTemplate && currentSvgFilename) {
+            currentTemplate =
+                findCoverTemplateRowForFilename(currentSvgFilename, coverTemplatesList, currentTemplateGruppe) ||
+                null;
+        }
+        if (!currentTemplate && coverTemplatesList.length) {
+            currentTemplate = coverTemplatesList[0];
+        }
         const selectedTemplateId = currentTemplate?.id || '';
 
         // Zugewiesene Farbpaar-IDs für dieses Template laden
@@ -1601,6 +2123,71 @@ function buildCmykString(c, m, y, k) {
     return vals.map((v) => (v === '' ? '0' : v)).join(',');
 }
 
+/**
+ * Näherung sRGB (#rrggbb) → CMYK in % — gedacht als praktikable Vorgabe für FOGRA51 / ISO Coated v2.
+ * Ohne ICC-Profil-Engine: lineares sRGB + übliche Subtraktions-CMYK-Formel (kein exaktes Profil-Mapping).
+ * @param {string} hex
+ * @returns {{ c: number, m: number, y: number, k: number } | null}
+ */
+function approxSrgbHexToCmykPercent(hex) {
+    const h = String(hex ?? '').replace(/^"+|"+$/g, '').trim();
+    if (!/^#[0-9a-fA-F]{6}$/i.test(h)) return null;
+    const r8 = parseInt(h.slice(1, 3), 16);
+    const g8 = parseInt(h.slice(3, 5), 16);
+    const b8 = parseInt(h.slice(5, 7), 16);
+    const toLin = (u8) => {
+        const u = u8 / 255;
+        return u <= 0.04045 ? u / 12.92 : ((u + 0.055) / 1.055) ** 2.4;
+    };
+    const r = toLin(r8);
+    const g = toLin(g8);
+    const b = toLin(b8);
+    const k = 1 - Math.max(r, g, b);
+    let c = 0;
+    let m = 0;
+    let y = 0;
+    if (k < 1 - 1e-9) {
+        const inv = 1 / (1 - k);
+        c = (1 - r - k) * inv;
+        m = (1 - g - k) * inv;
+        y = (1 - b - k) * inv;
+    }
+    const q = (x) => Math.max(0, Math.min(100, Math.round(x * 100)));
+    return { c: q(c), m: q(m), y: q(y), k: q(k) };
+}
+
+/** Parst #rrggbb → {r,g,b} 0–255 oder null. */
+function hexToRgb255(hex) {
+    const h = String(hex ?? '').replace(/^"+|"+$/g, '').trim();
+    if (!/^#[0-9a-fA-F]{6}$/i.test(h)) return null;
+    return {
+        r: parseInt(h.slice(1, 3), 16),
+        g: parseInt(h.slice(3, 5), 16),
+        b: parseInt(h.slice(5, 7), 16),
+    };
+}
+
+function clampByte255(n) {
+    const x = Number(n);
+    if (!Number.isFinite(x)) return 0;
+    return Math.max(0, Math.min(255, Math.round(x)));
+}
+
+/** Drei Kanäle 0–255 → #rrggbb (für Speicher / Picker). */
+function rgb255ToHex(r, g, b) {
+    return `#${[clampByte255(r), clampByte255(g), clampByte255(b)]
+        .map((x) => x.toString(16).padStart(2, '0'))
+        .join('')}`;
+}
+
+/** Liest die drei RGB-Felder und liefert #rrggbb. */
+function readRgbTripletAsHex(rId, gId, bId) {
+    const rv = document.getElementById(rId)?.value ?? '';
+    const gv = document.getElementById(gId)?.value ?? '';
+    const bv = document.getElementById(bId)?.value ?? '';
+    return rgb255ToHex(rv, gv, bv);
+}
+
 /** Datalist-IDs für Spotfarben */
 const SPOT_DATALIST_ID = 'fpSpotColorList';
 
@@ -1654,6 +2241,8 @@ function openSvgFarbpaareForm(index) {
     const rawRgb2 = clean(fp?.color2_rgb);
     const rgb1 = /^#[0-9a-fA-F]{6}$/i.test(rawRgb1) ? rawRgb1 : '#1a2f5a';
     const rgb2 = /^#[0-9a-fA-F]{6}$/i.test(rawRgb2) ? rawRgb2 : '#e8a000';
+    const comp1 = hexToRgb255(rgb1) || { r: 26, g: 47, b: 90 };
+    const comp2 = hexToRgb255(rgb2) || { r: 232, g: 160, b: 0 };
 
     const cmyk1 = parseCmykString(clean(fp?.color1_cmyk));
     const cmyk2 = parseCmykString(clean(fp?.color2_cmyk));
@@ -1719,20 +2308,41 @@ function openSvgFarbpaareForm(index) {
 
                 <label class="fp-field-label">
                     RGB
-                    <span class="fp-field-hint">→ Web-Vorschau</span>
+                    <span class="fp-field-hint">0–255 · Hex in der Vorschau oben</span>
                 </label>
                 <div class="fp-rgb-row">
                     <span class="fp-swatch" id="fpSwatch1" style="background:${escapeAttr(rgb1)}" title="Klicken zum Öffnen des Farbwählers">
                         <input type="color" id="svgFpC1Picker" class="fp-color-well-hidden" value="${escapeAttr(rgb1)}">
                     </span>
-                    <input type="text" id="svgFpC1Rgb" class="fp-hex-input"
-                        value="${escapeAttr(rawRgb1)}" placeholder="#1a2f5a" maxlength="7" spellcheck="false">
+                    <div class="fp-rgb-255-wrap">
+                        <div class="fp-rgb-255-row">
+                            <div class="fp-rgb-255-cell">
+                                <span class="fp-rgb-255-chan">R</span>
+                                <input type="number" min="0" max="255" step="1" id="svgFpC1R" class="fp-rgb-255-input"
+                                    value="${comp1.r}">
+                            </div>
+                            <div class="fp-rgb-255-cell">
+                                <span class="fp-rgb-255-chan">G</span>
+                                <input type="number" min="0" max="255" step="1" id="svgFpC1G" class="fp-rgb-255-input"
+                                    value="${comp1.g}">
+                            </div>
+                            <div class="fp-rgb-255-cell">
+                                <span class="fp-rgb-255-chan">B</span>
+                                <input type="number" min="0" max="255" step="1" id="svgFpC1B" class="fp-rgb-255-input"
+                                    value="${comp1.b}">
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <label class="fp-field-label">
                     CMYK
                     <span class="fp-field-hint">→ Fogra 51 / ISO Coated v2 · Ricoh Pro 7200</span>
                 </label>
+                <div class="fp-cmyk-rgb-btn-row">
+                    <button type="button" class="btn btn-sm fp-cmyk-rgb-btn" id="svgFpC1RgbToCmyk"
+                        title="RGB (oben) in CMYK-% eintragen — Näherung für ISO Coated v2, nicht ICC-exakt">RGB → CMYK</button>
+                </div>
                 <div class="fp-cmyk-row">
                     <div class="fp-cmyk-cell">
                         <span class="fp-cmyk-chan fp-cmyk-c">C</span>
@@ -1781,20 +2391,41 @@ function openSvgFarbpaareForm(index) {
 
                 <label class="fp-field-label">
                     RGB
-                    <span class="fp-field-hint">→ Web-Vorschau</span>
+                    <span class="fp-field-hint">0–255 · Hex in der Vorschau oben</span>
                 </label>
                 <div class="fp-rgb-row">
                     <span class="fp-swatch" id="fpSwatch2" style="background:${escapeAttr(rgb2)}" title="Klicken zum Öffnen des Farbwählers">
                         <input type="color" id="svgFpC2Picker" class="fp-color-well-hidden" value="${escapeAttr(rgb2)}">
                     </span>
-                    <input type="text" id="svgFpC2Rgb" class="fp-hex-input"
-                        value="${escapeAttr(rawRgb2)}" placeholder="#e8a000" maxlength="7" spellcheck="false">
+                    <div class="fp-rgb-255-wrap">
+                        <div class="fp-rgb-255-row">
+                            <div class="fp-rgb-255-cell">
+                                <span class="fp-rgb-255-chan">R</span>
+                                <input type="number" min="0" max="255" step="1" id="svgFpC2R" class="fp-rgb-255-input"
+                                    value="${comp2.r}">
+                            </div>
+                            <div class="fp-rgb-255-cell">
+                                <span class="fp-rgb-255-chan">G</span>
+                                <input type="number" min="0" max="255" step="1" id="svgFpC2G" class="fp-rgb-255-input"
+                                    value="${comp2.g}">
+                            </div>
+                            <div class="fp-rgb-255-cell">
+                                <span class="fp-rgb-255-chan">B</span>
+                                <input type="number" min="0" max="255" step="1" id="svgFpC2B" class="fp-rgb-255-input"
+                                    value="${comp2.b}">
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <label class="fp-field-label">
                     CMYK
                     <span class="fp-field-hint">→ Fogra 51 / ISO Coated v2 · Ricoh Pro 7200</span>
                 </label>
+                <div class="fp-cmyk-rgb-btn-row">
+                    <button type="button" class="btn btn-sm fp-cmyk-rgb-btn" id="svgFpC2RgbToCmyk"
+                        title="RGB (oben) in CMYK-% eintragen — Näherung für ISO Coated v2, nicht ICC-exakt">RGB → CMYK</button>
+                </div>
                 <div class="fp-cmyk-row">
                     <div class="fp-cmyk-cell">
                         <span class="fp-cmyk-chan fp-cmyk-c">C</span>
@@ -1836,30 +2467,39 @@ function openSvgFarbpaareForm(index) {
 
     </div><!-- /.fp-form-wrap -->`;
 
-    // ── Live-Preview: RGB-Picker ↔ Hex-Text ↔ Vorschau ──────────────────────
-    // Nutzt document.getElementById statt container.querySelector für robuste Elementreferenzen
-    function wireColor(pickerId, hexId, previewId, hexDisplayId, dotId, labelId, nameInputId, swatchId) {
-        const picker   = document.getElementById(pickerId);
-        const hexInput = document.getElementById(hexId);
-        const preview  = document.getElementById(previewId);
-        const hexDisp  = document.getElementById(hexDisplayId);
-        const dot      = document.getElementById(dotId);
-        const swatch   = swatchId ? document.getElementById(swatchId) : null;
-        const nameInp  = document.getElementById(nameInputId);
+    // ── Live-Preview: RGB-Picker ↔ R/G/B 0–255 ↔ abgeleiteter Hex in Vorschau ─
+    function wireRgbRow(pickerId, rId, gId, bId, previewId, hexDisplayId, dotId, labelId, nameInputId, swatchId) {
+        const picker  = document.getElementById(pickerId);
+        const rIn     = document.getElementById(rId);
+        const gIn     = document.getElementById(gId);
+        const bIn     = document.getElementById(bId);
+        const preview = document.getElementById(previewId);
+        const hexDisp = document.getElementById(hexDisplayId);
+        const dot     = document.getElementById(dotId);
+        const swatch  = swatchId ? document.getElementById(swatchId) : null;
+        const nameInp = document.getElementById(nameInputId);
 
         function applyColor(hex) {
             if (!preview) return;
             preview.style.background = hex;
             const tc = (() => {
-                const r = parseInt(hex.slice(1,3),16);
-                const g = parseInt(hex.slice(3,5),16);
-                const b = parseInt(hex.slice(5,7),16);
-                return (0.299*r + 0.587*g + 0.114*b) > 140 ? '#111' : '#fff';
+                const r = parseInt(hex.slice(1, 3), 16);
+                const g = parseInt(hex.slice(3, 5), 16);
+                const b = parseInt(hex.slice(5, 7), 16);
+                return (0.299 * r + 0.587 * g + 0.114 * b) > 140 ? '#111' : '#fff';
             })();
             preview.style.color = tc;
             if (hexDisp) hexDisp.textContent = hex;
-            if (dot)     dot.style.background = hex;
-            if (swatch)  swatch.style.background = hex;
+            if (dot) dot.style.background = hex;
+            if (swatch) swatch.style.background = hex;
+        }
+
+        function setRgbInputsFromHex(hex) {
+            const o = hexToRgb255(hex);
+            if (!o || !rIn || !gIn || !bIn) return;
+            rIn.value = String(o.r);
+            gIn.value = String(o.g);
+            bIn.value = String(o.b);
         }
 
         function applyLabel(name) {
@@ -1868,23 +2508,44 @@ function openSvgFarbpaareForm(index) {
         }
 
         picker?.addEventListener('input', () => {
-            if (hexInput) hexInput.value = picker.value;
+            setRgbInputsFromHex(picker.value);
             applyColor(picker.value);
         });
 
-        hexInput?.addEventListener('input', () => {
-            const h = hexInput.value.trim();
-            if (/^#[0-9a-fA-F]{6}$/.test(h)) {
-                picker.value = h;
-                applyColor(h);
-            }
+        [rIn, gIn, bIn].forEach((inp) => {
+            inp?.addEventListener('input', () => {
+                const hex = readRgbTripletAsHex(rId, gId, bId);
+                if (picker) picker.value = hex;
+                applyColor(hex);
+            });
         });
 
         nameInp?.addEventListener('input', () => applyLabel(nameInp.value));
     }
 
-    wireColor('svgFpC1Picker','svgFpC1Rgb','fpPreviewC1','fpPreviewC1Hex','fpDot1','fpPreviewC1Label','svgFpC1Name','fpSwatch1');
-    wireColor('svgFpC2Picker','svgFpC2Rgb','fpPreviewC2','fpPreviewC2Hex','fpDot2','fpPreviewC2Label','svgFpC2Name','fpSwatch2');
+    wireRgbRow('svgFpC1Picker', 'svgFpC1R', 'svgFpC1G', 'svgFpC1B', 'fpPreviewC1', 'fpPreviewC1Hex', 'fpDot1', 'fpPreviewC1Label', 'svgFpC1Name', 'fpSwatch1');
+    wireRgbRow('svgFpC2Picker', 'svgFpC2R', 'svgFpC2G', 'svgFpC2B', 'fpPreviewC2', 'fpPreviewC2Hex', 'fpDot2', 'fpPreviewC2Label', 'svgFpC2Name', 'fpSwatch2');
+
+    function wireRgbToCmyk(btnId, rId, gId, bId, cId, mId, yId, kId) {
+        document.getElementById(btnId)?.addEventListener('click', () => {
+            const hex = readRgbTripletAsHex(rId, gId, bId);
+            const conv = approxSrgbHexToCmykPercent(hex);
+            if (!conv) {
+                showToast('RGB 0–255 prüfen.', 'warn');
+                return;
+            }
+            const c = document.getElementById(cId);
+            const m = document.getElementById(mId);
+            const y = document.getElementById(yId);
+            const k = document.getElementById(kId);
+            if (c) c.value = String(conv.c);
+            if (m) m.value = String(conv.m);
+            if (y) y.value = String(conv.y);
+            if (k) k.value = String(conv.k);
+        });
+    }
+    wireRgbToCmyk('svgFpC1RgbToCmyk', 'svgFpC1R', 'svgFpC1G', 'svgFpC1B', 'svgFpC1C', 'svgFpC1M', 'svgFpC1Y', 'svgFpC1K');
+    wireRgbToCmyk('svgFpC2RgbToCmyk', 'svgFpC2R', 'svgFpC2G', 'svgFpC2B', 'svgFpC2C', 'svgFpC2M', 'svgFpC2Y', 'svgFpC2K');
 
     // ── Auto-Suggest: Paarnamen aus Bezeichnungen zusammensetzen ────────────
     document.getElementById('svgFpNameSuggest')?.addEventListener('click', () => {
@@ -1915,16 +2576,8 @@ async function saveSvgFarbpaare(existingId) {
     const cmyk1 = buildCmykString(g('svgFpC1C'), g('svgFpC1M'), g('svgFpC1Y'), g('svgFpC1K'));
     const cmyk2 = buildCmykString(g('svgFpC2C'), g('svgFpC2M'), g('svgFpC2Y'), g('svgFpC2K'));
 
-    const rgb1 = g('svgFpC1Rgb') || '#000000';
-    const rgb2 = g('svgFpC2Rgb') || '#000000';
-
-    // Validierung
-    if (!/^#[0-9a-fA-F]{6}$/i.test(rgb1)) {
-        showToast('Farbe 1 RGB: ungültiger Hex-Wert (z. B. #1a2f5a).', 'warn'); return;
-    }
-    if (!/^#[0-9a-fA-F]{6}$/i.test(rgb2)) {
-        showToast('Farbe 2 RGB: ungültiger Hex-Wert (z. B. #e8a000).', 'warn'); return;
-    }
+    const rgb1 = readRgbTripletAsHex('svgFpC1R', 'svgFpC1G', 'svgFpC1B');
+    const rgb2 = readRgbTripletAsHex('svgFpC2R', 'svgFpC2G', 'svgFpC2B');
 
     const payload = {
         name:        g('svgFpName')  || 'Farbpaar',
@@ -2250,6 +2903,7 @@ function clearPreview() {
     colorRoleByHex.clear();
     selectedUid = null;
     currentCoverTemplateId = null;
+    currentTemplateGruppe = null;
     document.getElementById('elementsTableWrap').innerHTML = '';
     document.getElementById('colorsWrap').innerHTML = '';
     updatePreviewTemplateName('');
@@ -2260,10 +2914,15 @@ function clearPreview() {
  * @param {string} text
  * @param {string} [filename] – z. B. aus Dateiauswahl oder cover_templates.filename
  * @param {string} [sourceNote] – z. B. „Quelle: Supabase Storage" für die Kopfzeile
+ * @param {string | null} [knownTemplateId] – UUID aus cover_templates (zuverlässige Palette/Upload-Zuordnung)
+ * @param {string | null} [knownGruppe] – cover_templates.gruppe (verhindert falsche Zuordnung bei gleichem Dateinamen)
  */
-function loadSvgFromText(text, filename, sourceNote) {
+function loadSvgFromText(text, filename, sourceNote, knownTemplateId, knownGruppe) {
     if (filename !== undefined) currentSvgFilename = String(filename || '').trim();
     clearPreview();
+    if (knownGruppe != null && String(knownGruppe).trim() !== '') {
+        currentTemplateGruppe = String(knownGruppe).trim();
+    }
     const host = document.getElementById('svgPreviewHost');
 
     // Empty-State-Div im DOM erhalten, nur das SVG-Element hinzufügen
@@ -2297,9 +2956,27 @@ function loadSvgFromText(text, filename, sourceNote) {
     loadFarbpaareRef().then(() => {
         renderFarbpaareReference();
         maybeRefreshSvgShopPanels();
-        void resolveCurrentCoverTemplateId();
+        const tid = knownTemplateId != null ? String(knownTemplateId).trim() : '';
+        if (tid && /^[0-9a-f-]{36}$/i.test(tid)) {
+            currentCoverTemplateId = tid;
+            if (!currentTemplateGruppe) {
+                void loadCoverTemplatesListIfNeeded().then(() => {
+                    const r = coverTemplatesList.find((x) => x.id === tid);
+                    if (r && r.gruppe) currentTemplateGruppe = r.gruppe;
+                    syncSupabaseUploadForm();
+                });
+            } else {
+                syncSupabaseUploadForm();
+            }
+        } else {
+            void resolveCurrentCoverTemplateId();
+        }
         requestAnimationFrame(() => {
-            requestAnimationFrame(() => renderColors());
+            requestAnimationFrame(() => {
+                hydrateColorRolesFromSvg();
+                renderColors();
+                syncLiveDataColorRoles();
+            });
         });
     });
 
@@ -2320,14 +2997,20 @@ function updatePreviewTemplateName(name) {
 }
 
 /**
- * Welches Schema ist für die Dropdown-Auswahl maßgeblich: data-label, sonst id wenn in Schema.
+ * Welches Schema ist für die Dropdown-Auswahl maßgeblich: zuerst SVG-id wenn element_id,
+ * sonst data-label wenn es schon element_id ist, sonst Abgleich über Schema-Label (z. B. „Titel der Arbeit“ → tpl-title).
  * @param {{ el: Element }} r
  */
 function getSchemaSelectValue(r) {
-    const dl = (r.el.getAttribute('data-label') || '').trim();
-    if (dl) return dl;
     const idAttr = (r.el.getAttribute('id') || '').trim();
+    const dl = (r.el.getAttribute('data-label') || '').trim();
     if (idAttr && schemaByElementId.has(idAttr)) return idAttr;
+    if (dl && schemaByElementId.has(dl)) return dl;
+    if (dl) {
+        for (const se of schemaElements) {
+            if (se && (se.label || '').trim() === dl) return se.element_id;
+        }
+    }
     return '';
 }
 
@@ -2551,6 +3234,7 @@ function renderColors() {
             const hex = sel.getAttribute('data-hex');
             if (!hex) return;
             colorRoleByHex.set(hex, sel.value);
+            syncLiveDataColorRoles();
             highlightElementsForHex(hex);
         });
     });
@@ -2694,6 +3378,25 @@ function stripProductionSvg(doc) {
         if (svg.hasAttribute(name)) svg.removeAttribute(name);
     }
 
+    stripGuideElementsFromDoc(doc);
+}
+
+/**
+ * Entfernt Hilfslinien (z. B. Magenta-Rahmen aus Inkscape) – id beginnt mit guide- oder data-editor="guide".
+ * @param {Document} doc
+ */
+function stripGuideElementsFromDoc(doc) {
+    const root = doc.documentElement;
+    if (!root) return;
+    const remove = [];
+    root
+        .querySelectorAll('#guide-sichtbereich, [id^="guide-"], [id^="guide_"], [data-editor="guide"]')
+        .forEach((el) => remove.push(el));
+    for (const el of remove) {
+        try {
+            el.parentNode && el.parentNode.removeChild(el);
+        } catch (_) {}
+    }
 }
 
 async function buildProductionSvgString() {
@@ -2784,6 +3487,17 @@ function escapeAttr(s) {
 
 initSupabaseTemplateBar();
 initSupabaseUploadPanel();
+initTemplateOverviewPanel();
+
+document.getElementById('btnTemplateGroupCreate')?.addEventListener('click', () => void createNewTemplateGroupFromForm());
+document.getElementById('btnTemplateGroupsReload')?.addEventListener('click', () => void refreshTemplateGroupsCache());
+document.getElementById('btnTemplateGroupsSaveAll')?.addEventListener('click', () => void saveAllTemplateGroupsFromTable());
+document.getElementById('templateGroupsTableWrap')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn-tg-open-templates');
+    if (!btn) return;
+    const g = btn.getAttribute('data-gruppe');
+    if (g) switchToEditorTemplatesForGroup(g);
+});
 
 window.addEventListener('message', (e) => {
     const d = e.data;
@@ -2794,6 +3508,7 @@ window.addEventListener('message', (e) => {
         adminSecret: d.adminSecret || '',
     };
     loadSchema();
+    void refreshTemplateGroupsCache();
 });
 
 document.getElementById('fileSvg').addEventListener('change', (ev) => {
@@ -2820,6 +3535,7 @@ document.querySelectorAll('.svg-editor-tabs button').forEach((btn) => {
             colors:    'panelColors',
             palette:   'panelPalette',
             preflight: 'panelPreflight',
+            templates: 'panelTemplates',
             export:    'panelExport',
             schema:    'panelSchema', // legacy, hidden
         };
@@ -2831,6 +3547,10 @@ document.querySelectorAll('.svg-editor-tabs button').forEach((btn) => {
             if (visible) el.scrollTop = 0;
         });
         if (tab === 'palette') void renderTemplatePalettePanel();
+        if (tab === 'templates') {
+            syncSupabaseUploadForm();
+            void renderTemplateOverview();
+        }
         if (tab === 'export') syncSupabaseUploadForm();
     });
 });
@@ -2845,16 +3565,26 @@ document.querySelectorAll('.svg-editor-mode-btn').forEach((btn) => {
         if (editorPanel)   editorPanel.hidden   = (mode !== 'editor');
         if (settingsPanel) settingsPanel.hidden = (mode !== 'settings');
         if (mode === 'settings') {
+            syncSettingsBodyTemplateGroupsWide();
             // Aktiven Einstellungs-Tab initialisieren
             const activeTab = document.querySelector('.svg-editor-settings-tab.active');
             if (activeTab) {
                 const st = activeTab.getAttribute('data-settings-tab');
                 if (st === 'schema-fields') renderSchemaFieldsTable();
                 if (st === 'farbpaare') void initSettingsFarbpaare();
+                if (st === 'template-groups') void refreshTemplateGroupsCache();
             }
         }
     });
 });
+
+function syncSettingsBodyTemplateGroupsWide() {
+    const body = document.querySelector('.svg-editor-settings-body');
+    if (!body) return;
+    const active = document.querySelector('.svg-editor-settings-tab.active');
+    const wide = active?.getAttribute('data-settings-tab') === 'template-groups';
+    body.classList.toggle('svg-editor-settings-body--template-groups-wide', wide);
+}
 
 // ── Einstellungs-Tab-Switching ────────────────────────────────────────────
 document.querySelectorAll('.svg-editor-settings-tab').forEach((btn) => {
@@ -2865,14 +3595,17 @@ document.querySelectorAll('.svg-editor-settings-tab').forEach((btn) => {
         const panelMap = {
             'schema-fields': 'settingsPanelFields',
             'farbpaare':     'settingsPanelFarbpaare',
+            'template-groups': 'settingsPanelTemplateGroups',
         };
         const panelId = panelMap[st];
         if (panelId) {
             const panel = document.getElementById(panelId);
             if (panel) { panel.classList.remove('hidden'); panel.scrollTop = 0; }
         }
+        syncSettingsBodyTemplateGroupsWide();
         if (st === 'schema-fields') renderSchemaFieldsTable();
         if (st === 'farbpaare')     void initSettingsFarbpaare();
+        if (st === 'template-groups') void refreshTemplateGroupsCache();
     });
 });
 
@@ -3107,4 +3840,5 @@ if (new URLSearchParams(location.search).get('embed') === '1') {
 if (typeof window.__SVG_EDITOR_CONFIG__ === 'object' && window.__SVG_EDITOR_CONFIG__) {
     toolConfig = window.__SVG_EDITOR_CONFIG__;
     loadSchema();
+    void refreshTemplateGroupsCache();
 }

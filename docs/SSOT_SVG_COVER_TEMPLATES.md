@@ -2,16 +2,20 @@
 
 **Single Source of Truth** für alle Konventionen, die der **Webshop** (`kalkulator/HardcoverEditor.mjs`), das **Dashboard** (`dashboard-svg-editor.js`), **Supabase** (`cover_schema_elements`) und **KI-generierte SVGs** gemeinsam erfüllen müssen.
 
+**Pflege in der Praxis:** Upload und Metadaten der Cover-Templates, globale Farbpaare, Template↔Farbschema-Zuordnung und Schema-Felder werden **zentral im SCG-Editor** gepflegt (`dashboard-svg-editor.html`, von der Shopkonfiguration unter **Buchdecken** verlinkt). Die übrigen Dashboard-Tools (z. B. Productioner, Preflight, Inkscape-Postprozessor) sind **Hilfsmittel** zur Vorbereitung und Prüfung, keine zweite Verwaltungsoberfläche für dieselben Supabase-Daten.
+
 | Bereich | Datei / Ort |
 |--------|----------------|
 | Layout, Maße, Falz, Kaschierung, BBox, Farblogik (Detail) | `docs/ai_skills/SKILL_01_TECHNICAL.md` |
-| Design, Typografie, Layout-Archetypen | `docs/ai_skills/SKILL_02_DESIGN.md` |
+| Design global (Typo-Bänder, Paletten-Übersicht, Art Direction) | `docs/ai_skills/SKILL_02_DESIGN.md` |
+| **Optik pro Stil** (L-01 … L-05, nur Layout/Look — keine Technik-Duplikate) | `docs/ai_skills/styles/` (README + `SKILL_STYLE_*.md`) |
 | Editor-Verhalten (technisch, kurz) | `kalkulator/docs/EDITOR_SVG_KONVENTIONEN.md` |
 
 ---
 
 ## 1. Prinzip
 
+- **Template-Referenz in Supabase:** Kanonisch ist **`cover_templates.id`** (UUID). Verknüpfungen (z. B. Farbpaare über `cover_template_paletten`) nutzen diese ID. Der **Dateiname** ist **nicht** projektweit eindeutig (Eindeutigkeit nur je **`gruppe`**); das Dashboard löst Zuordnungen deshalb über **UUID** und **`gruppe`**, nicht allein über den Dateinamen.
 - **`element_id` in Supabase** = **`id`-Attribut** der zugehörigen SVG-Elemente (Text `text`, Logo `rect`).
 - Präfix für alle personalisierbaren Felder: **`tpl-`** — so filtert der Webshop-Editor zuverlässig (`text[id^="tpl-"]`, `rect[id^="tpl-logo"]`).
 - **Legacy-IDs** (`front-text-title`, …) sind durch Migration `024_ssot_schema_element_ids_tpl.sql` ersetzt; in neuen Templates nicht mehr verwenden.
@@ -72,13 +76,18 @@ Zusätzliche projektspezifische Felder: weiterhin **`tpl-` + Kleinbuchstaben/Zif
 
 ## 6. Logos / Bilder
 
-- Platzhalter: **`rect`** mit **`id^="tpl-logo"`** (z. B. `tpl-logo-main`).
+- Platzhalter: **`rect`** mit **`id^="tpl-logo"`**. **Kanonisch für neue und KI-generierte Templates:** `tpl-logo-main` (entspricht typisch `cover_schema_elements`). Weitere Logos: eigene eindeutige IDs mit Präfix `tpl-logo-` (z. B. ältere Templates mit `tpl-logo-Logo1` / `tpl-logo-Logo2`).
 
 ---
 
 ## 7. Dokumentmaß
 
-- Vollumschlag: **500 × 330 mm**, **`viewBox="0 0 500 330"`** (1 Einheit = 1 mm). Details: SKILL_01.
+- Vollumschlag: **500 × 330 mm**, **`viewBox="0 0 500 330"`** (1 Einheit = 1 mm). **Produktion Hardcover DIN A4** (Pappe, Falz, 35-mm-Musterrücken, sichtbare 465 × 302, Druck zentriert, SVG-Aufteilung 232,5 / 267,5): alles in **`docs/ai_skills/SKILL_01_TECHNICAL.md`** Abschnitte **1.1–1.3**.
+
+### Hilfslinien (optional, z. B. Inkscape)
+
+- Rahmen mit **`id="guide-sichtbereich"`** oder **`id` beginnt mit `guide-` / `guide_`**: nur für die Bearbeitung; im **Webshop** werden sie beim Laden entfernt, in der **Produktions-SVG** (Dashboard SCG-Editor) beim Export ebenfalls. Die **Quell-SVG**-Datei darf sie weiter enthalten.
+- **`data-editor="guide"`** markiert dieselbe Rolle explizit.
 
 ---
 
@@ -93,10 +102,20 @@ Zusätzliche projektspezifische Felder: weiterhin **`tpl-` + Kleinbuchstaben/Zif
 
 Zielbild: Du lässt ein SVG nach Vorgaben erzeugen, speicherst es lokal unter **`Templates/ai_generated/`**, prüfst es im **Dashboard** (SVG-Personalisierung / Preflight), lädst es nach **Supabase** hoch — danach soll es im **Kalkulator/Webshop** für passende Bindungen nutzbar sein.
 
+**Hinweis zur Anweisung:** In der Praxis reicht oft eine **reine Stilbeschreibung** (Archetyp L-01…L-05 oder eigenes Style-Skill). Der Agent bzw. die KI im Projekt soll **dennoch immer** `SSOT_SVG_COVER_TEMPLATES.md`, `SKILL_01_TECHNICAL.md` und `SKILL_02_DESIGN.md` vollständig einbeziehen — nicht nur das Style-Skill.
+
+### Kurz-Checkliste: Neues Template in 5 Schritten
+
+1. **Generieren:** Stil nennen (siehe SKILL_02 Abschnitt 2 — Layout-Archetypen) oder neues `SKILL_STYLE_*` nutzen; Ausgabe nach **`Templates/ai_generated/`** (SVG, optional gleichnamige `.md` mit Farbvorschlägen).
+2. **Technisch prüfen:** IDs, `tpl-group-*`, BBox, `colorselector` gegen diese SSOT und SKILL_01.
+3. **Dashboard:** Datei öffnen, Schema/Felder abgleichen, **Preflight** ohne harte Fehler.
+4. **Upload:** Template mit passender **`gruppe`** zur Shop-Bindung hochladen.
+5. **Farbzuordnung & Test:** Mindestens ein **Farbpaar** zuordnen; im Webshop mit der richtigen Bindung testen.
+
 | Schritt | Was du tun musst / was passiert |
 |--------|----------------------------------|
-| 1. Generierung | KI hält **SKILL_01**, **SKILL_02** und diese **SSOT** ein: `tpl-*`-IDs, `tpl-group-u1` / `-spine` / `-u4`, `colorselector`, BBox in `defs`, `guide-sichtbereich`. |
-| 2. Datei | SVG liegt unter **`Templates/ai_generated/name.svg`**. |
+| 1. Generierung | KI hält **SKILL_01**, **SKILL_02** und diese **SSOT** ein: `tpl-*`-IDs, `tpl-group-u1` / `-spine` / `-u4` (oder dokumentiertes Ersatzlayout z. B. `layer-back-spine-bg`), `colorselector`, BBox in `defs`; optionale Hilfslinien siehe Abschnitt „Hilfslinien“. |
+| 2. Datei | SVG liegt unter **`Templates/ai_generated/name.svg`**. Optional (von der KI, siehe `.cursorrules`): gleicher Basisname **`name.md`** im selben Ordner — **Farbpaar-Vorschläge** (Rolle von color1/color2, 1–3 Paare mit Namen/Hex, Bezug zu SKILL_02). Du legst die Paare in **Supabase** an; die `.md` ist nur Hilfe, kein Ersatz für die Datenbank. |
 | 3. Dashboard | Datei öffnen, **Felder** mit Schema abgleichen, **Check** (Preflight) ohne harte Fehler; bei Bedarf **Farben** zuweisen. |
 | 4. Upload | Template hochladen mit **`gruppe`** = der Gruppe der Bindung (z. B. `hardcover_modern` — muss zu `editorConfig.templateGroup` im Shop passen, siehe `editorHandler.mjs`). |
 | 5. Farbpaare | Unter **Template-Zuordnung** mindestens ein **Farbpaar** pro Template wählen — sonst lädt der Editor zwar das SVG, die **Farbwahl** kann leer sein (`HardcoverEditor._loadPaletteFromSupabase`). |
@@ -104,6 +123,7 @@ Zielbild: Du lässt ein SVG nach Vorgaben erzeugen, speicherst es lokal unter **
 
 **Hinweise (keine „alten“ Konflikte, aber manuelle Pflichten):**
 
+- **Begleit-`name.md`:** Dient der Übergabe von Farbvorschlägen an dich; Anlage der **`cover_farbpaare`** und **Template-Zuordnung** bleiben manuell im Dashboard/Supabase.  
 - **`cover_schema_elements`** nutzt nach Migration **024** durchgängig **`tpl-*`**; SVG-`id`s müssen dazu passen.  
 - **Druck:** Webfonts im SVG (`@import`) sind für die Vorschau üblich; für belastbaren Druck ggf. **SVG Productioner** (Fonts einbetten) — separates Tool.  
 - **Migration 020** seedet historisch noch `front-text-*`; auf einer frischen DB mit 020+024 sind die Zeilen **`tpl-*`**. Neue Repos: `supabase db reset` wendet die Kette in der richtigen Reihenfolge an.
