@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="500mm"
+   height="330mm"
+   viewBox="0 0 500 330"
+   version="1.1"
+   id="svg-template-modern-scholar"
+   xml:space="preserve"
+   xml:lang="de"
+   xmlns="http://www.w3.org/2000/svg">
+
+  <defs id="defs-modern-scholar">
+    <style type="text/css">
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=Montserrat:wght@600;700;800&amp;display=swap');
+    </style>
+    <rect id="tpl-title_bbox" x="312" y="92" width="118" height="86" style="fill:none;stroke:none" />
+    <rect id="tpl-topic_bbox" x="312" y="198" width="118" height="44" style="fill:none;stroke:none" />
+  </defs>
+
+  <!-- U4 + Ruecken + schmaler Uebergriff (analog Swiss x=295); kein Farbsprung auf 232,5 / 267,5 -->
+  <g id="layer-back-spine-bg" data-layer="back">
+    <rect id="bg-u4-spine-ms" x="0" y="0" width="295" height="330" colorselector="color1" style="fill:#2C3539;stroke:none" />
+  </g>
+
+  <g id="tpl-group-spine" data-layer="spine">
+    <text id="tpl-title-spine" dominant-baseline="central" data-label="Titel (Buchr&#252;cken)" transform="rotate(-90, 250, 155)" text-anchor="start" style="font-family:'Montserrat',sans-serif;font-size:4.1px;font-weight:700;fill:#FFFFFF" x="250" y="155">
+      <tspan x="250" y="155">Titelzeile Buchr&#252;cken</tspan>
+    </text>
+    <text id="tpl-name-spine" dominant-baseline="central" data-label="Name (Buchr&#252;cken)" transform="rotate(-90, 250, 268)" text-anchor="start" style="font-family:'Inter',sans-serif;font-size:3.7px;font-weight:600;fill:#E06D53" colorselector="color2" x="250" y="268">
+      <tspan x="250" y="268">NAME</tspan>
+    </text>
+    <text id="tpl-year-spine" dominant-baseline="central" data-label="Jahr (Buchr&#252;cken)" transform="rotate(-90, 250, 292)" text-anchor="start" style="font-family:'Inter',sans-serif;font-size:3.5px;font-weight:400;fill:#FFFFFF;fill-opacity:0.8" x="250" y="292">
+      <tspan x="250" y="292">2026</tspan>
+    </text>
+  </g>
+
+  <!-- U1: helle Flaeche ab x=295; Inhalte ab 312 (auf Weiss, Abstand zur Falzregion) -->
+  <g id="tpl-group-u1" data-layer="front">
+    <rect id="bg-u1-ms" x="295" y="0" width="205" height="330" style="fill:#F5F6F4;stroke:none" />
+    <!-- Top-Band volle U1-Breite (Swiss: vertikaler Balken) -->
+    <rect id="deco-ms-topband" x="295" y="0" width="205" height="3.2" colorselector="color2" style="fill:#E06D53;stroke:none" />
+    <!-- Kapitellinie nur ueber Textspalte -->
+    <rect id="deco-ms-capline" x="312" y="69" width="72" height="0.75" colorselector="color2" style="fill:#E06D53;stroke:none;fill-opacity:0.85" />
+
+    <text id="tpl-subtitle" data-label="Art der Arbeit" colorselector="color2" text-anchor="start" style="font-family:'Inter',sans-serif;font-size:3.8px;font-weight:700;letter-spacing:0.12em;fill:#E06D53" x="312" y="44">
+      <tspan x="312" y="44">Masterarbeit</tspan>
+    </text>
+
+    <text id="tpl-degree" data-label="Abschluss / Studiengang" text-anchor="start" style="font-family:'Inter',sans-serif;font-size:3.4px;font-weight:500;fill:#2C3539;fill-opacity:0.62" x="312" y="56">
+      <tspan x="312" y="56">M.Sc., Beispielstudiengang</tspan>
+    </text>
+
+    <text id="tpl-title" data-label="Titel der Arbeit" colorselector="color1" text-anchor="start" style="font-family:'Montserrat',sans-serif;font-size:13.5px;font-weight:800;fill:#2C3539;letter-spacing:-0.035em" x="312" y="100">
+      <tspan x="312" y="100">Modern</tspan>
+      <tspan x="312" y="120">Scholar</tspan>
+    </text>
+
+    <text id="tpl-topic" data-label="Thema / Fach" data-multiline="true" data-max-lines="3" text-anchor="start" style="font-family:'Inter',sans-serif;font-size:3.85px;font-weight:300;fill:#2C3539;fill-opacity:0.7" x="312" y="204">
+      <tspan x="312" y="204">Linksb&#252;ndige Spalte, viel Freiraum</tspan>
+      <tspan x="312" y="209.6">zum Schnittrand rechts.</tspan>
+    </text>
+
+    <text id="tpl-name" data-label="Name" colorselector="color1" text-anchor="start" style="font-family:'Inter',sans-serif;font-size:7px;font-weight:600;fill:#2C3539" x="312" y="252">
+      <tspan x="312" y="252">Vorname Nachname</tspan>
+    </text>
+
+    <text id="tpl-university" data-label="Hochschule" text-anchor="start" style="font-family:'Inter',sans-serif;font-size:3.4px;font-weight:400;fill:#2C3539;fill-opacity:0.48" x="312" y="296">
+      <tspan x="312" y="296">Universit&#228;t</tspan>
+    </text>
+    <text id="tpl-year" data-label="Jahr" text-anchor="start" style="font-family:'Inter',sans-serif;font-size:3.4px;font-weight:400;fill:#2C3539;fill-opacity:0.48" x="312" y="306">
+      <tspan x="312" y="306">2026</tspan>
+    </text>
+  </g>
+
+  <g id="guide-sichtbereich" style="opacity:0.4">
+    <rect x="15" y="15" width="212" height="300" style="fill:none;stroke:#FF00FF;stroke-width:0.3" />
+    <rect x="232.5" y="15" width="35" height="300" style="fill:none;stroke:#FF00FF;stroke-width:0.3" />
+    <rect x="275.5" y="15" width="209.5" height="300" style="fill:none;stroke:#FF00FF;stroke-width:0.3" />
+  </g>
+</svg>

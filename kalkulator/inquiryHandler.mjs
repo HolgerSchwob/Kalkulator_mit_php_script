@@ -28,6 +28,7 @@ async function validateB2bCodeRemote(codeRaw) {
         headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + supabaseConfig.anonKey,
+            apikey: supabaseConfig.anonKey,
         },
         body: JSON.stringify({ code: codeRaw, order_total_eur: total }),
     });
@@ -278,6 +279,7 @@ async function handleSubmit(event) {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + supabaseConfig.anonKey,
+                apikey: supabaseConfig.anonKey,
             },
             body: JSON.stringify({
                 inquiryDetails,

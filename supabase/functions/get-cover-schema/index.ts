@@ -36,7 +36,9 @@ Deno.serve(async (req) => {
     // Schema-Felder
     let qEl = supabase
       .from('cover_schema_elements')
-      .select('id, element_id, label, placeholder, element_type, required, layer, sort_order, active, created_at, updated_at')
+      .select(
+        'id, element_id, label, placeholder, element_type, required, layer, sort_order, active, editor_slot, created_at, updated_at',
+      )
     if (!admin) qEl = qEl.eq('active', true)
     const { data: elements, error: elErr } = await qEl.order('sort_order', { ascending: true })
     if (elErr) {

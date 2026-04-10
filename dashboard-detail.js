@@ -3,11 +3,11 @@
  */
 import { state, STATUS_DROPDOWN, ASSIGNEES } from './dashboard-state.js';
 import { escapeHtml } from './dashboard-utils.js';
-import { getOrderDetail, updateOrder, sendOrderEmail, getEmailTemplates, getShopConfig, getFarbpaare, getTemplateZuordnungAll, getCoverTemplatesAdmin } from './dashboard-api.js';
+import { getOrderDetail, updateOrder, sendOrderEmail, getEmailTemplates, getShopConfig } from './dashboard-api.js';
 import { showListView, showDetailView } from './dashboard-nav.js';
 import { initOrders, refreshList } from './dashboard-orders.js';
 import { renderTemplatesList } from './dashboard-settings-mail.js';
-import { ensureShopConfig, renderShopConfigTabs, renderShopGeneralForm, renderShopPapersList, renderShopProductionLists, renderShopBindingsList, renderShopExtrasList, renderShopColorPairsList, renderTemplateZuordnungList, renderCoverTemplatesList } from './dashboard-settings-shop.js';
+import { ensureShopConfig, renderShopConfigTabs, renderShopGeneralForm, renderShopPapersList, renderShopProductionLists, renderShopBindingsList, renderShopExtrasList } from './dashboard-settings-shop.js';
 
 async function closeDetailAndSave() {
     if (!state.currentOrderId) {
@@ -73,9 +73,6 @@ async function showSettingsView() {
     document.getElementById('shopConfigWrap').style.display = 'none';
     try {
         state.shopConfigData = await getShopConfig();
-        state.farbpaareList = await getFarbpaare();
-        state.templateZuordnungList = await getTemplateZuordnungAll();
-        state.coverTemplatesList = await getCoverTemplatesAdmin().catch(() => []);
         state.availableTemplates = [];
         const templatePath = state.shopConfigData?.bindings?.find(b => b.editorConfig?.templatePath)?.editorConfig?.templatePath;
         if (templatePath) {
@@ -94,9 +91,6 @@ async function showSettingsView() {
         renderShopProductionLists();
         renderShopBindingsList();
         renderShopExtrasList();
-        renderShopColorPairsList();
-        renderCoverTemplatesList();
-        renderTemplateZuordnungList();
     } catch (e) {
         document.getElementById('shopConfigError').textContent = e.message;
         document.getElementById('shopConfigError').style.display = 'block';
@@ -257,6 +251,7 @@ function renderDetail(data) {
         const fullLabel = k.replace(/^svg_/, '');
         html += '<a href="' + escapeHtml(downloadUrls[k]) + '" target="_blank" rel="noopener" class="secondary" title="' + escapeHtml(fullLabel) + '">Buchdecke ' + (idx + 1) + '</a>';
     });
+    html += '<button type="button" class="secondary" id="btnSaveSvgsLocal" title="SVGs aus Storage laden, sonst aus Auftragsdaten (editorData.svgString) – temporär zur Prüfung">SVG-Dateien lokal speichern</button>';
     const hasAgent = !!state.config.agentUrl;
     const localSyncedAt = order.local_synced_at;
     if (hasAgent) {
@@ -335,11 +330,17 @@ async function generateOrderSheetPdf(data) {
     function describeBindingVariant(variant) {
         const lines = [];
         const bindingConf = bindingsConf.find(b => b.id === variant.bindingTypeId) || null;
+        const perso = personalizations[variant.id];
+        const params = perso?.editorData?.parameters || {};
+        const variantOpts = variant.options || variant.selectedOptions || {};
         if (bindingConf) {
             lines.push(bindingConf.name || (variant.name || 'Variante'));
-            if (bindingConf.options && variant.options) {
+            if (bindingConf.options && variantOpts) {
                 bindingConf.options.forEach(opt => {
-                    const selectedValue = variant.options[opt.optionKey];
+                    let selectedValue = variantOpts[opt.optionKey];
+                    if (opt.optionKey === 'foil_type' && params.foilTypeId) {
+                        selectedValue = params.foilTypeId;
+                    }
                     if (selectedValue === undefined || selectedValue === null) return;
                     const label = opt.name || opt.groupName || opt.optionKey;
                     if (opt.type === 'radio') {
@@ -355,8 +356,6 @@ async function generateOrderSheetPdf(data) {
         } else {
             lines.push(variant.name || 'Variante');
         }
-        const perso = personalizations[variant.id];
-        const params = perso?.editorData?.parameters || {};
         if (params.templateDisplayName) {
             lines.push(`Cover-Template: ${params.templateDisplayName}`);
         }
@@ -514,9 +513,86 @@ async function generateOrderSheetPdf(data) {
     pdfMake.createPdf(docDef).download(fileName);
 }
 
+function triggerSvgBlobDownload(blob, downloadName) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = downloadName;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+}
+
+/**
+ * SVGs: zuerst signierte URLs aus order-files (Storage), sonst Rohdaten aus payload.inquiryDetails.personalizations[].editorData.svgString.
+ */
+async function saveSvgFilesLocally(downloadUrls, orderNumber, order) {
+    const orderPrefix = (orderNumber || 'auftrag').replace(/[^a-zA-Z0-9-_]/g, '_');
+    const svgKeys = Object.keys(downloadUrls || {}).filter(k => k.startsWith('svg_'));
+
+    if (svgKeys.length > 0) {
+        for (let i = 0; i < svgKeys.length; i++) {
+            const k = svgKeys[i];
+            const url = downloadUrls[k];
+            let baseName = k.replace(/^svg_/, '') || `buchdecke_${i + 1}.svg`;
+            if (!/\.svg$/i.test(baseName)) baseName += '.svg';
+            const downloadName = `${orderPrefix}_${baseName}`.replace(/[/\\?%*:|"<>]/g, '_');
+            try {
+                const res = await fetch(url, { mode: 'cors' });
+                if (!res.ok) throw new Error(res.statusText || String(res.status));
+                const blob = await res.blob();
+                triggerSvgBlobDownload(blob, downloadName);
+                await new Promise(r => setTimeout(r, 400));
+            } catch (e) {
+                alert('Download fehlgeschlagen: ' + downloadName + '\n' + (e && e.message ? e.message : String(e)));
+                return;
+            }
+        }
+        return;
+    }
+
+    const p = order?.payload || {};
+    const inquiry = p.inquiryDetails || {};
+    const personalizations = inquiry.personalizations || {};
+    const variants = p.priceDetails?.variantsWithPrices || [];
+    let saved = 0;
+    const ids = Object.keys(personalizations);
+    for (let i = 0; i < ids.length; i++) {
+        const vid = ids[i];
+        const svg = personalizations[vid]?.editorData?.svgString;
+        if (!svg || typeof svg !== 'string') continue;
+        const v = variants.find(x => x.id === vid);
+        const safeName = (v && v.name ? String(v.name) : 'cover').replace(/[^a-zA-Z0-9]/g, '_');
+        const downloadName = `${orderPrefix}_personalisierung_${safeName}_${vid}.svg`.replace(/[/\\?%*:|"<>]/g, '_');
+        try {
+            const blob = new Blob([svg], { type: 'image/svg+xml' });
+            triggerSvgBlobDownload(blob, downloadName);
+            saved += 1;
+            await new Promise(r => setTimeout(r, 400));
+        } catch (e) {
+            alert('Download fehlgeschlagen: ' + downloadName + '\n' + (e && e.message ? e.message : String(e)));
+            return;
+        }
+    }
+    if (saved === 0) {
+        alert('Keine SVG-Dateien: im Speicher (order-files) keine .svg gefunden und in den Auftragsdaten kein editorData.svgString.');
+    }
+}
+
 function bindDetailActions(content, data) {
     const order = data.order || {};
     const orderId = order.id;
+    const downloadUrls = data.downloadUrls || {};
+    content.querySelector('#btnSaveSvgsLocal')?.addEventListener('click', async () => {
+        const btn = content.querySelector('#btnSaveSvgsLocal');
+        if (btn) btn.disabled = true;
+        try {
+            await saveSvgFilesLocally(downloadUrls, order.order_number || '', order);
+        } finally {
+            if (btn) btn.disabled = false;
+        }
+    });
     content.querySelector('#btnPaymentToggle')?.addEventListener('click', async () => {
         const isPaid = order.status === 'Bezahlt';
         const msg = isPaid ? 'Zahlung noch offen? Ja / Nein' : 'Zahlung eingegangen? Ja / Nein';

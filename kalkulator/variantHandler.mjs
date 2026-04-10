@@ -216,6 +216,13 @@ export function updateVariantsUI(variantsWithPrices, bookBlockState, personaliza
             let optionsHTML = '';
             if (bindingConfig.options && bindingConfig.options.length > 0) {
                 bindingConfig.options.forEach(optGroup => {
+                    // Folientyp nur im Buchdecken-Editor, nicht doppelt im Formular (Preise kommen aus Shop-Config + Editor-Parameter)
+                    if (
+                        optGroup.optionKey === 'foil_type' &&
+                        bindingConfig.personalizationInterface === 'coverEditor'
+                    ) {
+                        return;
+                    }
                     optionsHTML += `<fieldset class="variant-option-group"><legend>${escapeHtml(optGroup.name)}</legend>`;
                     optGroup.choices.forEach(choice => {
                         const isChecked = variant.selectedOptions[optGroup.optionKey] === choice.id;

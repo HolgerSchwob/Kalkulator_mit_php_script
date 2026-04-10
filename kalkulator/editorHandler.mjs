@@ -34,7 +34,19 @@ async function fetchCoverTemplateGroupConfig(templateGroup) {
  * @param {object} existingPersonalization - Any existing personalization data for this variant.
  * @param {function} onSubmitCallback - The function to call when the editor is successfully submitted.
  */
-export async function launchEditorForVariant(variant, bindingConfig, bookBlockThicknessMm, existingPersonalization, onSubmitCallback) {
+/**
+ * @param {object} [options]
+ * @param {string | null} [options.bookBlockPreviewUrl] – Data-URL / URL erste PDF-Seite (Buchblock)
+ * @param {string | null} [options.bookBlockPreviewFallbackUrl] – optional, überschreibt editorConfig
+ */
+export async function launchEditorForVariant(
+    variant,
+    bindingConfig,
+    bookBlockThicknessMm,
+    existingPersonalization,
+    onSubmitCallback,
+    options = {}
+) {
     if (!bindingConfig.personalizationInterface || bindingConfig.personalizationInterface !== 'coverEditor') {
         console.warn(`Attempted to launch SVG editor for binding type "${bindingConfig.id}" which does not use it.`);
         return;
@@ -66,6 +78,19 @@ export async function launchEditorForVariant(variant, bindingConfig, bookBlockTh
         };
     }
 
+    const ec = bindingSpecificConfig || {};
+    const bookBlockPreviewUrl =
+        options.bookBlockPreviewUrl !== undefined ? options.bookBlockPreviewUrl : null;
+    const bookBlockPreviewFallbackUrl =
+        options.bookBlockPreviewFallbackUrl !== undefined
+            ? options.bookBlockPreviewFallbackUrl
+            : ec.bookBlockPreviewFallbackUrl ?? null;
+
+    const foilOptionGroup = (bindingConfig.options || []).find((o) => o.optionKey === 'foil_type');
+    const foilTypeChoices = foilOptionGroup?.choices || null;
+
+    const initialDataMerged = { ...(existingPersonalization || {}) };
+
     const editorConfig = {
         ...bindingSpecificConfig,
         templateSource,
@@ -73,7 +98,10 @@ export async function launchEditorForVariant(variant, bindingConfig, bookBlockTh
         bindingType: editorBindingType,
         spineWidth,
         dimensions: dimensions || undefined,
-        initialData: existingPersonalization || {},
+        foilTypeChoices,
+        initialData: initialDataMerged,
+        bookBlockPreviewUrl,
+        bookBlockPreviewFallbackUrl,
         onSubmit: (result) => {
             if (onSubmitCallback) onSubmitCallback(variant.id, result);
         },

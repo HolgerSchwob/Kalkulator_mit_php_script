@@ -45,7 +45,7 @@
             </button>
         </div>
 
-        <p class="svg-editor-hint" id="topHint">Aus dem Dashboard öffnen, damit Supabase-Verbindung aktiv ist.</p>
+        <p class="svg-editor-hint" id="topHint">Zentrale Verwaltung für Buchdecken-Templates, Farben und Schema (Supabase). Aus dem Dashboard öffnen oder dieselbe <code>dashboard.config.json</code> nutzen.</p>
     </header>
 
     <!-- ══════════════════════════════════════════════════ EDITOR-MODUS -->
@@ -96,7 +96,8 @@
                 <button type="button" data-tab="colors"   role="tab" title="Farbrollen zuweisen">◈ Farben</button>
                 <button type="button" data-tab="palette"  role="tab" title="Welche Farbpaare kann der Kunde für dieses Template wählen?">🎨 Auswahl</button>
                 <button type="button" data-tab="preflight" role="tab" title="SVG gegen Schema prüfen">✓ Check</button>
-                <button type="button" data-tab="export"   role="tab" title="Exportieren &amp; Hochladen">↑ Export</button>
+                <button type="button" data-tab="templates" role="tab" title="Shop-Templates: Liste, Reihenfolge, Upload">📋 Templates</button>
+                <button type="button" data-tab="export"   role="tab" title="Lokal exportieren">↑ Export</button>
             </nav>
 
             <!-- ─── Tab: Felder ─────────────────────────────────────── -->
@@ -111,14 +112,15 @@
 
             <!-- ─── Tab: Farben ─────────────────────────────────────── -->
             <div class="svg-editor-tab-panel hidden" id="panelColors" role="tabpanel">
-                <p class="schema-status"><strong>color-1</strong> = Hauptfarbe &nbsp;·&nbsp; <strong>color-2</strong> = Akzentfarbe.<br>Jedes SVG-Element einer Farbkategorie zuweisen.</p>
+                <p class="schema-status"><strong>color-1</strong> = Hauptfarbe &nbsp;·&nbsp; <strong>color-2</strong> = Akzentfarbe.<br>Jedes erkannte Farb-Vorkommen einer Rolle zuweisen. Beim Ändern werden <code>data-color-role</code>-Attribute im geladenen SVG mitgeschrieben.</p>
+                <p class="schema-status ok colors-persist-hint">In Supabase speichern: Tab <strong>Templates</strong> → <strong>Hochladen</strong> (Produktions-SVG). Oder lokal: Tab <strong>Export</strong> → Produktion. Ohne Export/Upload bleibt die Datei auf dem Server unverändert.</p>
                 <div id="farbpaareRefWrap" class="farbpaare-ref-wrap"></div>
                 <div id="colorsWrap" class="color-swatches"></div>
             </div>
 
             <!-- ─── Tab: Palette ────────────────────────────────────── -->
             <div class="svg-editor-tab-panel hidden" id="panelPalette" role="tabpanel">
-                <p class="schema-status">Welche Farbpaare kann der Kunde im Shop für <em>dieses Template</em> wählen?<br>Globale Farbpaare verwalten: <strong>⚙ Einstellungen → Farbpaare</strong>.</p>
+                <p class="schema-status">Gilt immer für das <strong>aktuell geöffnete</strong> Supabase-Template (UUID siehe unten). Speichern schreibt <code>cover_template_paletten</code>. Globale Farbpaare: <strong>⚙ Einstellungen → Farbpaare</strong>.</p>
                 <div id="palettePanelWrap"></div>
             </div>
 
@@ -129,10 +131,60 @@
                 <div id="preflightList" class="preflight-list"></div>
             </div>
 
-            <!-- ─── Tab: Export & Upload ────────────────────────────── -->
-            <div class="svg-editor-tab-panel hidden" id="panelExport" role="tabpanel">
+            <!-- ─── Tab: Shop-Templates (Liste + Upload) ────────────── -->
+            <div class="svg-editor-tab-panel hidden" id="panelTemplates" role="tabpanel">
+                <p class="schema-status">Alle hochgeladenen Cover-Templates. <strong>Reihenfolge</strong> gilt innerhalb der jeweiligen <strong>Gruppe</strong> (wie im Shop). <strong>Aktiv</strong> = im Shop wählbar; deaktiviert = ausgeblendet.</p>
+                <div class="tmpl-overview-toolbar">
+                    <label class="tmpl-overview-filter-label">Gruppe
+                        <select id="tmplOverviewGruppeFilter" class="svg-shop-select tmpl-overview-filter" title="Liste filtern"></select>
+                    </label>
+                    <button type="button" class="btn btn-sm" id="btnTmplOverviewRefresh">↻ Liste laden</button>
+                </div>
+                <div id="tmplOverviewTableWrap" class="tmpl-overview-table-wrap"></div>
+                <div class="svg-shop-actions tmpl-overview-save-row">
+                    <button type="button" class="btn btn-primary btn-sm" id="btnTmplOverviewSaveList">Änderungen speichern</button>
+                </div>
 
-                <!-- Lokal speichern -->
+                <div class="svg-editor-templates-divider" role="separator" aria-hidden="true"></div>
+
+                <div class="export-section svg-editor-upload-block" id="supabaseUploadBlock">
+                    <p class="export-section-label">Aktuelles SVG als Produktionsversion hochladen</p>
+                    <div class="svg-editor-info-box" id="supabaseUploadInfoBox" aria-label="Hinweise zum Upload">
+                        <ul class="svg-editor-info-box-list" id="supabaseUploadBullets"></ul>
+                    </div>
+                    <div id="supabaseUploadFormWrap">
+                        <div class="svg-editor-upload-modes">
+                            <label class="svg-editor-upload-radio"><input type="radio" name="supabaseUploadMode" value="new" id="supabaseUploadModeNew" checked> Neues Template</label>
+                            <label class="svg-editor-upload-radio"><input type="radio" name="supabaseUploadMode" value="replace" id="supabaseUploadModeReplace" disabled> Ersetzen</label>
+                        </div>
+                        <div id="supabaseUploadFieldsNew" class="svg-editor-upload-fields">
+                            <div class="svg-shop-form-row">
+                                <label for="supabaseUploadDisplayName">Anzeigename</label>
+                                <input type="text" id="supabaseUploadDisplayName" class="svg-shop-input" placeholder="z. B. Wave Modern" />
+                            </div>
+                            <div class="svg-shop-form-row">
+                                <label for="supabaseUploadGruppe">Gruppe</label>
+                                <select id="supabaseUploadGruppe" class="svg-shop-select"></select>
+                            </div>
+                            <div class="svg-shop-form-row">
+                                <label for="supabaseUploadSort">Sortierung <span class="text-muted">(innerhalb der Gruppe)</span></label>
+                                <input type="number" id="supabaseUploadSort" class="svg-shop-input" min="0" value="0" />
+                            </div>
+                            <div class="svg-shop-form-row">
+                                <label for="supabaseUploadFilename">Dateiname (.svg)</label>
+                                <input type="text" id="supabaseUploadFilename" class="svg-shop-input" placeholder="mein-template.svg" />
+                            </div>
+                        </div>
+                        <div class="svg-shop-actions">
+                            <button type="button" class="btn btn-primary btn-upload-cta" id="btnSupabaseUpload">↑ Hochladen</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ─── Tab: Export (nur lokal) ─────────────────────────── -->
+            <div class="svg-editor-tab-panel hidden" id="panelExport" role="tabpanel">
+                <p class="schema-status">Nur <strong>lokaler Download</strong> des aktuell geladenen SVG. Shop-Liste, Reihenfolge, Aktiv/Inaktiv und Supabase-Upload: Tab <strong>📋 Templates</strong>.</p>
                 <div class="export-section">
                     <p class="export-section-label">Lokal speichern</p>
                     <div class="export-local-row">
@@ -144,40 +196,6 @@
                             ↓ Produktion
                             <small>Fonts eingebettet · RIP-ready</small>
                         </button>
-                    </div>
-                </div>
-
-                <!-- Supabase hochladen -->
-                <div class="export-section svg-editor-upload-block" id="supabaseUploadBlock">
-                    <p class="export-section-label">Supabase hochladen</p>
-                    <p class="schema-status" id="supabaseUploadHint">Speichert die Produktion-SVG (Fonts eingebettet) im Storage-Bucket <code>cover-templates</code>. Erfordert Admin-Secret.</p>
-                    <div id="supabaseUploadFormWrap">
-                        <div class="svg-editor-upload-modes">
-                            <label class="svg-editor-upload-radio"><input type="radio" name="supabaseUploadMode" value="new" id="supabaseUploadModeNew" checked> Neues Template</label>
-                            <label class="svg-editor-upload-radio"><input type="radio" name="supabaseUploadMode" value="replace" id="supabaseUploadModeReplace" disabled> Ersetzen</label>
-                        </div>
-                        <p class="schema-status ok hidden" id="supabaseUploadReplaceInfo"></p>
-                        <div id="supabaseUploadFieldsNew" class="svg-editor-upload-fields">
-                            <div class="svg-shop-form-row">
-                                <label for="supabaseUploadDisplayName">Anzeigename</label>
-                                <input type="text" id="supabaseUploadDisplayName" class="svg-shop-input" placeholder="z. B. Wave Modern" />
-                            </div>
-                            <div class="svg-shop-form-row">
-                                <label for="supabaseUploadGruppe">Gruppe</label>
-                                <select id="supabaseUploadGruppe" class="svg-shop-select"></select>
-                            </div>
-                            <div class="svg-shop-form-row">
-                                <label for="supabaseUploadSort">Sortierung</label>
-                                <input type="number" id="supabaseUploadSort" class="svg-shop-input" min="0" value="0" />
-                            </div>
-                            <div class="svg-shop-form-row">
-                                <label for="supabaseUploadFilename">Dateiname (.svg)</label>
-                                <input type="text" id="supabaseUploadFilename" class="svg-shop-input" placeholder="mein-template.svg" />
-                            </div>
-                        </div>
-                        <div class="svg-shop-actions">
-                            <button type="button" class="btn btn-primary btn-upload-cta" id="btnSupabaseUpload">↑ Hochladen</button>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -197,6 +215,9 @@
             <button type="button" class="svg-editor-settings-tab" data-settings-tab="farbpaare" role="tab">
                 🎨 Farbpaare
             </button>
+            <button type="button" class="svg-editor-settings-tab" data-settings-tab="template-groups" role="tab">
+                📐 Template-Gruppen
+            </button>
         </nav>
 
         <div class="svg-editor-settings-body">
@@ -206,6 +227,13 @@
                 <div class="settings-panel-header">
                     <h2>Schema-Felder <code>(cover_schema_elements)</code></h2>
                     <p class="schema-status" id="schemaManageHint">Globale Liste aller personalisierbaren Felder. Aktive Felder erscheinen im Shop-Editor.</p>
+                    <details class="settings-hint schema-slot-hint" style="margin-top:10px;">
+                        <summary>Editor-Slot: Buchblock erste Seite (<code>book_block_first_page</code>)</summary>
+                        <div style="margin-top:8px;font-size:0.92em;line-height:1.45;">
+                            <p>Für ein <strong><code>&lt;image&gt;</code></strong>-Element im SVG (nicht <code>rect</code>): Spalte <strong>Editor-Slot</strong> auf <code>book_block_first_page</code> setzen und dieselbe <code>element_id</code> wie die SVG-<code>id</code> wählen. Beim Öffnen des Editors wird dann die Vorschau der ersten Buchblock-PDF-Seite eingesetzt (falls der Kunde eine PDF analysiert hat).</p>
+                            <p><strong>Fest-ID ohne extra Schema-Zeile:</strong> Existiert im Template ein <code>&lt;image id="tpl-pdf-page1"&gt;</code> (z.&nbsp;B. Paperback Deckfolie), befüllt der Webshop das Bild ebenfalls automatisch — die Schema-Zeile ist dafür optional. Details: <code>docs/SSOT_SVG_COVER_TEMPLATES.md</code>.</p>
+                        </div>
+                    </details>
                 </div>
                 <div class="schema-toolbar">
                     <button type="button" class="btn btn-primary btn-sm" id="btnSchemaNewField">＋ Neues Feld</button>
@@ -225,6 +253,33 @@
                 <div id="svgFarbpaareForm" class="svg-farbpaare-form hidden"></div>
             </div>
 
+            <!-- ─── Einstellungen: Template-Gruppen (cover_template_groups) ─── -->
+            <div class="svg-editor-settings-panel hidden" id="settingsPanelTemplateGroups">
+                <div class="settings-panel-header">
+                    <h2>Template-Gruppen <code>(cover_template_groups)</code></h2>
+                    <p class="schema-status">Maße und Falz gelten für alle Templates dieser Gruppe. Neue <strong>id</strong> muss in der Shop-Bindung (<code>editorConfig.templateGroup</code> / Shop-Config) eingetragen sein, sonst erscheint sie im Kalkulator nicht.</p>
+                </div>
+                <div class="template-groups-new-block">
+                    <p class="export-section-label">Neue Gruppe anlegen</p>
+                    <div class="svg-shop-form-row">
+                        <label for="newGroupId">id <span class="text-muted">(Kleinbuchstaben, Ziffern, _)</span></label>
+                        <input type="text" id="newGroupId" class="svg-shop-input" placeholder="z. B. hardcover_modern" autocomplete="off" />
+                    </div>
+                    <div class="svg-shop-form-row">
+                        <label for="newGroupDisplayName">Anzeigename</label>
+                        <input type="text" id="newGroupDisplayName" class="svg-shop-input" placeholder="z. B. Hardcover Modern" />
+                    </div>
+                    <div class="svg-shop-actions">
+                        <button type="button" class="btn btn-primary btn-sm" id="btnTemplateGroupCreate">Gruppe anlegen</button>
+                    </div>
+                </div>
+                <div class="template-groups-toolbar svg-shop-actions">
+                    <button type="button" class="btn btn-sm" id="btnTemplateGroupsReload">↻ Neu laden</button>
+                    <button type="button" class="btn btn-primary btn-sm" id="btnTemplateGroupsSaveAll">Alle Änderungen speichern</button>
+                </div>
+                <div id="templateGroupsTableWrap" class="template-groups-table-wrap"></div>
+            </div>
+
         </div>
     </div>
 
@@ -239,6 +294,16 @@
         <p id="farbpaareRefWrap" style="display:none"></p>
     </div>
 
+</div>
+<!-- Zusammenfassung Produktion / Upload (OK schließt) -->
+<div id="productionSummaryOverlay" class="svg-editor-modal-overlay" hidden aria-hidden="true">
+    <div class="svg-editor-modal" role="dialog" aria-modal="true" aria-labelledby="productionSummaryTitle">
+        <h2 id="productionSummaryTitle" class="svg-editor-modal-title"></h2>
+        <ul id="productionSummaryList" class="svg-editor-modal-list"></ul>
+        <div class="svg-editor-modal-actions">
+            <button type="button" class="btn btn-primary svg-editor-modal-ok" id="productionSummaryOk">OK</button>
+        </div>
+    </div>
 </div>
 <!-- Toast-Benachrichtigungen -->
 <div class="svg-editor-toast-container" id="toastContainer" aria-live="polite" aria-atomic="false"></div>

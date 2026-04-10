@@ -55,3 +55,43 @@ In Cursor: Source Control → Commit → Sync/Push. Oder Konsole: `git pull`, ar
 
 - **dashboard.config.json** und **supabase.config.json** stehen in `.gitignore` und werden nicht hochgeladen. Auf dem Laptop musst du sie einmal aus den `.example`-Dateien anlegen und mit deinen echten Werten füllen.
 - Google Service Account JSON-Dateien (z. B. für E-Mail-Versand) werden ebenfalls nicht committet. Auf dem Laptop die gleiche JSON-Datei lokal ablegen und in Supabase (Edge Function Secrets) erneut eintragen, falls nötig.
+
+---
+
+## Vercel (GitHub → Live-URL)
+
+Deployment-Host für die **statische Website**. Backend bleibt **Supabase** (Edge Functions, DB); dort auch **Stripe**-Checkout-Logik.
+
+### Einmalig: Projekt bei Vercel
+
+1. [vercel.com](https://vercel.com) → **Add New…** → **Project** → GitHub-Repo auswählen.
+2. **Framework Preset:** Other (oder „Other“ mit statischem Output).
+3. **Root Directory:** Repo-Root (Ordner mit `index.html`), falls nicht anders gewählt.
+4. **Build Command:** `npm run build` (schreibt `supabase.config.json` / optional `dashboard.config.json` aus Umgebungsvariablen).
+5. **Output Directory:** `.` (aktueller Ordner nach dem Build).
+6. **Install Command:** `npm install` (Standard).
+
+### Umgebungsvariablen bei Vercel (Settings → Environment Variables)
+
+| Variable | Pflicht | Inhalt |
+|----------|---------|--------|
+| `SUPABASE_URL` | ja | Projekt-URL, z. B. `https://xxxx.supabase.co` (ohne Slash am Ende) |
+| `SUPABASE_ANON_KEY` | ja | **anon public**-Key aus Supabase → Project Settings → API |
+| `ADMIN_SECRET` | optional | Gleicher Wert wie Supabase Edge Function Secret `ADMIN_SECRET` – **nur setzen**, wenn `dashboard.html` auf der Vercel-URL nutzbar sein soll |
+| `DASHBOARD_PASSWORD` | optional | Leer lassen oder wie lokal |
+| `AGENT_URL` | optional | Meist leer auf Production; nur wenn FileAgent öffentlich erreichbar |
+| `AGENT_API_KEY` | optional | Wie lokal, sonst leer |
+
+Ohne `ADMIN_SECRET` wird **keine** `dashboard.config.json` erzeugt – Landingpage und Kalkulator funktionieren trotzdem (nur Dashboard nicht).
+
+Lokale Dateien `supabase.config.json` / `dashboard.config.json` werden **nicht** ins Repo committed (`.gitignore`); der Build auf Vercel erzeugt sie zur Deploy-Zeit.
+
+### Nach dem ersten erfolgreichen Deploy
+
+1. **Supabase → Edge Functions → Secrets:** `PUBLIC_SITE_URL` auf die **öffentliche Vercel-Domain** setzen (z. B. `https://dein-projekt.vercel.app` oder Custom Domain). Wird u. a. für Stripe **success/cancel**-URLs in `create-order-and-checkout` genutzt; ohne sinnvolle URL kann der Checkout fehlschlagen.
+2. **Supabase → Authentication:** Falls Login/Redirects genutzt werden, unter URL-Konfiguration die Vercel-URL(s) eintragen.
+3. **Stripe:** Webhooks zeigen auf Supabase-Functions, nicht auf Vercel – unverändert. Nur die **Return-URLs** des Checkout hängen an `PUBLIC_SITE_URL` / Browser-Kontext.
+
+### Täglicher Ablauf mit Vercel
+
+Wie oben: **Pull** → ändern → **Commit** → **Push**. Vercel startet nach Push auf den Standard-Branch (meist `main`) automatisch ein neues Deployment. Zum Testen reicht oft die Vercel-Preview-URL.

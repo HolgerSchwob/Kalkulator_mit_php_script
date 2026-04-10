@@ -181,6 +181,208 @@
     box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.08));
 }
 
+/* Vorschau: Farben links (Rail) + Cover/Zoom rechts */
+.hce-preview-inner {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    flex-direction: row;
+    align-items: stretch;
+}
+
+.hce-palette-rail {
+    flex: 0 0 auto;
+    width: 11.5rem;
+    max-width: 42%;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+    border-right: 1px solid var(--border-color);
+    background: linear-gradient(180deg, var(--editor-bg) 0%, var(--secondary-color) 100%);
+    transition: width 0.22s ease, max-width 0.22s ease;
+}
+
+@media (min-width: 769px) {
+    .hce-palette-rail--collapsed {
+        width: 3.25rem;
+        max-width: 3.25rem;
+    }
+    .hce-palette-rail--collapsed .hce-palette-rail-label,
+    .hce-palette-rail--collapsed .hce-color-meta,
+    .hce-palette-rail--collapsed .color-pair-label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+    .hce-palette-rail--collapsed .hce-palette-rail-body {
+        padding-left: 0.25rem;
+        padding-right: 0.25rem;
+    }
+}
+
+.hce-palette-rail-toggle {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 2rem;
+    padding: 0.25rem;
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--editor-bg);
+    color: var(--text-color-light);
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.hce-palette-rail-toggle:hover {
+    background: var(--secondary-color);
+    color: var(--text-color-dark);
+}
+
+.hce-palette-rail-toggle:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: -2px;
+}
+
+.hce-palette-rail-toggle-icon {
+    display: flex;
+    transition: transform 0.2s ease;
+}
+
+.hce-palette-rail--collapsed .hce-palette-rail-toggle-icon {
+    transform: rotate(180deg);
+}
+
+.hce-palette-rail-body {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.5rem 0.5rem 0.65rem;
+}
+
+.hce-palette-rail-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-color-light);
+    line-height: 1.2;
+}
+
+/* Paperback Deckfolie: Glänzend / Matt oberhalb der Farbpalette */
+.hce-deck-foil-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.15rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.hce-deck-foil-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-height: 0;
+}
+
+.hce-deck-foil-option {
+    min-width: 0;
+}
+
+.hce-deck-foil-btn {
+    width: 100%;
+    margin: 0;
+    padding: 0.4rem 0.45rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.35rem;
+    background: var(--editor-bg);
+    color: var(--text-color-dark);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.25;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.hce-deck-foil-btn:hover {
+    background: var(--secondary-color);
+    border-color: var(--text-color-light);
+}
+
+.hce-deck-foil-btn:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+.hce-deck-foil-btn.active {
+    border-color: var(--primary-color);
+    background: linear-gradient(180deg, var(--editor-bg) 0%, var(--secondary-color) 100%);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+@media (min-width: 769px) {
+    .hce-palette-rail--collapsed .hce-deck-foil-btn {
+        font-size: 0.5rem;
+        padding: 0.2rem 0.15rem;
+        line-height: 1.15;
+        word-break: break-word;
+        hyphens: auto;
+    }
+}
+
+/* Keine Text-/Logo-Eingaben: rechte Spalte aus, Vorschau nutzt die Breite */
+.hardcover-editor-container.hce--no-inputs-panel .editor-preview-panel {
+    flex: 1 1 100%;
+    min-width: 0;
+}
+
+.hce-color-meta {
+    padding: 0.35rem 0.4rem;
+    border-radius: 0.35rem;
+    background: var(--editor-bg);
+    border: 1px solid var(--border-color);
+}
+
+.hce-color-meta-title {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--text-color-dark);
+    line-height: 1.25;
+    word-break: break-word;
+}
+
+.hce-color-meta-sub {
+    margin-top: 0.2rem;
+    font-size: 0.6875rem;
+    line-height: 1.35;
+    color: var(--text-color-light);
+    word-break: break-word;
+}
+
+.hce-preview-main-column {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
 .editor-header-controls {
     display: flex;
     justify-content: space-between;
@@ -354,8 +556,8 @@
 .preview-footer {
     display: flex;
     flex-wrap: wrap;
-    align-items: flex-end;
-    justify-content: space-between;
+    align-items: center;
+    justify-content: flex-end;
     gap: 0.75rem 1rem;
     padding: 0.625rem 1rem 0.75rem;
     border-top: 1px solid var(--border-color);
@@ -367,11 +569,6 @@
     display: flex;
     flex-direction: column;
     gap: 0.35rem;
-    min-width: 0;
-}
-
-.preview-footer-colors {
-    flex: 1 1 auto;
     min-width: 0;
 }
 
@@ -391,11 +588,31 @@
 
 .color-palette-container {
     display: flex;
-    justify-content: flex-start;
-    align-items: center;
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: stretch;
     gap: 0.5rem;
-    min-height: 2rem;
+    min-height: 0;
+}
+
+.color-pair-option {
+    display: flex;
+    flex-direction: column;
+    gap: 0.28rem;
+    align-items: stretch;
+    min-width: 0;
+}
+
+.color-pair-label {
+    font-size: 0.65rem;
+    line-height: 1.25;
+    color: var(--text-color-light);
+    text-align: center;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    word-break: break-word;
 }
 .zoom-controls {
     display: flex;
@@ -417,6 +634,11 @@
     border-radius: 0.5rem;
     background-color: var(--editor-bg);
     box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.08));
+}
+
+/* display:flex oben gewinnt sonst gegen HTML-[hidden] → leere Spalte blieb sichtbar */
+.editor-controls-panel[hidden] {
+    display: none !important;
 }
 
 .editor-controls-panel-head {
@@ -748,8 +970,9 @@ textarea.form-input {
 
 /* --- Buttons and other controls --- */
 .color-pair-button {
-    width: 44px;
-    height: 30px;
+    width: 100%;
+    height: 2.25rem;
+    min-height: 2.25rem;
     border: 2px solid var(--color-surface);
     outline: 1px solid var(--border-color);
     border-radius: 0.375rem;
@@ -760,7 +983,7 @@ textarea.form-input {
     flex-shrink: 0;
 }
 .color-pair-button:hover {
-    transform: scale(1.06);
+    transform: scale(1.02);
     outline-color: var(--color-border-input);
 }
 .color-pair-button:focus-visible {
@@ -768,9 +991,20 @@ textarea.form-input {
     outline-offset: 2px;
 }
 .color-pair-button.active {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 1px;
-    box-shadow: 0 0 0 1px var(--editor-bg), 0 2px 8px rgba(26, 58, 92, 0.35);
+    outline: 3px solid var(--primary-color);
+    outline-offset: 2px;
+    box-shadow:
+        0 0 0 2px var(--editor-bg),
+        0 0 0 5px color-mix(in srgb, var(--primary-color) 35%, transparent),
+        0 4px 12px rgba(26, 58, 92, 0.4);
+}
+@supports not (background: color-mix(in srgb, red, blue)) {
+    .color-pair-button.active {
+        box-shadow:
+            0 0 0 2px var(--editor-bg),
+            0 0 0 5px rgba(26, 58, 92, 0.35),
+            0 4px 12px rgba(26, 58, 92, 0.4);
+    }
 }
 .btn {
     padding: 0.6rem 1.35rem;
@@ -841,9 +1075,79 @@ textarea.form-input {
     }
     .editor-preview-panel {
         flex: 0 0 auto;
-        max-height: 55vh;
+        max-height: none;
         min-height: 0;
-        overflow: auto;
+        overflow: visible;
+    }
+    .hce-preview-inner {
+        flex-direction: column;
+    }
+    .hce-preview-main-column {
+        order: 1;
+        min-height: min(52vh, 480px);
+    }
+    .hce-palette-rail {
+        order: 2;
+        width: 100%;
+        max-width: none;
+        border-right: none;
+        border-top: 1px solid var(--border-color);
+        max-height: min(38vh, 260px);
+    }
+    .hce-palette-rail--collapsed {
+        width: 100%;
+        max-width: none;
+    }
+    .hce-palette-rail-toggle {
+        display: none;
+    }
+    .hce-palette-rail--collapsed .hce-palette-rail-label,
+    .hce-palette-rail--collapsed .hce-color-meta,
+    .hce-palette-rail--collapsed .color-pair-label {
+        position: static;
+        width: auto;
+        height: auto;
+        margin: 0;
+        overflow: visible;
+        clip: auto;
+        white-space: normal;
+    }
+    .hce-deck-foil-buttons {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        gap: 0.5rem;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding-bottom: 0.15rem;
+        -webkit-overflow-scrolling: touch;
+    }
+    .hce-deck-foil-option {
+        flex: 0 0 auto;
+        width: 7rem;
+        max-width: 42vw;
+    }
+    .hce-deck-foil-btn {
+        white-space: nowrap;
+    }
+    .color-palette-container {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: stretch;
+        gap: 0.5rem;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding-bottom: 0.25rem;
+        scrollbar-gutter: stable;
+        -webkit-overflow-scrolling: touch;
+    }
+    .color-pair-option {
+        flex: 0 0 auto;
+        width: 5.75rem;
+        max-width: 30vw;
+    }
+    .color-pair-button {
+        height: 2rem;
+        min-height: 2rem;
     }
     .preview-footer {
         flex-direction: column;

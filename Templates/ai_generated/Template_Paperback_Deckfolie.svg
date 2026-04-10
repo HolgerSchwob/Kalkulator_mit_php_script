@@ -1,41 +1,133 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-     width="500mm" height="330mm" viewBox="0 0 500 330">
-  <title>Paperback Deckfolie - Visualisierung</title>
-  <desc>Folien-Paperback: Karton color1, U1 mit Seite-1-Preview und Folie color2. Referenz-Ruecken 35 mm.</desc>
-
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="500mm"
+   height="330mm"
+   viewBox="0 0 500 330"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="Template_Paperback_Deckfolie.svg"
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1">
+    <linearGradient
+       id="linearGradient2"
+       inkscape:collect="always">
+      <stop
+         style="stop-color:#bbd5d9;stop-opacity:1;"
+         offset="0"
+         id="stop2" />
+      <stop
+         style="stop-color:#bbd6d9;stop-opacity:0;"
+         offset="1"
+         id="stop3" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient2"
+       id="linearGradient3"
+       x1="289.11185"
+       y1="306.67938"
+       x2="467.29709"
+       y2="27.606165"
+       gradientUnits="userSpaceOnUse" />
+  </defs>
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     inkscape:zoom="0.52713165"
+     inkscape:cx="788.22814"
+     inkscape:cy="543.50749"
+     inkscape:window-width="1920"
+     inkscape:window-height="991"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="tpl-group-u1"
+     showgrid="false" />
+  <title
+     id="title1">Paperback Deckfolie</title>
+  <desc
+     id="desc1">Gruppe paperback_foil (Supabase): u4/u1 204 mm, Falz 6 mm, sichtbare Höhe 297 mm. Karton nur in tpl-group-u4 / tpl-group-spine / Streifen in tpl-group-u1 — gleiche Delta-Logik wie Hardcover. Linker Überstand bis x=0; Folie/PDF nach rechts bis x=500 (Viewport im Editor schneidet wie bei Hardcover). 14 mm Karton auf U1 = rechter Falz 6 mm + 8 mm Klebezone vor sichtbarer Folie (196×297 mm).</desc>
   <!-- Hilfslinien (Webshop entfernt id guide-*) -->
-  <g id="guide-pappen" fill="none" stroke="#c026d3" stroke-width="0.2" opacity="0.45" style="pointer-events:none">
-    <rect id="guide-pappe-u4" x="22.5" y="16.5" width="204" height="297"/>
-    <rect id="guide-falz-left" x="226.5" y="16.5" width="6" height="297"/>
-    <rect id="guide-pappe-spine" x="232.5" y="16.5" width="35" height="297"/>
-    <rect id="guide-falz-right" x="267.5" y="16.5" width="6" height="297"/>
-    <rect id="guide-pappe-u1" x="273.5" y="16.5" width="204" height="297"/>
-  </g>
-
-  <!-- Karton U4 + Falz + Spine + Falz -->
-  <rect id="tpl-bg-karton"
-        x="22.5" y="16.5" width="251" height="297"
-        data-color-role="color-1" fill="#6B7280"/>
-
-  <g id="layer-back">
-    <g id="tpl-group-u4" transform="translate(22.5,16.5)"/>
-  </g>
-
-  <g id="layer-spine">
-    <g id="tpl-group-spine" transform="translate(232.5,16.5)">
-      <rect id="tpl-spine-face" width="35" height="297" fill="none" pointer-events="none"/>
+  <!-- Karton U4 inkl. linkem Überstand bis x=0 (bewegt mit tpl-group-u4) -->
+  <g
+     id="tpl-group-u4"
+     inkscape:label="tpl-group-u4">
+    <g
+       id="g1"
+       transform="translate(22.5,16.5)">
+      <rect
+         id="tpl-bg-karton"
+         x="-22.5"
+         y="0"
+         width="232.5"
+         height="297"
+         data-color-role="color-1"
+         fill="#6b7280"
+         style="fill:#000000;fill-opacity:1" />
     </g>
   </g>
-
-  <g id="layer-front">
-    <g id="tpl-group-u1" transform="translate(273.5,16.5)">
-      <image id="tpl-pdf-page1" x="0" y="5" width="204" height="287"
-             preserveAspectRatio="xMidYMid slice"
-             href="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
-             xlink:href="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"/>
-      <rect id="tpl-foil-overlay" x="0" y="5" width="204" height="287"
-            data-color-role="color-2" fill="#E5E7EB" fill-opacity="0.35"/>
-    </g>
+  <!-- Rechter Falz + 14 mm Karton vor Folie; Folie/PDF bis rechts (Überstand viewport-geschnitten) -->
+  <rect
+     style="fill:#000000;stroke-width:0.258895"
+     id="tpl-spine-face"
+     width="35"
+     height="297"
+     x="232.5"
+     y="16.5" />
+  <g
+     id="tpl-group-u1">
+    <rect
+       id="weisser_hintergrund"
+       x="281.5"
+       y="16.5"
+       width="196"
+       height="297"
+       data-color-role="color-2"
+       fill="#e5e7eb"
+       fill-opacity="0.35"
+       style="opacity:1;fill:#ffffff;fill-opacity:1;stroke-width:0.960392" />
+    <image
+       id="tpl-pdf-page1"
+       x="267.5"
+       y="16.5"
+       width="210"
+       height="297"
+       preserveAspectRatio="xMidYMid slice"
+       href="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+       xlink:href="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+       style="opacity:1" />
+    <rect
+       id="tpl-foil-overlay"
+       x="281.5"
+       y="16.5"
+       width="196"
+       height="297"
+       data-color-role="color-2"
+       fill="#e5e7eb"
+       fill-opacity="0.35"
+       style="opacity:0.290859;fill:url(#linearGradient3);fill-opacity:1;stroke-width:0.960392" />
+    <rect
+       id="kartonuebergriff"
+       width="14"
+       height="297"
+       data-color-role="color-1"
+       fill="#6b7280"
+       pointer-events="none"
+       x="267.5"
+       y="16.5"
+       style="fill:#000000;fill-opacity:1;stroke-width:0.632456" />
   </g>
 </svg>

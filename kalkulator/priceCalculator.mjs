@@ -41,7 +41,7 @@ function calculateVariableBookBlockPrice(bookBlockState, config) {
  * @returns {object} An object containing variants with their calculated prices.
  */
 export function calculateVariantPrices(inquiryState, config) {
-    const { variants, bookBlock } = inquiryState;
+    const { variants, bookBlock, personalizations = {} } = inquiryState;
     
     const variableBookBlockPrice = calculateVariableBookBlockPrice(bookBlock, config);
     const bookBlockBaseFee = config.general.bookBlockBaseFee || 0;
@@ -55,10 +55,19 @@ export function calculateVariantPrices(inquiryState, config) {
         const bindingBaseFee = bindingConfig.bindingTypeBaseFee || 0;
         let variableBindingPrice = bindingConfig.pricePerItem || 0;
 
+        // Optionen: State nutzt selectedOptions; foil_type bei Cover-Editor aus gespeicherten Editor-Parametern (nicht Formular)
+        let optionsForPricing = { ...(variant.selectedOptions || variant.options || {}) };
+        if (bindingConfig.personalizationInterface === 'coverEditor') {
+            const foilFromEditor = personalizations[variant.id]?.editorData?.parameters?.foilTypeId;
+            if (foilFromEditor) {
+                optionsForPricing = { ...optionsForPricing, foil_type: foilFromEditor };
+            }
+        }
+
         // Add prices for selected options
-        if (bindingConfig.options && variant.options) {
+        if (bindingConfig.options && optionsForPricing) {
             bindingConfig.options.forEach(opt => {
-                const selectedOption = variant.options[opt.optionKey];
+                const selectedOption = optionsForPricing[opt.optionKey];
                 if (opt.type === 'radio' && selectedOption) {
                     const choice = opt.choices.find(c => c.id === selectedOption);
                     if (choice) variableBindingPrice += choice.price || 0;

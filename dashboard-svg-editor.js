@@ -116,227 +116,20 @@ let coverTemplatesList = [];
 let supabaseTemplatesCache = [];
 /** UUID aus admin-cover-templates, wenn currentSvgFilename einem Eintrag entspricht (Upload „ersetzen") */
 let currentCoverTemplateId = null;
-/** Template-Gruppe (`cover_templates.gruppe`) für eindeutige Zuordnung bei gleichem Dateinamen in mehreren Gruppen */
+/** `cover_templates.gruppe` – eindeutige Zuordnung bei gleichem Dateinamen in mehreren Gruppen */
 let currentTemplateGruppe = null;
+/** Zuletzt ins Upload-Feld „Dateiname“ übernommener Wert (bei neuem `currentSvgFilename` neu setzen) */
+let lastSupabaseUploadFilenameReflected = '';
 
-/** Fallback wenn Admin-API nicht erreichbar (z. B. ohne Secret) */
-const TEMPLATE_GROUPS_FALLBACK = [
+/** Fallback-Labels wenn API noch nicht geladen / kein Admin (cover_template_groups in DB ist maßgeblich) */
+const TEMPLATE_GROUPS = [
     { id: 'hardcover_modern', name: 'Hardcover Modern' },
     { id: 'hardcover_efalin', name: 'Hardcover Klassik (Efalin)' },
     { id: 'paperback_modern', name: 'Paperback Modern' },
     { id: 'paperback_classic', name: 'Paperback Classic' },
+    { id: 'paperback_foil', name: 'Paperback (Deckfolie / Folienvariante)' },
     { id: 'paperback', name: 'Paperback (Legacy)' },
 ];
-
-/** Rohe Zeilen aus GET admin-cover-template-groups */
-let templateGroupsRowsCache = [];
-/** Bis zum ersten erfolgreichen API-Lauf Fallback-Dropdowns nutzen */
-let templateGroupsLoadFailed = true;
-
-/**
- * @returns {Array<{ id: string, name: string }>}
- */
-function getTemplateGroupsList() {
-    if (templateGroupsRowsCache.length) {
-        return templateGroupsRowsCache.map((r) => ({
-            id: r.id,
-            name: String(r.display_name || r.id || '').trim() || r.id,
-        }));
-    }
-    return templateGroupsLoadFailed ? [...TEMPLATE_GROUPS_FALLBACK] : [];
-}
-
-function refillTemplateGroupDropdowns() {
-    const list = getTemplateGroupsList();
-    const optsFromList =
-        list.map((g) => `<option value="${escapeAttr(g.id)}">${escapeHtml(g.name)}</option>`).join('');
-    const gruppeEl = document.getElementById('supabaseTemplateGruppe');
-    if (gruppeEl) {
-        const v = gruppeEl.value;
-        gruppeEl.innerHTML = '<option value="">Alle Gruppen</option>' + optsFromList;
-        if (v && [...gruppeEl.options].some((o) => o.value === v)) gruppeEl.value = v;
-    }
-    const filt = document.getElementById('tmplOverviewGruppeFilter');
-    if (filt) {
-        const fv = filt.value;
-        filt.innerHTML = '<option value="">Alle Gruppen</option>' + optsFromList;
-        if (fv && [...filt.options].some((o) => o.value === fv)) filt.value = fv;
-    }
-    const uploadSel = document.getElementById('supabaseUploadGruppe');
-    if (uploadSel) {
-        const uv = uploadSel.value;
-        uploadSel.innerHTML = optsFromList;
-        if (uv && [...uploadSel.options].some((o) => o.value === uv)) uploadSel.value = uv;
-        else if (list.length && !uv) uploadSel.selectedIndex = 0;
-    }
-}
-
-async function refreshTemplateGroupsCache() {
-    if (!hasAdminSecret() || !(toolConfig.supabaseUrl || '').trim()) {
-        templateGroupsRowsCache = [];
-        templateGroupsLoadFailed = true;
-        refillTemplateGroupDropdowns();
-        renderTemplateGroupsSettingsTable();
-        return;
-    }
-    try {
-        const d = await apiFetchEdge('GET', '/functions/v1/admin-cover-template-groups');
-        templateGroupsRowsCache = Array.isArray(d.data) ? d.data : [];
-        templateGroupsLoadFailed = false;
-    } catch (e) {
-        templateGroupsRowsCache = [];
-        templateGroupsLoadFailed = true;
-        console.warn('[Template-Gruppen]', e);
-    }
-    refillTemplateGroupDropdowns();
-    renderTemplateGroupsSettingsTable();
-    tmplOverviewRenderTable();
-}
-
-function renderTemplateGroupsSettingsTable() {
-    const wrap = document.getElementById('templateGroupsTableWrap');
-    if (!wrap) return;
-    if (!hasAdminSecret()) {
-        wrap.innerHTML = '<p class="schema-status err">Admin-Secret erforderlich (Tool über das Dashboard öffnen).</p>';
-        return;
-    }
-    const rows = templateGroupsRowsCache;
-    if (!rows.length) {
-        wrap.innerHTML =
-            '<p class="schema-status">' +
-            (templateGroupsLoadFailed
-                ? 'API nicht erreichbar – Fallback-Gruppen in den Dropdowns.'
-                : 'Keine Gruppen. Legen Sie eine neue Gruppe an oder „Neu laden“.') +
-            '</p>';
-        return;
-    }
-
-    const head =
-        '<table class="template-groups-table"><thead><tr>' +
-        '<th>Sort</th><th>id</th><th>Anzeigename</th><th>spine_off</th><th>Höhe</th><th>U1/U4</th>' +
-        '<th>Spine-Ref</th><th>Falz</th><th>svg_W</th><th>svg_H</th><th>center_X</th><th></th>' +
-        '</tr></thead><tbody>';
-    const body = rows
-        .map((r) => {
-            const id = escapeAttr(r.id);
-            const dims = r.dimensions && typeof r.dimensions === 'object' ? r.dimensions : {};
-            const sw = dims.svg_total_width ?? 500;
-            const sh = dims.svg_total_height ?? 330;
-            const cx = dims.svg_center_x ?? 250;
-            const dsp = escapeAttr(r.display_name || '');
-            const defSpine =
-                r.default_spine_width_mm != null && r.default_spine_width_mm !== ''
-                    ? String(r.default_spine_width_mm)
-                    : '';
-            return (
-                `<tr data-tg-id="${id}">` +
-                `<td><input type="number" class="tg-sort svg-shop-input" min="0" value="${Number(r.sort_order) || 0}" /></td>` +
-                `<td class="tg-id"><code>${escapeHtml(r.id)}</code></td>` +
-                `<td><input type="text" class="tg-display svg-shop-input tg-inp-wide" value="${dsp}" /></td>` +
-                `<td><input type="number" class="tg-spine-off svg-shop-input" step="0.1" value="${Number(r.spine_offset_mm) || 0}" /></td>` +
-                `<td><input type="number" class="tg-vis-h svg-shop-input" step="0.1" value="${Number(r.visible_cover_height_mm) || 0}" /></td>` +
-                `<td><input type="number" class="tg-u1 svg-shop-input" step="0.1" value="${Number(r.u1_width_mm) || 0}" /></td>` +
-                `<td><input type="number" class="tg-def-spine svg-shop-input" step="0.1" value="${defSpine}" placeholder="leer" /></td>` +
-                `<td><input type="number" class="tg-falz svg-shop-input" step="0.1" value="${Number(r.falz_zone_width_mm) || 0}" /></td>` +
-                `<td><input type="number" class="tg-svg-w svg-shop-input" step="0.1" value="${Number(sw) || 0}" /></td>` +
-                `<td><input type="number" class="tg-svg-h svg-shop-input" step="0.1" value="${Number(sh) || 0}" /></td>` +
-                `<td><input type="number" class="tg-svg-cx svg-shop-input" step="0.1" value="${Number(cx) || 0}" /></td>` +
-                `<td><button type="button" class="btn btn-sm btn-tg-open-templates" data-gruppe="${id}">Templates</button></td>` +
-                `</tr>`
-            );
-        })
-        .join('');
-    wrap.innerHTML = head + body + '</tbody></table>';
-}
-
-async function saveAllTemplateGroupsFromTable() {
-    const wrap = document.getElementById('templateGroupsTableWrap');
-    if (!wrap || !hasAdminSecret()) return;
-    const trs = wrap.querySelectorAll('tbody tr[data-tg-id]');
-    if (!trs.length) return;
-    try {
-        for (const tr of trs) {
-            const gid = tr.getAttribute('data-tg-id');
-            if (!gid) continue;
-            const parseNum = (sel, fallback) => {
-                const v = parseFloat(String(tr.querySelector(sel)?.value ?? '').replace(',', '.'));
-                return Number.isFinite(v) ? v : fallback;
-            };
-            const defRaw = (tr.querySelector('.tg-def-spine')?.value ?? '').trim();
-            const defSpineParsed = parseFloat(defRaw.replace(',', '.'));
-            const payload = {
-                id: gid,
-                display_name: (tr.querySelector('.tg-display')?.value ?? '').trim(),
-                sort_order: parseInt(tr.querySelector('.tg-sort')?.value ?? '0', 10) || 0,
-                spine_offset_mm: parseNum('.tg-spine-off', 0),
-                visible_cover_height_mm: parseNum('.tg-vis-h', 302),
-                u1_width_mm: parseNum('.tg-u1', 215),
-                falz_zone_width_mm: parseNum('.tg-falz', 8),
-                default_spine_width_mm: defRaw === '' ? null : (Number.isFinite(defSpineParsed) ? defSpineParsed : null),
-                dimensions: {
-                    svg_total_width: parseNum('.tg-svg-w', 500),
-                    svg_total_height: parseNum('.tg-svg-h', 330),
-                    svg_center_x: parseNum('.tg-svg-cx', 250),
-                },
-            };
-            await apiFetchEdge('PATCH', '/functions/v1/admin-cover-template-groups', payload);
-        }
-        showToast('Template-Gruppen gespeichert.', 'success');
-        await refreshTemplateGroupsCache();
-    } catch (e) {
-        showToast(e && e.message ? e.message : String(e), 'error');
-    }
-}
-
-async function createNewTemplateGroupFromForm() {
-    if (!hasAdminSecret()) {
-        showToast('Admin-Secret erforderlich.', 'error');
-        return;
-    }
-    const rawId = (document.getElementById('newGroupId')?.value ?? '').trim().toLowerCase();
-    const display_name = (document.getElementById('newGroupDisplayName')?.value ?? '').trim();
-    if (!rawId || !/^[a-z0-9_]+$/.test(rawId)) {
-        showToast('id: nur Kleinbuchstaben, Ziffern und Unterstrich.', 'warn');
-        return;
-    }
-    try {
-        await apiFetchEdge('POST', '/functions/v1/admin-cover-template-groups', {
-            id: rawId,
-            display_name: display_name || rawId,
-        });
-        showToast('Gruppe angelegt.', 'success');
-        const nid = document.getElementById('newGroupId');
-        const ndn = document.getElementById('newGroupDisplayName');
-        if (nid) nid.value = '';
-        if (ndn) ndn.value = '';
-        await refreshTemplateGroupsCache();
-    } catch (e) {
-        showToast(e && e.message ? e.message : String(e), 'error');
-    }
-}
-
-/**
- * @param {string} gruppeId
- */
-function switchToEditorTemplatesForGroup(gruppeId) {
-    document.querySelectorAll('.svg-editor-mode-btn').forEach((b) => {
-        b.classList.toggle('active', b.getAttribute('data-mode') === 'editor');
-    });
-    const editorPanel = document.getElementById('panelModeEditor');
-    const settingsPanel = document.getElementById('panelModeSettings');
-    if (editorPanel) editorPanel.hidden = false;
-    if (settingsPanel) settingsPanel.hidden = true;
-    const tabBtn = document.querySelector('.svg-editor-tabs button[data-tab="templates"]');
-    if (tabBtn) tabBtn.click();
-    const filt = document.getElementById('tmplOverviewGruppeFilter');
-    if (filt && gruppeId) {
-        if ([...filt.options].some((o) => o.value === gruppeId)) filt.value = gruppeId;
-        tmplOverviewRenderTable();
-    }
-    syncSupabaseUploadForm();
-    void renderTemplateOverview();
-}
-
 /** @type {Map<string, object>} */
 const schemaByElementId = new Map();
 let uidCounter = 0;
@@ -377,6 +170,109 @@ function showToast(message, type = 'info', duration = 4000) {
 
     toast.addEventListener('click', dismiss);
     setTimeout(dismiss, duration);
+}
+
+let productionSummaryModalInited = false;
+
+function initProductionSummaryModal() {
+    if (productionSummaryModalInited) return;
+    const overlay = document.getElementById('productionSummaryOverlay');
+    const ok = document.getElementById('productionSummaryOk');
+    if (!overlay || !ok) return;
+    const close = () => {
+        overlay.hidden = true;
+        overlay.setAttribute('aria-hidden', 'true');
+    };
+    ok.addEventListener('click', close);
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) close();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !overlay.hidden) close();
+    });
+    productionSummaryModalInited = true;
+}
+
+/**
+ * Kurze Übersicht: lokale Webfont-Einbettung.
+ * @param {{ fontFamilyCount: number, fontsEmbedded: boolean }} meta
+ * @returns {string}
+ */
+function buildFontEmbedSummaryLine(meta) {
+    if (!meta || meta.fontFamilyCount === 0) {
+        return 'Lokal – Webfonts: keine Google-Fonts zum Einbetten (nur Standard-/Systemschriftarten).';
+    }
+    if (meta.fontsEmbedded) {
+        return `Lokal – Webfonts: ${meta.fontFamilyCount} Schriftfamilie(n) als WOFF2 eingebettet.`;
+    }
+    return `Lokal – Webfonts: ${meta.fontFamilyCount} Familie(n) erkannt; Einbettung blieb leer oder fehlgeschlagen (Konsole prüfen).`;
+}
+
+/**
+ * Zeilen aus Edge-Function `production_prep` (Mittelmarke + Rückentext).
+ * @param {unknown} prep
+ * @returns {string[]}
+ */
+function productionPrepToLines(prep) {
+    const lines = [];
+    if (!prep || typeof prep !== 'object') return lines;
+    if (prep.mittelmarke === true) {
+        lines.push('Server – Mittelmarke: Produktions-Gruppe eingefügt bzw. aktualisiert.');
+    }
+    const n = prep.spine_baseline_added;
+    if (typeof n === 'number' && n > 0) {
+        lines.push(`Server – Rückentext: vertikale Zentrierung (dominant-baseline) bei ${n} Textfeld(ern).`);
+    } else if (prep.mittelmarke === true) {
+        lines.push(
+            'Server – Rückentext: keine zusätzliche Baseline-Anpassung (keine tpl-*-spine-Texte oder bereits gesetzt).',
+        );
+    }
+    return lines;
+}
+
+/**
+ * Alle Bullet-Zeilen für das Erfolgs-Modal an einer Stelle.
+ * @param {object} p
+ * @param {'export'|'upload-replace'|'upload-new'} p.kind
+ * @param {{ fontFamilyCount: number, fontsEmbedded: boolean }} [p.meta]
+ * @param {unknown} [p.productionPrep]
+ * @param {string} [p.filename]
+ * @returns {string[]}
+ */
+function buildProductionSummaryModalLines(p) {
+    const meta = p.meta || { fontFamilyCount: 0, fontsEmbedded: false };
+    const lines = [];
+    if (p.kind === 'export') {
+        lines.push('Die Datei „cover-produktion.svg" wurde heruntergeladen.');
+    } else if (p.kind === 'upload-replace') {
+        lines.push('Die Datei in Supabase wurde überschrieben.');
+    } else if (p.kind === 'upload-new') {
+        lines.push(`Neues Template „${p.filename || 'template.svg'}" wurde in Supabase angelegt.`);
+    }
+    lines.push(buildFontEmbedSummaryLine(meta));
+    if (p.kind !== 'export') {
+        lines.push(...productionPrepToLines(p.productionPrep));
+    }
+    return lines;
+}
+
+/**
+ * Modal mit Auflistung (ersetzt Toast-Kette bei Produktion/Upload).
+ * @param {{ title: string, lines: string[] }} opts
+ */
+function showProductionSummaryModal(opts) {
+    initProductionSummaryModal();
+    const overlay = document.getElementById('productionSummaryOverlay');
+    const titleEl = document.getElementById('productionSummaryTitle');
+    const listEl = document.getElementById('productionSummaryList');
+    const okBtn = document.getElementById('productionSummaryOk');
+    if (!overlay || !titleEl || !listEl) return;
+    titleEl.textContent = opts.title || 'Fertig';
+    const lines = Array.isArray(opts.lines) ? opts.lines : [];
+    listEl.innerHTML = lines.map((line) => `<li>${escapeHtml(String(line))}</li>`).join('');
+    overlay.hidden = false;
+    overlay.setAttribute('aria-hidden', 'false');
+    okBtn?.focus();
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -987,40 +883,18 @@ function resolveColorRoleFromElement(el) {
 }
 
 /**
- * Liest bestehende Zuweisungen aus dem SVG (data-color-role, colorselector) in die Map für den Tab „Farben“.
+ * Stellt die Map hex → Rolle aus gespeicherten SVG-Attributen wieder her.
+ * Ohne diesen Schritt gehen nach Supabase-Reload / erneutem Laden die Dropdown-Zuweisungen
+ * verloren, und applyAnnotationsToDoc entfernt data-color-role beim Export.
  */
-function hydrateColorRolesFromSvg() {
-    if (!svgRoot) return;
-    /**
-     * @param {Element} el
-     * @returns {'' | 'color-1' | 'color-2'}
-     */
-    const roleFromElement = (el) => {
-        const dr = (el.getAttribute('data-color-role') || '').trim();
-        if (dr === 'color-1' || dr === 'color-2') return dr;
-        const cs = (el.getAttribute('colorselector') || '').trim().toLowerCase();
-        if (cs === 'color1' || cs === 'color-1') return 'color-1';
-        if (cs === 'color2' || cs === 'color-2') return 'color-2';
-        return '';
-    };
+function seedColorRoleMapFromSvg() {
     for (const r of elementRows) {
-        const role = roleFromElement(r.el);
-        if (!role) continue;
+        const raw = (r.el.getAttribute('data-color-role') || '').trim();
+        const attr = raw === 'color1' ? 'color-1' : raw === 'color2' ? 'color-2' : raw;
+        if (attr !== 'color-1' && attr !== 'color-2') continue;
         for (const hex of collectPaintHexesForElement(r.el)) {
-            colorRoleByHex.set(hex, role);
+            colorRoleByHex.set(hex, attr);
         }
-    }
-}
-
-/**
- * Schreibt die aktuelle Map als data-color-role auf die Live-DOM-Knoten (Shop-Konvention).
- */
-function syncLiveDataColorRoles() {
-    if (!svgRoot) return;
-    for (const r of elementRows) {
-        const role = resolveColorRoleFromElement(r.el);
-        if (role) r.el.setAttribute('data-color-role', role);
-        else r.el.removeAttribute('data-color-role');
     }
 }
 
@@ -1084,6 +958,21 @@ async function loadSchema() {
 }
 
 /**
+ * Öffentliche Supabase-Storage-URLs bleiben bei Ersetzen (upsert) gleich; ohne Bypass liefert
+ * der Browser (und ggf. ein CDN) oft noch den alten Response-Body.
+ * @param {string} publicUrl
+ */
+function fetchCoverTemplateStorageSvg(publicUrl) {
+    const u = String(publicUrl || '').trim();
+    const sep = u.includes('?') ? '&' : '?';
+    return fetch(`${u}${sep}_t=${Date.now()}`, {
+        mode: 'cors',
+        credentials: 'omit',
+        cache: 'no-store',
+    });
+}
+
+/**
  * Liste der Cover-Templates aus Supabase (Edge Function get-cover-templates, anon).
  */
 async function refreshSupabaseTemplateList() {
@@ -1106,7 +995,9 @@ async function refreshSupabaseTemplateList() {
     }
     if (gruppeEl) gruppeEl.disabled = false;
     const gruppe = gruppeEl ? gruppeEl.value.trim() : '';
-    const qs = gruppe ? `?gruppe=${encodeURIComponent(gruppe)}` : '';
+    const qs =
+        (gruppe ? `?gruppe=${encodeURIComponent(gruppe)}` : '?') +
+        `${gruppe ? '&' : ''}_cb=${Date.now()}`;
     let preserveFile = '';
     if (sel && sel.value !== '') {
         const pi = parseInt(sel.value, 10);
@@ -1114,6 +1005,7 @@ async function refreshSupabaseTemplateList() {
     }
     try {
         const res = await fetch(`${url}/functions/v1/get-cover-templates${qs}`, {
+            cache: 'no-store',
             headers: { apikey: key, Authorization: `Bearer ${key}` },
         });
         const data = await res.json().catch(() => ({}));
@@ -1152,9 +1044,138 @@ async function refreshSupabaseTemplateList() {
         if (btnLoad) btnLoad.disabled = true;
         if (btnRef) btnRef.disabled = false;
     }
-    const pTmpl = document.getElementById('panelTemplates');
-    if (pTmpl && !pTmpl.classList.contains('hidden')) {
-        void renderTemplateOverview();
+}
+
+/** Optionen für Gruppe-Spalte (gleiche Quelle wie Upload-Dropdown). */
+function tmplOverviewGroupOptions() {
+    const uploadSel = document.getElementById('supabaseUploadGruppe');
+    if (uploadSel && uploadSel.options.length) {
+        return [...uploadSel.options].map((o) => ({
+            id: o.value,
+            label: (o.textContent && o.textContent.trim()) || o.value,
+        }));
+    }
+    return TEMPLATE_GROUPS.map((g) => ({ id: g.id, label: g.name }));
+}
+
+/**
+ * Tab „📋 Templates“: Tabelle mit allen Einträgen aus admin-cover-templates (Gruppe, Sort, Aktiv).
+ */
+async function renderTmplOverviewTable() {
+    const wrap = document.getElementById('tmplOverviewTableWrap');
+    const filterEl = document.getElementById('tmplOverviewGruppeFilter');
+    if (!wrap) return;
+    if (!hasAdminSecret()) {
+        wrap.innerHTML =
+            '<p class="schema-status err">Admin-Secret erforderlich – Template-Liste und Zuordnung zu Gruppen nur mit Admin.</p>';
+        return;
+    }
+    wrap.innerHTML = '<p class="schema-status">Lade…</p>';
+    try {
+        await loadCoverTemplatesListIfNeeded();
+        const go = tmplOverviewGroupOptions();
+        if (filterEl) {
+            const cur = filterEl.value;
+            filterEl.innerHTML =
+                '<option value="">Alle Gruppen</option>' +
+                go.map((g) => `<option value="${escapeAttr(g.id)}">${escapeHtml(g.label)}</option>`).join('');
+            if (cur && [...filterEl.options].some((o) => o.value === cur)) filterEl.value = cur;
+        }
+
+        const gruppeFilter = filterEl?.value?.trim() || '';
+        const all = coverTemplatesList.slice();
+        const rows = gruppeFilter
+            ? all.filter((r) => String(r.gruppe || '').trim() === gruppeFilter)
+            : all;
+        rows.sort(
+            (a, b) =>
+                (a.sort_order ?? 0) - (b.sort_order ?? 0) ||
+                String(a.filename || '').localeCompare(String(b.filename || ''), 'de')
+        );
+
+        if (rows.length === 0) {
+            wrap.innerHTML =
+                '<p class="schema-status">' +
+                (gruppeFilter ? 'Keine Templates in dieser Gruppe.' : 'Noch keine Templates in Supabase.') +
+                '</p>';
+            return;
+        }
+
+        const optGruppe = (current) => {
+            const c = String(current || '').trim();
+            return go
+                .map((g) => {
+                    const sel = g.id === c ? ' selected' : '';
+                    return `<option value="${escapeAttr(g.id)}"${sel}>${escapeHtml(g.label)}</option>`;
+                })
+                .join('');
+        };
+
+        const thead =
+            '<thead><tr>' +
+            '<th>Anzeigename</th><th>Dateiname</th><th>Gruppe</th><th>Sort</th><th>Aktiv</th><th></th>' +
+            '</tr></thead>';
+        const tbody = rows
+            .map((r) => {
+                const id = String(r.id || '').trim();
+                const idAttr = escapeAttr(id);
+                const dn = escapeAttr(r.display_name || '');
+                const fn = escapeHtml(r.filename || '');
+                const act = r.active !== false ? ' checked' : '';
+                const sort = String(r.sort_order ?? 0);
+                return (
+                    `<tr data-tmpl-row="${idAttr}">` +
+                    `<td><input type="text" class="svg-shop-input tmpl-disp" value="${dn}" /></td>` +
+                    `<td class="tmpl-fn"><code>${fn}</code></td>` +
+                    `<td><select class="svg-shop-select tmpl-gruppe">${optGruppe(r.gruppe)}</select></td>` +
+                    `<td class="tmpl-sort"><input type="number" class="svg-shop-input tmpl-sort-inp" min="0" step="1" value="${escapeAttr(sort)}" /></td>` +
+                    `<td><label class="tmpl-act-label"><input type="checkbox" class="tmpl-active"${act} /> ja</label></td>` +
+                    `<td class="tmpl-ov-actions"><button type="button" class="btn btn-sm btn-primary btn-tmpl-ov-load">Laden</button> ` +
+                    `<button type="button" class="btn btn-sm danger btn-tmpl-ov-del">Löschen</button></td>` +
+                    `</tr>`
+                );
+            })
+            .join('');
+
+        wrap.innerHTML = `<table class="tmpl-overview-table">${thead}<tbody>${tbody}</tbody></table>`;
+    } catch (e) {
+        wrap.innerHTML =
+            '<p class="schema-status err">' + escapeHtml(e && e.message ? e.message : String(e)) + '</p>';
+    }
+}
+
+async function saveTmplOverviewList() {
+    const wrap = document.getElementById('tmplOverviewTableWrap');
+    if (!wrap || !hasAdminSecret()) return;
+    const trs = wrap.querySelectorAll('tr[data-tmpl-row]');
+    if (!trs.length) {
+        showToast('Nichts zu speichern.', 'warn');
+        return;
+    }
+    try {
+        let n = 0;
+        for (const tr of trs) {
+            const id = tr.getAttribute('data-tmpl-row');
+            if (!id) continue;
+            const display_name = tr.querySelector('.tmpl-disp')?.value?.trim() ?? '';
+            const gruppe = tr.querySelector('.tmpl-gruppe')?.value ?? '';
+            const sort_order = parseInt(tr.querySelector('.tmpl-sort-inp')?.value || '0', 10) || 0;
+            const active = tr.querySelector('.tmpl-active')?.checked === true;
+            await apiFetchEdge('PATCH', '/functions/v1/admin-cover-templates', {
+                id,
+                display_name,
+                gruppe,
+                sort_order,
+                active,
+            });
+            n += 1;
+        }
+        showToast(`${n} Template(s) gespeichert.`, 'success');
+        await loadCoverTemplatesListIfNeeded();
+        await renderTmplOverviewTable();
+        await refreshSupabaseTemplateList();
+    } catch (e) {
+        showToast(e && e.message ? e.message : String(e), 'error');
     }
 }
 
@@ -1172,7 +1193,7 @@ async function loadSelectedSupabaseTemplate() {
         return;
     }
     try {
-        const res = await fetch(fetchUrl, { mode: 'cors', credentials: 'omit' });
+        const res = await fetchCoverTemplateStorageSvg(fetchUrl);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const text = await res.text();
         const fname = (t.file || 'template.svg').trim() || 'template.svg';
@@ -1187,7 +1208,6 @@ async function loadSelectedSupabaseTemplate() {
 
 function initSupabaseTemplateBar() {
     const gruppeEl = document.getElementById('supabaseTemplateGruppe');
-    refillTemplateGroupDropdowns();
     gruppeEl?.addEventListener('change', () => {
         void refreshSupabaseTemplateList();
     });
@@ -1197,7 +1217,7 @@ function initSupabaseTemplateBar() {
     document.getElementById('btnRefreshSupabaseTemplates')?.addEventListener('click', () => {
         void refreshSupabaseTemplateList();
     });
-    void refreshSupabaseTemplateList();
+    void refreshTemplateGroupDropdowns().then(() => refreshSupabaseTemplateList());
 }
 
 /**
@@ -1222,10 +1242,9 @@ async function apiAdminCoverTemplatesMultipart(method, formData) {
 }
 
 /**
- * Findet die cover_templates-Zeile zum Dateinamen (exakt, Groß/Klein, ohne _production).
  * @param {string} filename
  * @param {object[]} rows
- * @param {string|null|undefined} [gruppe] – Wenn gesetzt, nur in dieser Template-Gruppe suchen (verhindert falsche Zeile bei gleichem Dateinamen).
+ * @param {string|null|undefined} [gruppe]
  * @returns {object | null}
  */
 function findCoverTemplateRowForFilename(filename, rows, gruppe) {
@@ -1288,24 +1307,51 @@ async function resolveCurrentCoverTemplateId() {
     syncSupabaseUploadForm();
 }
 
+function renderSupabaseUploadInfoBox() {
+    const box = document.getElementById('supabaseUploadInfoBox');
+    const ul = document.getElementById('supabaseUploadBullets');
+    if (!box || !ul) return;
+    const items = [];
+    if (!hasAdminSecret()) {
+        box.classList.add('svg-editor-info-box--err');
+        items.push(
+            'Supabase-Upload: Bitte mit Admin-Secret über das Dashboard öffnen (gleicher Wert wie ADMIN_SECRET in Supabase).',
+        );
+    } else {
+        box.classList.remove('svg-editor-info-box--err');
+        items.push(
+            'Aufbereitung wie „Produktion“: Webfonts einbetten, Annotationen und data-color-role, ohne Editor-only-Klassen.',
+        );
+        items.push('Ziel: Bucket cover-templates (Admin-Secret erforderlich).');
+        const mode = document.querySelector('input[name="supabaseUploadMode"]:checked')?.value || 'new';
+        if (mode === 'replace' && currentCoverTemplateId && (currentSvgFilename || '').trim()) {
+            const uploadGruppe = document.getElementById('supabaseUploadGruppe')?.value?.trim() || '';
+            const g = (currentTemplateGruppe && String(currentTemplateGruppe).trim()) || uploadGruppe || '—';
+            const idShort = currentCoverTemplateId ? String(currentCoverTemplateId).slice(0, 8) + '…' : '—';
+            items.push(
+                `Modus „Ersetzen“: Storage-Datei wird überschrieben (DB-Zeile bleibt). Datei: ${currentSvgFilename} · Gruppe: ${g} · Template-ID: ${idShort}`,
+            );
+        }
+    }
+    ul.replaceChildren(...items.map((t) => {
+        const li = document.createElement('li');
+        li.textContent = t;
+        return li;
+    }));
+}
+
 function syncSupabaseUploadForm() {
-    const hint = document.getElementById('supabaseUploadHint');
+    const box = document.getElementById('supabaseUploadInfoBox');
     const wrap = document.getElementById('supabaseUploadFormWrap');
     const modeRep = document.getElementById('supabaseUploadModeReplace');
     const modeNewEl = document.getElementById('supabaseUploadModeNew');
-    const repInfo = document.getElementById('supabaseUploadReplaceInfo');
     const fieldsNew = document.getElementById('supabaseUploadFieldsNew');
-    if (!hint || !wrap) return;
+    if (!box || !wrap) return;
     if (!hasAdminSecret()) {
-        hint.textContent =
-            'Supabase-Upload: bitte mit Admin-Secret über das Dashboard öffnen (gleicher Wert wie ADMIN_SECRET in Supabase).';
-        hint.className = 'schema-status err';
         wrap.classList.add('hidden');
+        renderSupabaseUploadInfoBox();
         return;
     }
-    hint.textContent =
-        'Produktions-SVG (Fonts eingebettet) aus dem aktuellen Editor in den Bucket cover-templates – siehe Formular unten im Tab „Templates“.';
-    hint.className = 'schema-status';
     wrap.classList.remove('hidden');
     if (modeRep) {
         modeRep.disabled = !currentCoverTemplateId;
@@ -1315,141 +1361,25 @@ function syncSupabaseUploadForm() {
     }
     const mode = document.querySelector('input[name="supabaseUploadMode"]:checked')?.value || 'new';
     if (fieldsNew) fieldsNew.classList.toggle('hidden', mode === 'replace');
-    if (repInfo) {
-        const showRep = mode === 'replace' && currentCoverTemplateId && (currentSvgFilename || '').trim();
-        repInfo.classList.toggle('hidden', !showRep);
-        if (showRep) {
-            const uploadGruppe = document.getElementById('supabaseUploadGruppe')?.value?.trim() || '';
-            const g = (currentTemplateGruppe && String(currentTemplateGruppe).trim()) || uploadGruppe || '—';
-            const idShort = currentCoverTemplateId ? String(currentCoverTemplateId).slice(0, 8) + '…' : '—';
-            repInfo.textContent =
-                `Storage-Datei wird überschrieben (DB-Zeile bleibt). Datei: ${currentSvgFilename} · Gruppe: ${g} · Template-ID: ${idShort}`;
-        }
-    }
     const fn = (currentSvgFilename || '').trim();
     const baseName = fn.replace(/\.svg$/i, '').replace(/_/g, ' ').trim() || 'Template';
     const disp = document.getElementById('supabaseUploadDisplayName');
     const fnInp = document.getElementById('supabaseUploadFilename');
     if (disp && !disp.value.trim()) disp.value = baseName;
-    if (fnInp && !fnInp.value.trim()) fnInp.value = fn || 'template.svg';
-}
-
-/** Cache für Tab „Templates“ (Admin-Liste). */
-let templateOverviewCache = [];
-
-function tmplOverviewGroupLabel(gruppeId) {
-    const g = getTemplateGroupsList().find((x) => x.id === gruppeId);
-    return g ? g.name : (gruppeId || '–');
-}
-
-function tmplOverviewRenderTable() {
-    const wrap = document.getElementById('tmplOverviewTableWrap');
-    const filterEl = document.getElementById('tmplOverviewGruppeFilter');
-    if (!wrap) return;
-    const gruppe = filterEl ? filterEl.value.trim() : '';
-    let rows = Array.isArray(templateOverviewCache) ? [...templateOverviewCache] : [];
-    if (gruppe) rows = rows.filter((r) => (r.gruppe || '') === gruppe);
-    if (gruppe) {
-        rows.sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0));
-    } else {
-        rows.sort((a, b) => {
-            const g = (a.gruppe || '').localeCompare(b.gruppe || '');
-            if (g !== 0) return g;
-            return (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0);
-        });
-    }
-
-    if (rows.length === 0) {
-        wrap.innerHTML =
-            '<p class="schema-status">' +
-            (templateOverviewCache.length === 0
-                ? 'Keine Templates in Supabase.'
-                : 'Keine Einträge für diese Gruppe.') +
-            '</p>';
-        return;
-    }
-
-    const head =
-        '<table class="tmpl-overview-table"><thead><tr>' +
-        '<th>Aktiv</th><th>Sort</th><th>Anzeigename</th><th>Dateiname</th><th>Gruppe</th><th>Aktionen</th>' +
-        '</tr></thead><tbody>';
-    const body = rows
-        .map((r) => {
-            const id = escapeAttr(r.id || '');
-            const url = escapeAttr(r.url || '');
-            const fn = escapeAttr(r.filename || '');
-            const fnRaw = String(r.filename || '');
-            const active = r.active !== false;
-            const so = Number(r.sort_order) || 0;
-            const disp = escapeAttr(r.display_name || '');
-            const gruppeOpts = getTemplateGroupsList()
-                .map(
-                    (g) =>
-                        `<option value="${escapeAttr(g.id)}" ${(r.gruppe || '') === g.id ? 'selected' : ''}>${escapeHtml(g.name)}</option>`
-                )
-                .join('');
-            const gruppeSelect =
-                gruppeOpts.length > 0
-                    ? `<select class="tmpl-gruppe svg-shop-select">${gruppeOpts}</select>`
-                    : `<span>${escapeHtml(tmplOverviewGroupLabel(r.gruppe))}</span>`;
-            const dataGruppe = escapeAttr(r.gruppe || '');
-            return (
-                `<tr data-id="${id}" data-url="${url}" data-filename="${fn}" data-gruppe="${dataGruppe}">` +
-                `<td style="text-align:center"><input type="checkbox" class="tmpl-act" ${active ? 'checked' : ''} title="Im Shop"></td>` +
-                `<td><input type="number" class="tmpl-sort svg-shop-input" min="0" value="${so}"></td>` +
-                `<td><input type="text" class="tmpl-disp svg-shop-input" value="${disp}"></td>` +
-                `<td><code class="tmpl-fn">${escapeHtml(fnRaw)}</code></td>` +
-                `<td>${gruppeSelect}</td>` +
-                `<td class="tmpl-overview-actions-cell">` +
-                `<button type="button" class="btn btn-sm tmpl-load">Laden</button> ` +
-                `<button type="button" class="btn btn-sm danger tmpl-del">Löschen</button>` +
-                `</td></tr>`
-            );
-        })
-        .join('');
-    wrap.innerHTML = head + body + '</tbody></table>';
-}
-
-async function renderTemplateOverview() {
-    const wrap = document.getElementById('tmplOverviewTableWrap');
-    if (!wrap) return;
-    if (!hasAdminSecret()) {
-        wrap.innerHTML = '<p class="schema-status err">Admin-Secret erforderlich (über das Dashboard öffnen).</p>';
-        return;
-    }
-    wrap.innerHTML = '<p class="schema-status">Lade…</p>';
-    try {
-        const d = await apiFetchEdge('GET', '/functions/v1/admin-cover-templates');
-        templateOverviewCache = Array.isArray(d.data) ? d.data : [];
-        tmplOverviewRenderTable();
-    } catch (e) {
-        wrap.innerHTML = '<p class="schema-status err">' + escapeHtml(e && e.message ? e.message : String(e)) + '</p>';
-    }
-}
-
-async function saveTemplateOverviewList() {
-    const wrap = document.getElementById('tmplOverviewTableWrap');
-    if (!wrap || !hasAdminSecret()) return;
-    const trs = wrap.querySelectorAll('tbody tr[data-id]');
-    if (!trs.length) return;
-    try {
-        for (const tr of trs) {
-            const id = tr.getAttribute('data-id');
-            if (!id) continue;
-            const active = !!tr.querySelector('.tmpl-act')?.checked;
-            const sort_order = parseInt(tr.querySelector('.tmpl-sort')?.value ?? '0', 10) || 0;
-            const display_name = (tr.querySelector('.tmpl-disp')?.value ?? '').trim();
-            const gruppeEl = tr.querySelector('.tmpl-gruppe');
-            const gruppe = gruppeEl ? (gruppeEl.value ?? '').trim() : undefined;
-            const patch = { id, active, sort_order, display_name };
-            if (gruppe !== undefined) patch.gruppe = gruppe;
-            await apiFetchEdge('PATCH', '/functions/v1/admin-cover-templates', patch);
+    if (fnInp) {
+        if (fn) {
+            const v = fnInp.value.trim();
+            const openedChanged = fn !== lastSupabaseUploadFilenameReflected;
+            if (openedChanged || !v || /^template\.svg$/i.test(v)) {
+                fnInp.value = fn;
+            }
+            lastSupabaseUploadFilenameReflected = fn;
+        } else {
+            if (!fnInp.value.trim()) fnInp.value = 'template.svg';
+            lastSupabaseUploadFilenameReflected = '';
         }
-        showToast('Template-Liste gespeichert.', 'success');
-        await refreshSupabaseTemplateList();
-    } catch (e) {
-        showToast(e && e.message ? e.message : String(e), 'error');
     }
+    renderSupabaseUploadInfoBox();
 }
 
 async function submitSupabaseUpload() {
@@ -1461,10 +1391,13 @@ async function submitSupabaseUpload() {
         showToast('Admin-Secret erforderlich – Tool über das Dashboard öffnen.', 'error');
         return;
     }
-    showToast('Fonts werden eingebettet…', 'info', 10000);
     let svgStr;
+    /** @type {{ fontFamilyCount: number, fontsEmbedded: boolean }} */
+    let meta = { fontFamilyCount: 0, fontsEmbedded: false };
     try {
-        svgStr = await buildProductionSvgString();
+        const built = await buildProductionSvgStringWithMeta();
+        svgStr = built.svg;
+        meta = built.meta;
     } catch (e) {
         showToast('SVG-Aufbereitung fehlgeschlagen: ' + (e?.message ?? String(e)), 'error');
         return;
@@ -1485,17 +1418,21 @@ async function submitSupabaseUpload() {
             const fd = new FormData();
             fd.append('id', currentCoverTemplateId);
             fd.append('file', new File([blob], fname, { type: 'image/svg+xml' }));
-            await apiAdminCoverTemplatesMultipart('PATCH', fd);
-            showToast('Datei in Supabase erfolgreich ersetzt.', 'success');
+            const patchData = await apiAdminCoverTemplatesMultipart('PATCH', fd);
+            showProductionSummaryModal({
+                title: 'Supabase-Upload abgeschlossen',
+                lines: buildProductionSummaryModalLines({
+                    kind: 'upload-replace',
+                    meta,
+                    productionPrep: patchData.production_prep,
+                }),
+            });
         } else {
             const display_name =
                 document.getElementById('supabaseUploadDisplayName')?.value.trim() ||
                 (currentSvgFilename || 'template').replace(/\.svg$/i, '') ||
                 'Template';
-            const list = getTemplateGroupsList();
-            const gruppe =
-                document.getElementById('supabaseUploadGruppe')?.value ||
-                (list.length ? list[0].id : 'hardcover_modern');
+            const gruppe = document.getElementById('supabaseUploadGruppe')?.value || TEMPLATE_GROUPS[0].id;
             const sortEl = document.getElementById('supabaseUploadSort');
             const sort_order = parseInt(sortEl && sortEl.value ? sortEl.value : '0', 10) || 0;
             let fname = document.getElementById('supabaseUploadFilename')?.value.trim() || '';
@@ -1505,19 +1442,27 @@ async function submitSupabaseUpload() {
             fd.append('display_name', display_name);
             fd.append('gruppe', gruppe);
             fd.append('sort_order', String(sort_order));
-            await apiAdminCoverTemplatesMultipart('POST', fd);
+            const postData = await apiAdminCoverTemplatesMultipart('POST', fd);
             currentSvgFilename = fname;
-            showToast(`Neues Template „${fname}" in Supabase angelegt.`, 'success');
+            currentTemplateGruppe = gruppe;
+            showProductionSummaryModal({
+                title: 'Supabase-Upload abgeschlossen',
+                lines: buildProductionSummaryModalLines({
+                    kind: 'upload-new',
+                    meta,
+                    filename: fname,
+                    productionPrep: postData.production_prep,
+                }),
+            });
         }
         await refreshSupabaseTemplateList();
         await resolveCurrentCoverTemplateId();
     } catch (e) {
-        showToast(e && e.message ? e.message : String(e), 'error', 14000);
+        showToast(e && e.message ? e.message : String(e), 'error');
     }
 }
 
 function initSupabaseUploadPanel() {
-    refillTemplateGroupDropdowns();
     document.querySelectorAll('input[name="supabaseUploadMode"]').forEach((r) => {
         r.addEventListener('change', () => syncSupabaseUploadForm());
     });
@@ -1527,60 +1472,7 @@ function initSupabaseUploadPanel() {
     document.getElementById('btnSupabaseUpload')?.addEventListener('click', () => {
         void submitSupabaseUpload();
     });
-    syncSupabaseUploadForm();
-}
-
-function initTemplateOverviewPanel() {
-    const filt = document.getElementById('tmplOverviewGruppeFilter');
-    refillTemplateGroupDropdowns();
-    filt?.addEventListener('change', () => tmplOverviewRenderTable());
-    document.getElementById('btnTmplOverviewRefresh')?.addEventListener('click', () => void renderTemplateOverview());
-    document.getElementById('btnTmplOverviewSaveList')?.addEventListener('click', () => void saveTemplateOverviewList());
-
-    document.getElementById('tmplOverviewTableWrap')?.addEventListener('click', (e) => {
-        const loadBtn = e.target.closest('.tmpl-load');
-        const delBtn = e.target.closest('.tmpl-del');
-        const tr = e.target.closest('tr[data-id]');
-        if (loadBtn && tr) {
-            const url = tr.getAttribute('data-url') || '';
-            const fname = (tr.getAttribute('data-filename') || 'template.svg').trim() || 'template.svg';
-            if (!url) {
-                showToast('Keine URL für dieses Template.', 'error');
-                return;
-            }
-            void (async () => {
-                try {
-                    const res = await fetch(url, { mode: 'cors', credentials: 'omit' });
-                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                    const text = await res.text();
-                    const tid = tr.getAttribute('data-id');
-                    const gAttr = tr.getAttribute('data-gruppe');
-                    loadSvgFromText(text, fname, 'Quelle: Supabase Storage', tid || null, gAttr || null);
-                    showToast('Template im Editor geladen.', 'success');
-                } catch (err) {
-                    showToast('Laden fehlgeschlagen: ' + (err && err.message ? err.message : String(err)), 'error');
-                }
-            })();
-            return;
-        }
-        if (delBtn && tr) {
-            const id = tr.getAttribute('data-id');
-            if (!id || !hasAdminSecret()) return;
-            if (!confirm('Template wirklich löschen? Die Datei wird aus dem Storage entfernt.')) return;
-            void (async () => {
-                try {
-                    await apiFetchEdge('DELETE', '/functions/v1/admin-cover-templates', { id });
-                    showToast('Template gelöscht.', 'success');
-                    await renderTemplateOverview();
-                    await refreshSupabaseTemplateList();
-                    await resolveCurrentCoverTemplateId();
-                    syncSupabaseUploadForm();
-                } catch (err) {
-                    showToast(err && err.message ? err.message : String(err), 'error');
-                }
-            })();
-        }
-    });
+    void refreshTemplateGroupDropdowns().then(() => syncSupabaseUploadForm());
 }
 
 /**
@@ -1708,22 +1600,8 @@ async function apiPostEdge(path, body) {
         },
         body: JSON.stringify(body),
     });
-    const text = await res.text();
-    let data = {};
-    if (text && text.trim()) {
-        try {
-            data = JSON.parse(text);
-        } catch {
-            data = { _raw: text };
-        }
-    }
-    if (!res.ok) {
-        const msg =
-            data.error ||
-            data.message ||
-            (text ? undefined : `HTTP ${res.status} (leerer Antwort-Body)`);
-        throw new Error(msg || `HTTP ${res.status}`);
-    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
     return data;
 }
 
@@ -1735,34 +1613,184 @@ async function apiPostEdge(path, body) {
 async function apiFetchEdge(method, path, body) {
     const base = (toolConfig.supabaseUrl || '').replace(/\/$/, '');
     const key = toolConfig.anonKey || '';
-    const headers = {
-        apikey: key,
-        Authorization: `Bearer ${key}`,
-        'x-admin-secret': toolConfig.adminSecret || '',
-    };
-    if (body !== undefined) headers['Content-Type'] = 'application/json';
-    const res = await fetch(`${base}${path}`, {
+    /** GET: kein Browser-/CDN-Stale der Template-Liste (sonst wirken gelöschte Zeilen „zurück“). */
+    let pathResolved = path;
+    if (method === 'GET') {
+        const sep = path.includes('?') ? '&' : '?';
+        pathResolved = `${path}${sep}_cb=${Date.now()}`;
+    }
+    const res = await fetch(`${base}${pathResolved}`, {
         method,
-        headers,
+        cache: 'no-store',
+        headers: {
+            'Content-Type': 'application/json',
+            apikey: key,
+            Authorization: `Bearer ${key}`,
+            'x-admin-secret': toolConfig.adminSecret || '',
+        },
         body: body !== undefined ? JSON.stringify(body) : undefined,
     });
-    const text = await res.text();
-    let data = {};
-    if (text && text.trim()) {
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+}
+
+/**
+ * Dropdowns „Gruppe“ aus DB laden (Migration 029: z. B. paperback_foil), sonst TEMPLATE_GROUPS-Fallback.
+ */
+async function refreshTemplateGroupDropdowns() {
+    const uploadSel = document.getElementById('supabaseUploadGruppe');
+    const barSel = document.getElementById('supabaseTemplateGruppe');
+    const preserveUpload = uploadSel?.value;
+    const preserveBar = barSel?.value;
+
+    let rows = [];
+    if (hasAdminSecret()) {
         try {
-            data = JSON.parse(text);
-        } catch {
-            data = { _raw: text };
+            const d = await apiFetchEdge('GET', '/functions/v1/admin-cover-template-groups');
+            rows = Array.isArray(d.data) ? d.data : [];
+        } catch (_) {
+            rows = [];
         }
     }
-    if (!res.ok) {
-        const msg =
-            data.error ||
-            data.message ||
-            (text ? undefined : `HTTP ${res.status} (leerer Antwort-Body)`);
-        throw new Error(msg || `HTTP ${res.status}`);
+
+    const useStatic = rows.length === 0;
+    const opts = useStatic
+        ? TEMPLATE_GROUPS.map((g) => ({ id: g.id, display_name: g.name, sort_order: 0 }))
+        : [...rows].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+
+    const optHtml = (includeAll) =>
+        (includeAll ? '<option value="">Alle Gruppen</option>' : '') +
+        opts
+            .map((r) => {
+                const id = String(r.id || '').trim();
+                const label = String(r.display_name || r.id || '').trim() || id;
+                return `<option value="${escapeAttr(id)}">${escapeHtml(label)}</option>`;
+            })
+            .join('');
+
+    if (uploadSel) {
+        uploadSel.innerHTML = optHtml(false);
+        if (preserveUpload && [...uploadSel.options].some((o) => o.value === preserveUpload)) {
+            uploadSel.value = preserveUpload;
+        }
     }
-    return data;
+    if (barSel) {
+        barSel.innerHTML = optHtml(true);
+        if (preserveBar != null && [...barSel.options].some((o) => o.value === preserveBar)) {
+            barSel.value = preserveBar;
+        }
+    }
+}
+
+function setSettingsBodyTemplateGroupsWide(active) {
+    document.querySelector('.svg-editor-settings-body')?.classList.toggle(
+        'svg-editor-settings-body--template-groups-wide',
+        Boolean(active)
+    );
+}
+
+/**
+ * Einstellungen → Template-Gruppen: Tabelle aus cover_template_groups.
+ */
+async function renderTemplateGroupsSettingsPanel() {
+    const wrap = document.getElementById('templateGroupsTableWrap');
+    if (!wrap) return;
+    if (!hasAdminSecret()) {
+        wrap.innerHTML = '<p class="schema-status err">Admin-Secret erforderlich – Tool über das Dashboard öffnen.</p>';
+        return;
+    }
+    wrap.innerHTML = '<p class="schema-status">Lade…</p>';
+    try {
+        const d = await apiFetchEdge('GET', '/functions/v1/admin-cover-template-groups');
+        const rows = Array.isArray(d.data) ? d.data : [];
+        if (rows.length === 0) {
+            wrap.innerHTML = '<p class="schema-status">Keine Template-Gruppen in der Datenbank.</p>';
+            return;
+        }
+        const sorted = [...rows].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+        const head =
+            '<thead><tr>' +
+            '<th>id</th><th>Anzeigename</th><th>sort</th><th>Spine-Off.</th><th>sichtb. H</th><th>U1</th>' +
+            '<th>Spine-B.</th><th>Falz</th><th>dimensions JSON</th><th></th>' +
+            '</tr></thead>';
+        const body = sorted
+            .map((r) => {
+                const id = String(r.id || '').trim();
+                const idAttr = escapeAttr(id);
+                const dimStr =
+                    r.dimensions != null && typeof r.dimensions === 'object'
+                        ? JSON.stringify(r.dimensions)
+                        : String(r.dimensions ?? '{}');
+                const dsp = escapeAttr(r.display_name || '');
+                const ds = r.default_spine_width_mm;
+                const dsVal = ds === null || ds === undefined ? '' : String(ds);
+                return (
+                    `<tr data-tg-id="${idAttr}">` +
+                    `<td class="tg-id"><code>${escapeHtml(id)}</code></td>` +
+                    `<td><input type="text" class="svg-shop-input tg-inp-wide tg-disp" value="${dsp}" /></td>` +
+                    `<td><input type="number" class="svg-shop-input tg-sort" step="1" value="${escapeAttr(String(r.sort_order ?? 0))}" /></td>` +
+                    `<td><input type="number" class="svg-shop-input tg-spine_off" step="0.1" value="${escapeAttr(String(r.spine_offset_mm ?? 0))}" /></td>` +
+                    `<td><input type="number" class="svg-shop-input tg-vis_h" step="0.1" value="${escapeAttr(String(r.visible_cover_height_mm ?? ''))}" /></td>` +
+                    `<td><input type="number" class="svg-shop-input tg-u1" step="0.1" value="${escapeAttr(String(r.u1_width_mm ?? ''))}" /></td>` +
+                    `<td><input type="number" class="svg-shop-input tg-spine_d" step="0.1" placeholder="leer" value="${escapeAttr(dsVal)}" /></td>` +
+                    `<td><input type="number" class="svg-shop-input tg-falz" step="0.1" value="${escapeAttr(String(r.falz_zone_width_mm ?? ''))}" /></td>` +
+                    `<td><textarea class="svg-shop-input tg-dim-json" rows="2" cols="28">${escapeHtml(dimStr)}</textarea></td>` +
+                    `<td class="tg-actions"><button type="button" class="btn btn-sm danger btn-tg-delete" data-tg-del="${idAttr}" title="Gruppe löschen">Löschen</button></td>` +
+                    `</tr>`
+                );
+            })
+            .join('');
+        wrap.innerHTML = `<table class="template-groups-table">${head}<tbody>${body}</tbody></table>`;
+    } catch (e) {
+        wrap.innerHTML =
+            '<p class="schema-status err">' + escapeHtml(e && e.message ? e.message : String(e)) + '</p>';
+    }
+}
+
+async function saveAllTemplateGroupRows() {
+    const wrap = document.getElementById('templateGroupsTableWrap');
+    if (!wrap || !hasAdminSecret()) return;
+    const trs = wrap.querySelectorAll('tr[data-tg-id]');
+    if (!trs.length) {
+        showToast('Nichts zu speichern.', 'warn');
+        return;
+    }
+    let ok = 0;
+    for (const tr of trs) {
+        const id = tr.getAttribute('data-tg-id');
+        if (!id) continue;
+        const disp = tr.querySelector('.tg-disp')?.value?.trim() ?? '';
+        const sortEl = tr.querySelector('.tg-sort');
+        const sort_order = parseInt(sortEl && sortEl.value !== '' ? sortEl.value : '0', 10);
+        const payload = {
+            id,
+            display_name: disp,
+            sort_order: Number.isNaN(sort_order) ? 0 : sort_order,
+            spine_offset_mm: parseFloat(tr.querySelector('.tg-spine_off')?.value || '0') || 0,
+            visible_cover_height_mm: parseFloat(tr.querySelector('.tg-vis_h')?.value || '0') || 0,
+            u1_width_mm: parseFloat(tr.querySelector('.tg-u1')?.value || '0') || 0,
+            falz_zone_width_mm: parseFloat(tr.querySelector('.tg-falz')?.value || '0') || 0,
+        };
+        const sdRaw = tr.querySelector('.tg-spine_d')?.value?.trim() ?? '';
+        if (sdRaw === '') payload.default_spine_width_mm = null;
+        else {
+            const n = parseFloat(sdRaw);
+            if (!Number.isNaN(n)) payload.default_spine_width_mm = n;
+        }
+        const dimTxt = tr.querySelector('.tg-dim-json')?.value?.trim() ?? '{}';
+        try {
+            payload.dimensions = JSON.parse(dimTxt);
+        } catch (err) {
+            showToast(`dimensions JSON ungültig (${id}): ${err?.message || err}`, 'error');
+            return;
+        }
+        await apiFetchEdge('PATCH', '/functions/v1/admin-cover-template-groups', payload);
+        ok += 1;
+    }
+    showToast(`${ok} Gruppe(n) gespeichert.`, 'success');
+    await refreshTemplateGroupDropdowns();
+    await renderTemplateGroupsSettingsPanel();
 }
 
 /** @param {string} str */
@@ -1879,14 +1907,18 @@ async function renderTemplatePalettePanel() {
             if (currentTemplate?.id) templateId = currentTemplate.id;
         }
         const templateName = currentTemplate?.display_name || currentTemplate?.filename || null;
+        const hasFile = !!(currentSvgFilename || '').trim();
+        const noTplMsg = !hasFile
+            ? 'Kein Template geladen — lade zuerst ein SVG.'
+            : 'Kein eindeutiges Template — gleicher Dateiname in mehreren Gruppen? Gruppe im Upload-Bereich wählen oder Template aus der Supabase-Liste laden.';
 
         // Info-Box
         const infoHtml = `<div class="palette-template-info">
-            <span>Template (cover_templates):</span>
+            <span>Template:</span>
             ${
                 templateName && templateId
                     ? `<strong>${escapeHtml(templateName)}</strong> <code class="palette-tid">${escapeHtml(templateId)}</code>`
-                    : `<span class="palette-no-template">Kein Supabase-Template zugeordnet — SVG über die Kopfleiste oder Tab „Templates“ → „Laden“ öffnen, oder lokale Datei mit passendem Dateinamen in der DB.</span>`
+                    : `<span class="palette-no-template">${escapeHtml(noTplMsg)}</span>`
             }
         </div>`;
 
@@ -2124,68 +2156,27 @@ function buildCmykString(c, m, y, k) {
 }
 
 /**
- * Näherung sRGB (#rrggbb) → CMYK in % — gedacht als praktikable Vorgabe für FOGRA51 / ISO Coated v2.
- * Ohne ICC-Profil-Engine: lineares sRGB + übliche Subtraktions-CMYK-Formel (kein exaktes Profil-Mapping).
+ * RGB (#RRGGBB, sRGB) → CMYK in Prozent (0–100), übliche Umrechnung.
+ * Nur Näherung; echtes Druckprofil (Fogra/ISO) kann abweichen.
  * @param {string} hex
- * @returns {{ c: number, m: number, y: number, k: number } | null}
+ * @returns {{ c: number, m: number, y: number, k: number }}
  */
-function approxSrgbHexToCmykPercent(hex) {
-    const h = String(hex ?? '').replace(/^"+|"+$/g, '').trim();
-    if (!/^#[0-9a-fA-F]{6}$/i.test(h)) return null;
-    const r8 = parseInt(h.slice(1, 3), 16);
-    const g8 = parseInt(h.slice(3, 5), 16);
-    const b8 = parseInt(h.slice(5, 7), 16);
-    const toLin = (u8) => {
-        const u = u8 / 255;
-        return u <= 0.04045 ? u / 12.92 : ((u + 0.055) / 1.055) ** 2.4;
-    };
-    const r = toLin(r8);
-    const g = toLin(g8);
-    const b = toLin(b8);
-    const k = 1 - Math.max(r, g, b);
-    let c = 0;
-    let m = 0;
-    let y = 0;
-    if (k < 1 - 1e-9) {
-        const inv = 1 / (1 - k);
-        c = (1 - r - k) * inv;
-        m = (1 - g - k) * inv;
-        y = (1 - b - k) * inv;
-    }
-    const q = (x) => Math.max(0, Math.min(100, Math.round(x * 100)));
-    return { c: q(c), m: q(m), y: q(y), k: q(k) };
-}
-
-/** Parst #rrggbb → {r,g,b} 0–255 oder null. */
-function hexToRgb255(hex) {
-    const h = String(hex ?? '').replace(/^"+|"+$/g, '').trim();
-    if (!/^#[0-9a-fA-F]{6}$/i.test(h)) return null;
-    return {
-        r: parseInt(h.slice(1, 3), 16),
-        g: parseInt(h.slice(3, 5), 16),
-        b: parseInt(h.slice(5, 7), 16),
-    };
-}
-
-function clampByte255(n) {
-    const x = Number(n);
-    if (!Number.isFinite(x)) return 0;
-    return Math.max(0, Math.min(255, Math.round(x)));
-}
-
-/** Drei Kanäle 0–255 → #rrggbb (für Speicher / Picker). */
-function rgb255ToHex(r, g, b) {
-    return `#${[clampByte255(r), clampByte255(g), clampByte255(b)]
-        .map((x) => x.toString(16).padStart(2, '0'))
-        .join('')}`;
-}
-
-/** Liest die drei RGB-Felder und liefert #rrggbb. */
-function readRgbTripletAsHex(rId, gId, bId) {
-    const rv = document.getElementById(rId)?.value ?? '';
-    const gv = document.getElementById(gId)?.value ?? '';
-    const bv = document.getElementById(bId)?.value ?? '';
-    return rgb255ToHex(rv, gv, bv);
+function rgbHexToCmykPercent(hex) {
+    let s = String(hex ?? '').trim();
+    if (!s.startsWith('#')) s = `#${s}`;
+    const match = /^#([0-9a-fA-F]{6})$/.exec(s);
+    if (!match) return { c: 0, m: 0, y: 0, k: 0 };
+    const r = parseInt(match[1].slice(0, 2), 16) / 255;
+    const g = parseInt(match[1].slice(2, 4), 16) / 255;
+    const b = parseInt(match[1].slice(4, 6), 16) / 255;
+    const k0 = 1 - Math.max(r, g, b);
+    if (k0 >= 1 - 1e-9) return { c: 0, m: 0, y: 0, k: 100 };
+    const d = 1 - k0;
+    const c = (1 - r - k0) / d;
+    const m = (1 - g - k0) / d;
+    const y = (1 - b - k0) / d;
+    const clampPct = (x) => Math.max(0, Math.min(100, Math.round(x * 100)));
+    return { c: clampPct(c), m: clampPct(m), y: clampPct(y), k: clampPct(k0) };
 }
 
 /** Datalist-IDs für Spotfarben */
@@ -2241,8 +2232,6 @@ function openSvgFarbpaareForm(index) {
     const rawRgb2 = clean(fp?.color2_rgb);
     const rgb1 = /^#[0-9a-fA-F]{6}$/i.test(rawRgb1) ? rawRgb1 : '#1a2f5a';
     const rgb2 = /^#[0-9a-fA-F]{6}$/i.test(rawRgb2) ? rawRgb2 : '#e8a000';
-    const comp1 = hexToRgb255(rgb1) || { r: 26, g: 47, b: 90 };
-    const comp2 = hexToRgb255(rgb2) || { r: 232, g: 160, b: 0 };
 
     const cmyk1 = parseCmykString(clean(fp?.color1_cmyk));
     const cmyk2 = parseCmykString(clean(fp?.color2_cmyk));
@@ -2308,31 +2297,14 @@ function openSvgFarbpaareForm(index) {
 
                 <label class="fp-field-label">
                     RGB
-                    <span class="fp-field-hint">0–255 · Hex in der Vorschau oben</span>
+                    <span class="fp-field-hint">→ Web-Vorschau</span>
                 </label>
                 <div class="fp-rgb-row">
                     <span class="fp-swatch" id="fpSwatch1" style="background:${escapeAttr(rgb1)}" title="Klicken zum Öffnen des Farbwählers">
                         <input type="color" id="svgFpC1Picker" class="fp-color-well-hidden" value="${escapeAttr(rgb1)}">
                     </span>
-                    <div class="fp-rgb-255-wrap">
-                        <div class="fp-rgb-255-row">
-                            <div class="fp-rgb-255-cell">
-                                <span class="fp-rgb-255-chan">R</span>
-                                <input type="number" min="0" max="255" step="1" id="svgFpC1R" class="fp-rgb-255-input"
-                                    value="${comp1.r}">
-                            </div>
-                            <div class="fp-rgb-255-cell">
-                                <span class="fp-rgb-255-chan">G</span>
-                                <input type="number" min="0" max="255" step="1" id="svgFpC1G" class="fp-rgb-255-input"
-                                    value="${comp1.g}">
-                            </div>
-                            <div class="fp-rgb-255-cell">
-                                <span class="fp-rgb-255-chan">B</span>
-                                <input type="number" min="0" max="255" step="1" id="svgFpC1B" class="fp-rgb-255-input"
-                                    value="${comp1.b}">
-                            </div>
-                        </div>
-                    </div>
+                    <input type="text" id="svgFpC1Rgb" class="fp-hex-input"
+                        value="${escapeAttr(rawRgb1)}" placeholder="#1a2f5a" maxlength="7" spellcheck="false">
                 </div>
 
                 <label class="fp-field-label">
@@ -2340,8 +2312,8 @@ function openSvgFarbpaareForm(index) {
                     <span class="fp-field-hint">→ Fogra 51 / ISO Coated v2 · Ricoh Pro 7200</span>
                 </label>
                 <div class="fp-cmyk-rgb-btn-row">
-                    <button type="button" class="btn btn-sm fp-cmyk-rgb-btn" id="svgFpC1RgbToCmyk"
-                        title="RGB (oben) in CMYK-% eintragen — Näherung für ISO Coated v2, nicht ICC-exakt">RGB → CMYK</button>
+                    <button type="button" class="btn btn-sm secondary fp-cmyk-rgb-btn" id="svgFpFillCmyk1"
+                        title="CMYK-Werte (0–100 %) aus dem RGB-Feld berechnen (Näherung)">CMYK aus RGB übernehmen</button>
                 </div>
                 <div class="fp-cmyk-row">
                     <div class="fp-cmyk-cell">
@@ -2391,31 +2363,14 @@ function openSvgFarbpaareForm(index) {
 
                 <label class="fp-field-label">
                     RGB
-                    <span class="fp-field-hint">0–255 · Hex in der Vorschau oben</span>
+                    <span class="fp-field-hint">→ Web-Vorschau</span>
                 </label>
                 <div class="fp-rgb-row">
                     <span class="fp-swatch" id="fpSwatch2" style="background:${escapeAttr(rgb2)}" title="Klicken zum Öffnen des Farbwählers">
                         <input type="color" id="svgFpC2Picker" class="fp-color-well-hidden" value="${escapeAttr(rgb2)}">
                     </span>
-                    <div class="fp-rgb-255-wrap">
-                        <div class="fp-rgb-255-row">
-                            <div class="fp-rgb-255-cell">
-                                <span class="fp-rgb-255-chan">R</span>
-                                <input type="number" min="0" max="255" step="1" id="svgFpC2R" class="fp-rgb-255-input"
-                                    value="${comp2.r}">
-                            </div>
-                            <div class="fp-rgb-255-cell">
-                                <span class="fp-rgb-255-chan">G</span>
-                                <input type="number" min="0" max="255" step="1" id="svgFpC2G" class="fp-rgb-255-input"
-                                    value="${comp2.g}">
-                            </div>
-                            <div class="fp-rgb-255-cell">
-                                <span class="fp-rgb-255-chan">B</span>
-                                <input type="number" min="0" max="255" step="1" id="svgFpC2B" class="fp-rgb-255-input"
-                                    value="${comp2.b}">
-                            </div>
-                        </div>
-                    </div>
+                    <input type="text" id="svgFpC2Rgb" class="fp-hex-input"
+                        value="${escapeAttr(rawRgb2)}" placeholder="#e8a000" maxlength="7" spellcheck="false">
                 </div>
 
                 <label class="fp-field-label">
@@ -2423,8 +2378,8 @@ function openSvgFarbpaareForm(index) {
                     <span class="fp-field-hint">→ Fogra 51 / ISO Coated v2 · Ricoh Pro 7200</span>
                 </label>
                 <div class="fp-cmyk-rgb-btn-row">
-                    <button type="button" class="btn btn-sm fp-cmyk-rgb-btn" id="svgFpC2RgbToCmyk"
-                        title="RGB (oben) in CMYK-% eintragen — Näherung für ISO Coated v2, nicht ICC-exakt">RGB → CMYK</button>
+                    <button type="button" class="btn btn-sm secondary fp-cmyk-rgb-btn" id="svgFpFillCmyk2"
+                        title="CMYK-Werte (0–100 %) aus dem RGB-Feld berechnen (Näherung)">CMYK aus RGB übernehmen</button>
                 </div>
                 <div class="fp-cmyk-row">
                     <div class="fp-cmyk-cell">
@@ -2467,39 +2422,30 @@ function openSvgFarbpaareForm(index) {
 
     </div><!-- /.fp-form-wrap -->`;
 
-    // ── Live-Preview: RGB-Picker ↔ R/G/B 0–255 ↔ abgeleiteter Hex in Vorschau ─
-    function wireRgbRow(pickerId, rId, gId, bId, previewId, hexDisplayId, dotId, labelId, nameInputId, swatchId) {
-        const picker  = document.getElementById(pickerId);
-        const rIn     = document.getElementById(rId);
-        const gIn     = document.getElementById(gId);
-        const bIn     = document.getElementById(bId);
-        const preview = document.getElementById(previewId);
-        const hexDisp = document.getElementById(hexDisplayId);
-        const dot     = document.getElementById(dotId);
-        const swatch  = swatchId ? document.getElementById(swatchId) : null;
-        const nameInp = document.getElementById(nameInputId);
+    // ── Live-Preview: RGB-Picker ↔ Hex-Text ↔ Vorschau ──────────────────────
+    // Nutzt document.getElementById statt container.querySelector für robuste Elementreferenzen
+    function wireColor(pickerId, hexId, previewId, hexDisplayId, dotId, labelId, nameInputId, swatchId) {
+        const picker   = document.getElementById(pickerId);
+        const hexInput = document.getElementById(hexId);
+        const preview  = document.getElementById(previewId);
+        const hexDisp  = document.getElementById(hexDisplayId);
+        const dot      = document.getElementById(dotId);
+        const swatch   = swatchId ? document.getElementById(swatchId) : null;
+        const nameInp  = document.getElementById(nameInputId);
 
         function applyColor(hex) {
             if (!preview) return;
             preview.style.background = hex;
             const tc = (() => {
-                const r = parseInt(hex.slice(1, 3), 16);
-                const g = parseInt(hex.slice(3, 5), 16);
-                const b = parseInt(hex.slice(5, 7), 16);
-                return (0.299 * r + 0.587 * g + 0.114 * b) > 140 ? '#111' : '#fff';
+                const r = parseInt(hex.slice(1,3),16);
+                const g = parseInt(hex.slice(3,5),16);
+                const b = parseInt(hex.slice(5,7),16);
+                return (0.299*r + 0.587*g + 0.114*b) > 140 ? '#111' : '#fff';
             })();
             preview.style.color = tc;
             if (hexDisp) hexDisp.textContent = hex;
-            if (dot) dot.style.background = hex;
-            if (swatch) swatch.style.background = hex;
-        }
-
-        function setRgbInputsFromHex(hex) {
-            const o = hexToRgb255(hex);
-            if (!o || !rIn || !gIn || !bIn) return;
-            rIn.value = String(o.r);
-            gIn.value = String(o.g);
-            bIn.value = String(o.b);
+            if (dot)     dot.style.background = hex;
+            if (swatch)  swatch.style.background = hex;
         }
 
         function applyLabel(name) {
@@ -2508,44 +2454,49 @@ function openSvgFarbpaareForm(index) {
         }
 
         picker?.addEventListener('input', () => {
-            setRgbInputsFromHex(picker.value);
+            if (hexInput) hexInput.value = picker.value;
             applyColor(picker.value);
         });
 
-        [rIn, gIn, bIn].forEach((inp) => {
-            inp?.addEventListener('input', () => {
-                const hex = readRgbTripletAsHex(rId, gId, bId);
-                if (picker) picker.value = hex;
-                applyColor(hex);
-            });
+        hexInput?.addEventListener('input', () => {
+            const h = hexInput.value.trim();
+            if (/^#[0-9a-fA-F]{6}$/.test(h)) {
+                picker.value = h;
+                applyColor(h);
+            }
         });
 
         nameInp?.addEventListener('input', () => applyLabel(nameInp.value));
     }
 
-    wireRgbRow('svgFpC1Picker', 'svgFpC1R', 'svgFpC1G', 'svgFpC1B', 'fpPreviewC1', 'fpPreviewC1Hex', 'fpDot1', 'fpPreviewC1Label', 'svgFpC1Name', 'fpSwatch1');
-    wireRgbRow('svgFpC2Picker', 'svgFpC2R', 'svgFpC2G', 'svgFpC2B', 'fpPreviewC2', 'fpPreviewC2Hex', 'fpDot2', 'fpPreviewC2Label', 'svgFpC2Name', 'fpSwatch2');
+    wireColor('svgFpC1Picker','svgFpC1Rgb','fpPreviewC1','fpPreviewC1Hex','fpDot1','fpPreviewC1Label','svgFpC1Name','fpSwatch1');
+    wireColor('svgFpC2Picker','svgFpC2Rgb','fpPreviewC2','fpPreviewC2Hex','fpDot2','fpPreviewC2Label','svgFpC2Name','fpSwatch2');
 
-    function wireRgbToCmyk(btnId, rId, gId, bId, cId, mId, yId, kId) {
-        document.getElementById(btnId)?.addEventListener('click', () => {
-            const hex = readRgbTripletAsHex(rId, gId, bId);
-            const conv = approxSrgbHexToCmykPercent(hex);
-            if (!conv) {
-                showToast('RGB 0–255 prüfen.', 'warn');
-                return;
-            }
-            const c = document.getElementById(cId);
-            const m = document.getElementById(mId);
-            const y = document.getElementById(yId);
-            const k = document.getElementById(kId);
-            if (c) c.value = String(conv.c);
-            if (m) m.value = String(conv.m);
-            if (y) y.value = String(conv.y);
-            if (k) k.value = String(conv.k);
-        });
+    function fillCmykInputsFromRgb(rgbInputId, cId, mId, yId, kId) {
+        const hexEl = document.getElementById(rgbInputId);
+        const hex = (hexEl?.value || '').trim();
+        if (!/^#[0-9a-fA-F]{6}$/i.test(hex)) {
+            showToast('Zuerst gültiges RGB als #RRGGBB eingeben.', 'warn', 2800);
+            return;
+        }
+        const norm = hex.startsWith('#') ? hex : `#${hex}`;
+        const { c, m, y, k } = rgbHexToCmykPercent(norm);
+        const set = (id, v) => {
+            const el = document.getElementById(id);
+            if (el) el.value = String(v);
+        };
+        set(cId, c);
+        set(mId, m);
+        set(yId, y);
+        set(kId, k);
     }
-    wireRgbToCmyk('svgFpC1RgbToCmyk', 'svgFpC1R', 'svgFpC1G', 'svgFpC1B', 'svgFpC1C', 'svgFpC1M', 'svgFpC1Y', 'svgFpC1K');
-    wireRgbToCmyk('svgFpC2RgbToCmyk', 'svgFpC2R', 'svgFpC2G', 'svgFpC2B', 'svgFpC2C', 'svgFpC2M', 'svgFpC2Y', 'svgFpC2K');
+
+    document.getElementById('svgFpFillCmyk1')?.addEventListener('click', () => {
+        fillCmykInputsFromRgb('svgFpC1Rgb', 'svgFpC1C', 'svgFpC1M', 'svgFpC1Y', 'svgFpC1K');
+    });
+    document.getElementById('svgFpFillCmyk2')?.addEventListener('click', () => {
+        fillCmykInputsFromRgb('svgFpC2Rgb', 'svgFpC2C', 'svgFpC2M', 'svgFpC2Y', 'svgFpC2K');
+    });
 
     // ── Auto-Suggest: Paarnamen aus Bezeichnungen zusammensetzen ────────────
     document.getElementById('svgFpNameSuggest')?.addEventListener('click', () => {
@@ -2576,8 +2527,16 @@ async function saveSvgFarbpaare(existingId) {
     const cmyk1 = buildCmykString(g('svgFpC1C'), g('svgFpC1M'), g('svgFpC1Y'), g('svgFpC1K'));
     const cmyk2 = buildCmykString(g('svgFpC2C'), g('svgFpC2M'), g('svgFpC2Y'), g('svgFpC2K'));
 
-    const rgb1 = readRgbTripletAsHex('svgFpC1R', 'svgFpC1G', 'svgFpC1B');
-    const rgb2 = readRgbTripletAsHex('svgFpC2R', 'svgFpC2G', 'svgFpC2B');
+    const rgb1 = g('svgFpC1Rgb') || '#000000';
+    const rgb2 = g('svgFpC2Rgb') || '#000000';
+
+    // Validierung
+    if (!/^#[0-9a-fA-F]{6}$/i.test(rgb1)) {
+        showToast('Farbe 1 RGB: ungültiger Hex-Wert (z. B. #1a2f5a).', 'warn'); return;
+    }
+    if (!/^#[0-9a-fA-F]{6}$/i.test(rgb2)) {
+        showToast('Farbe 2 RGB: ungültiger Hex-Wert (z. B. #e8a000).', 'warn'); return;
+    }
 
     const payload = {
         name:        g('svgFpName')  || 'Farbpaar',
@@ -2653,6 +2612,7 @@ function renderSchemaFieldsTable() {
     );
     const layerOpts = ['', 'front', 'spine', 'back', 'any'];
     const typeOpts = ['text', 'image', 'zone'];
+    const slotOpts = ['none', 'book_block_first_page'];
 
     if (!hasAdminSecret()) {
         if (hint) {
@@ -2665,11 +2625,13 @@ function renderSchemaFieldsTable() {
             return;
         }
         let html =
-            '<table class="schema-crud-table"><thead><tr><th>element_id</th><th>Label</th><th>Typ</th><th>Layer</th><th>aktiv</th></tr></thead><tbody>';
+            '<table class="schema-crud-table"><thead><tr><th>element_id</th><th>Label</th><th>Typ</th><th>Layer</th><th>editor_slot</th><th>aktiv</th></tr></thead><tbody>';
         for (const e of rows.filter((x) => x.active)) {
             html += `<tr><td><code>${escapeHtml(e.element_id)}</code></td><td>${escapeHtml(e.label)}</td><td>${escapeHtml(
                 e.element_type
-            )}</td><td>${escapeHtml(e.layer || '—')}</td><td>${e.active ? 'ja' : 'nein'}</td></tr>`;
+            )}</td><td>${escapeHtml(e.layer || '—')}</td><td><code>${escapeHtml(e.editor_slot || 'none')}</code></td><td>${
+                e.active ? 'ja' : 'nein'
+            }</td></tr>`;
         }
         html += '</tbody></table>';
         wrap.innerHTML = html;
@@ -2678,12 +2640,12 @@ function renderSchemaFieldsTable() {
 
     if (hint) {
         hint.textContent =
-            'Felder (cover_schema_elements): Speichern pro Zeile. Deaktivieren = ausblenden; Löschen nur wenn inaktiv und nicht in Template-SVGs.';
+            'Felder (cover_schema_elements): Speichern pro Zeile. Deaktivieren = ausblenden; Löschen nur wenn inaktiv und nicht in Template-SVGs. Editor-Slot „book_block_first_page“: siehe aufklappbare Hilfe — oder festes SVG-Image mit id tpl-pdf-page1 ohne Schema-Zeile.';
         hint.className = 'schema-status ok';
     }
 
     let html =
-        '<table class="schema-crud-table"><thead><tr><th style="width:80px"></th><th>element_id</th><th>Label</th><th>Placeholder</th><th>Typ</th><th>Layer</th><th>Sort</th><th>Pflicht</th><th>aktiv</th></tr></thead><tbody>';
+        '<table class="schema-crud-table"><thead><tr><th style="width:80px"></th><th>element_id</th><th>Label</th><th>Placeholder</th><th>Typ</th><th>Layer</th><th>Editor-Slot</th><th>Sort</th><th>Pflicht</th><th>aktiv</th></tr></thead><tbody>';
 
     for (const e of rows) {
         const id = e.id || '';
@@ -2704,6 +2666,13 @@ function renderSchemaFieldsTable() {
                     )}</option>`
             )
             .join('');
+        const curSlot = (e.editor_slot || 'none').trim();
+        const slotSel = slotOpts
+            .map(
+                (sv) =>
+                    `<option value="${escapeAttr(sv)}"${curSlot === sv ? ' selected' : ''}>${escapeHtml(sv)}</option>`
+            )
+            .join('');
         html += `<tr data-field-id="${escapeAttr(id)}"${tmp ? ` data-tmp="${escapeAttr(tmp)}"` : ''}>`;
         // Aktionen ZUERST – immer sichtbar ohne scrollen
         html += '<td class="schema-row-actions">';
@@ -2722,6 +2691,7 @@ function renderSchemaFieldsTable() {
         html += `<td><input type="text" class="sf-ph" value="${escapeAttr(e.placeholder || '')}"></td>`;
         html += `<td><select class="sf-type">${typeSel}</select></td>`;
         html += `<td><select class="sf-layer">${layerSel}</select></td>`;
+        html += `<td><select class="sf-slot" title="none = Standard. book_block_first_page = erstes &lt;image&gt; mit passender element_id zeigt die erste Buchblock-PDF-Seite. tpl-pdf-page1 im SVG funktioniert auch ohne Schema-Zeile (SSOT).">${slotSel}</select></td>`;
         html += `<td><input type="number" class="sf-sort" value="${escapeAttr(String(e.sort_order ?? 0))}"></td>`;
         html += `<td style="text-align:center"><input type="checkbox" class="sf-req" ${e.required ? ' checked' : ''}></td>`;
         html += `<td style="text-align:center"><input type="checkbox" class="sf-act" ${e.active !== false ? ' checked' : ''}></td>`;
@@ -2914,8 +2884,8 @@ function clearPreview() {
  * @param {string} text
  * @param {string} [filename] – z. B. aus Dateiauswahl oder cover_templates.filename
  * @param {string} [sourceNote] – z. B. „Quelle: Supabase Storage" für die Kopfzeile
- * @param {string | null} [knownTemplateId] – UUID aus cover_templates (zuverlässige Palette/Upload-Zuordnung)
- * @param {string | null} [knownGruppe] – cover_templates.gruppe (verhindert falsche Zuordnung bei gleichem Dateinamen)
+ * @param {string | null} [knownTemplateId]
+ * @param {string | null} [knownGruppe]
  */
 function loadSvgFromText(text, filename, sourceNote, knownTemplateId, knownGruppe) {
     if (filename !== undefined) currentSvgFilename = String(filename || '').trim();
@@ -2943,6 +2913,7 @@ function loadSvgFromText(text, filename, sourceNote, knownTemplateId, knownGrupp
     svgRoot = svgEl;
 
     walkCollect(svgRoot, 'unknown', false);
+    seedColorRoleMapFromSvg();
 
     const nText = elementRows.filter((r) => r.tag === 'text').length;
     const baseHint = `${nText} Textfelder · ${elementRows.length} Elemente gesamt · Ebenen aus Inkscape.`;
@@ -2972,11 +2943,7 @@ function loadSvgFromText(text, filename, sourceNote, knownTemplateId, knownGrupp
             void resolveCurrentCoverTemplateId();
         }
         requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                hydrateColorRolesFromSvg();
-                renderColors();
-                syncLiveDataColorRoles();
-            });
+            requestAnimationFrame(() => renderColors());
         });
     });
 
@@ -2997,20 +2964,14 @@ function updatePreviewTemplateName(name) {
 }
 
 /**
- * Welches Schema ist für die Dropdown-Auswahl maßgeblich: zuerst SVG-id wenn element_id,
- * sonst data-label wenn es schon element_id ist, sonst Abgleich über Schema-Label (z. B. „Titel der Arbeit“ → tpl-title).
+ * Welches Schema ist für die Dropdown-Auswahl maßgeblich: data-label, sonst id wenn in Schema.
  * @param {{ el: Element }} r
  */
 function getSchemaSelectValue(r) {
-    const idAttr = (r.el.getAttribute('id') || '').trim();
     const dl = (r.el.getAttribute('data-label') || '').trim();
+    if (dl) return dl;
+    const idAttr = (r.el.getAttribute('id') || '').trim();
     if (idAttr && schemaByElementId.has(idAttr)) return idAttr;
-    if (dl && schemaByElementId.has(dl)) return dl;
-    if (dl) {
-        for (const se of schemaElements) {
-            if (se && (se.label || '').trim() === dl) return se.element_id;
-        }
-    }
     return '';
 }
 
@@ -3189,6 +3150,7 @@ function renderElementsTable() {
 
 function renderColors() {
     const wrap = document.getElementById('colorsWrap');
+    seedColorRoleMapFromSvg();
     const hexFreq = new Map();
     for (const r of elementRows) {
         for (const hex of collectPaintHexesForElement(r.el)) {
@@ -3234,7 +3196,6 @@ function renderColors() {
             const hex = sel.getAttribute('data-hex');
             if (!hex) return;
             colorRoleByHex.set(hex, sel.value);
-            syncLiveDataColorRoles();
             highlightElementsForHex(hex);
         });
     });
@@ -3305,7 +3266,15 @@ function applyAnnotationsToDoc(doc) {
         const el = root.querySelector(`[data-uid="${r.uid}"]`);
         if (!el) continue;
         const role = resolveColorRoleFromElement(r.el);
+        const existingRaw = (el.getAttribute('data-color-role') || '').trim();
+        const existing =
+            existingRaw === 'color1'
+                ? 'color-1'
+                : existingRaw === 'color2'
+                  ? 'color-2'
+                  : existingRaw;
         if (role) el.setAttribute('data-color-role', role);
+        else if (existing === 'color-1' || existing === 'color-2') el.setAttribute('data-color-role', existing);
         else el.removeAttribute('data-color-role');
         const dl = el.getAttribute('data-label');
         if (dl) {
@@ -3378,42 +3347,39 @@ function stripProductionSvg(doc) {
         if (svg.hasAttribute(name)) svg.removeAttribute(name);
     }
 
-    stripGuideElementsFromDoc(doc);
 }
 
 /**
- * Entfernt Hilfslinien (z. B. Magenta-Rahmen aus Inkscape) – id beginnt mit guide- oder data-editor="guide".
- * @param {Document} doc
+ * @returns {Promise<{ svg: string | null, meta: { fontFamilyCount: number, fontsEmbedded: boolean } }>}
  */
-function stripGuideElementsFromDoc(doc) {
-    const root = doc.documentElement;
-    if (!root) return;
-    const remove = [];
-    root
-        .querySelectorAll('#guide-sichtbereich, [id^="guide-"], [id^="guide_"], [data-editor="guide"]')
-        .forEach((el) => remove.push(el));
-    for (const el of remove) {
-        try {
-            el.parentNode && el.parentNode.removeChild(el);
-        } catch (_) {}
+async function buildProductionSvgStringWithMeta() {
+    if (!svgRoot) {
+        return { svg: null, meta: { fontFamilyCount: 0, fontsEmbedded: false } };
     }
-}
-
-async function buildProductionSvgString() {
-    if (!svgRoot) return null;
     const xml = new XMLSerializer().serializeToString(svgRoot);
     const parser = new DOMParser();
     const doc = parser.parseFromString(xml, 'image/svg+xml');
     applyAnnotationsToDoc(doc);
     stripEditorOnlyClasses(doc);
     stripProductionSvg(doc);
+    const fontMap = scanSvgFonts(doc);
+    const fontFamilyCount = fontMap.size;
     const fontCss = await buildEmbeddedFontsCss(doc);
+    const fontsEmbedded = !!fontCss && String(fontCss).trim().length > 0;
     if (fontCss) {
         const styleEl = doc.createElementNS(SVG_NS, 'style');
         styleEl.textContent = fontCss;
         doc.documentElement.insertBefore(styleEl, doc.documentElement.firstChild);
     }
-    return new XMLSerializer().serializeToString(doc);
+    return {
+        svg: new XMLSerializer().serializeToString(doc),
+        meta: { fontFamilyCount, fontsEmbedded },
+    };
+}
+
+async function buildProductionSvgString() {
+    const { svg } = await buildProductionSvgStringWithMeta();
+    return svg;
 }
 
 /**
@@ -3442,12 +3408,14 @@ function exportEditorSvg() {
 
 async function exportProductionSvg() {
     if (!svgRoot) { showToast('Zuerst ein SVG laden.', 'warn'); return; }
-    showToast('Fonts werden eingebettet…', 'info', 10000);
     try {
-        const out = await buildProductionSvgString();
+        const { svg: out, meta } = await buildProductionSvgStringWithMeta();
         if (!out) { showToast('SVG-Inhalt leer.', 'error'); return; }
         downloadBlob(out, 'cover-produktion.svg', 'image/svg+xml');
-        showToast('Produktion-SVG gespeichert – Fonts eingebettet.', 'success', 3500);
+        showProductionSummaryModal({
+            title: 'Produktion-Export',
+            lines: buildProductionSummaryModalLines({ kind: 'export', meta }),
+        });
     } catch (e) {
         showToast('Export fehlgeschlagen: ' + (e?.message ?? String(e)), 'error');
     }
@@ -3487,17 +3455,7 @@ function escapeAttr(s) {
 
 initSupabaseTemplateBar();
 initSupabaseUploadPanel();
-initTemplateOverviewPanel();
-
-document.getElementById('btnTemplateGroupCreate')?.addEventListener('click', () => void createNewTemplateGroupFromForm());
-document.getElementById('btnTemplateGroupsReload')?.addEventListener('click', () => void refreshTemplateGroupsCache());
-document.getElementById('btnTemplateGroupsSaveAll')?.addEventListener('click', () => void saveAllTemplateGroupsFromTable());
-document.getElementById('templateGroupsTableWrap')?.addEventListener('click', (e) => {
-    const btn = e.target.closest('.btn-tg-open-templates');
-    if (!btn) return;
-    const g = btn.getAttribute('data-gruppe');
-    if (g) switchToEditorTemplatesForGroup(g);
-});
+initProductionSummaryModal();
 
 window.addEventListener('message', (e) => {
     const d = e.data;
@@ -3508,7 +3466,10 @@ window.addEventListener('message', (e) => {
         adminSecret: d.adminSecret || '',
     };
     loadSchema();
-    void refreshTemplateGroupsCache();
+    void refreshTemplateGroupDropdowns().then(() => {
+        syncSupabaseUploadForm();
+        void refreshSupabaseTemplateList();
+    });
 });
 
 document.getElementById('fileSvg').addEventListener('change', (ev) => {
@@ -3524,6 +3485,63 @@ document.getElementById('fileSvg').addEventListener('change', (ev) => {
 
 document.getElementById('btnExportEditor').addEventListener('click', exportEditorSvg);
 document.getElementById('btnExportProd').addEventListener('click', exportProductionSvg);
+
+document.getElementById('tmplOverviewGruppeFilter')?.addEventListener('change', () => {
+    void renderTmplOverviewTable();
+});
+document.getElementById('btnTmplOverviewRefresh')?.addEventListener('click', () => {
+    void renderTmplOverviewTable();
+});
+document.getElementById('btnTmplOverviewSaveList')?.addEventListener('click', () => {
+    void saveTmplOverviewList();
+});
+
+document.getElementById('panelTemplates')?.addEventListener('click', (e) => {
+    const t = /** @type {HTMLElement} */ (e.target);
+    const loadB = t.closest('.btn-tmpl-ov-load');
+    const delB = t.closest('.btn-tmpl-ov-del');
+    const tr = t.closest('tr[data-tmpl-row]');
+    if (!tr) return;
+    const id = tr.getAttribute('data-tmpl-row');
+    if (!id) return;
+    if (loadB) {
+        void (async () => {
+            try {
+                await loadCoverTemplatesListIfNeeded();
+                const row = coverTemplatesList.find((x) => String(x.id) === id);
+                const fetchUrl = (row?.url || '').trim();
+                if (!fetchUrl) {
+                    showToast('Keine URL für dieses Template.', 'error');
+                    return;
+                }
+                const res = await fetchCoverTemplateStorageSvg(fetchUrl);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const text = await res.text();
+                const fname = (row?.filename || 'template.svg').trim() || 'template.svg';
+                const g = row?.gruppe ?? null;
+                loadSvgFromText(text, fname, 'Quelle: Supabase Storage', id, g);
+            } catch (err) {
+                showToast(err && err.message ? err.message : String(err), 'error');
+            }
+        })();
+        return;
+    }
+    if (delB) {
+        if (!hasAdminSecret()) return;
+        if (!confirm('Template wirklich löschen (Datei in Storage und DB-Eintrag)?')) return;
+        void (async () => {
+            try {
+                await apiFetchEdge('DELETE', '/functions/v1/admin-cover-templates', { id });
+                showToast('Template gelöscht.', 'success');
+                await loadCoverTemplatesListIfNeeded();
+                await renderTmplOverviewTable();
+                await refreshSupabaseTemplateList();
+            } catch (err) {
+                showToast(err && err.message ? err.message : String(err), 'error');
+            }
+        })();
+    }
+});
 
 // ── Editor-Tab-Switching ───────────────────────────────────────────────────
 document.querySelectorAll('.svg-editor-tabs button').forEach((btn) => {
@@ -3547,10 +3565,7 @@ document.querySelectorAll('.svg-editor-tabs button').forEach((btn) => {
             if (visible) el.scrollTop = 0;
         });
         if (tab === 'palette') void renderTemplatePalettePanel();
-        if (tab === 'templates') {
-            syncSupabaseUploadForm();
-            void renderTemplateOverview();
-        }
+        if (tab === 'templates') void renderTmplOverviewTable();
         if (tab === 'export') syncSupabaseUploadForm();
     });
 });
@@ -3565,26 +3580,18 @@ document.querySelectorAll('.svg-editor-mode-btn').forEach((btn) => {
         if (editorPanel)   editorPanel.hidden   = (mode !== 'editor');
         if (settingsPanel) settingsPanel.hidden = (mode !== 'settings');
         if (mode === 'settings') {
-            syncSettingsBodyTemplateGroupsWide();
             // Aktiven Einstellungs-Tab initialisieren
             const activeTab = document.querySelector('.svg-editor-settings-tab.active');
             if (activeTab) {
                 const st = activeTab.getAttribute('data-settings-tab');
+                setSettingsBodyTemplateGroupsWide(st === 'template-groups');
                 if (st === 'schema-fields') renderSchemaFieldsTable();
                 if (st === 'farbpaare') void initSettingsFarbpaare();
-                if (st === 'template-groups') void refreshTemplateGroupsCache();
+                if (st === 'template-groups') void renderTemplateGroupsSettingsPanel();
             }
         }
     });
 });
-
-function syncSettingsBodyTemplateGroupsWide() {
-    const body = document.querySelector('.svg-editor-settings-body');
-    if (!body) return;
-    const active = document.querySelector('.svg-editor-settings-tab.active');
-    const wide = active?.getAttribute('data-settings-tab') === 'template-groups';
-    body.classList.toggle('svg-editor-settings-body--template-groups-wide', wide);
-}
 
 // ── Einstellungs-Tab-Switching ────────────────────────────────────────────
 document.querySelectorAll('.svg-editor-settings-tab').forEach((btn) => {
@@ -3592,9 +3599,10 @@ document.querySelectorAll('.svg-editor-settings-tab').forEach((btn) => {
         const st = btn.getAttribute('data-settings-tab');
         document.querySelectorAll('.svg-editor-settings-tab').forEach((b) => b.classList.toggle('active', b === btn));
         document.querySelectorAll('.svg-editor-settings-panel').forEach((p) => p.classList.add('hidden'));
+        setSettingsBodyTemplateGroupsWide(st === 'template-groups');
         const panelMap = {
-            'schema-fields': 'settingsPanelFields',
-            'farbpaare':     'settingsPanelFarbpaare',
+            'schema-fields':   'settingsPanelFields',
+            'farbpaare':       'settingsPanelFarbpaare',
             'template-groups': 'settingsPanelTemplateGroups',
         };
         const panelId = panelMap[st];
@@ -3602,10 +3610,9 @@ document.querySelectorAll('.svg-editor-settings-tab').forEach((btn) => {
             const panel = document.getElementById(panelId);
             if (panel) { panel.classList.remove('hidden'); panel.scrollTop = 0; }
         }
-        syncSettingsBodyTemplateGroupsWide();
         if (st === 'schema-fields') renderSchemaFieldsTable();
-        if (st === 'farbpaare')     void initSettingsFarbpaare();
-        if (st === 'template-groups') void refreshTemplateGroupsCache();
+        if (st === 'farbpaare') void initSettingsFarbpaare();
+        if (st === 'template-groups') void renderTemplateGroupsSettingsPanel();
     });
 });
 
@@ -3625,6 +3632,63 @@ document.getElementById('btnSvgFarbpaarAdd')?.addEventListener('click', () => op
 
 document.getElementById('btnSchemaReload')?.addEventListener('click', () => loadSchema());
 
+document.getElementById('btnTemplateGroupsReload')?.addEventListener('click', () => {
+    void renderTemplateGroupsSettingsPanel();
+});
+
+document.getElementById('btnTemplateGroupsSaveAll')?.addEventListener('click', () => {
+    void saveAllTemplateGroupRows();
+});
+
+document.getElementById('settingsPanelTemplateGroups')?.addEventListener('click', (e) => {
+    const btn = e.target && /** @type {HTMLElement} */ (e.target).closest('.btn-tg-delete');
+    if (!btn || !hasAdminSecret()) return;
+    const id = btn.getAttribute('data-tg-del');
+    if (!id) return;
+    const label = btn.closest('tr')?.querySelector('.tg-disp')?.value?.trim() || id;
+    if (!confirm(`Template-Gruppe „${id}“ (${label}) wirklich löschen?`)) return;
+    void (async () => {
+        try {
+            await apiFetchEdge('DELETE', '/functions/v1/admin-cover-template-groups', { id });
+            showToast('Gruppe gelöscht.', 'success');
+            await refreshTemplateGroupDropdowns();
+            await renderTemplateGroupsSettingsPanel();
+            syncSupabaseUploadForm();
+            void refreshSupabaseTemplateList();
+        } catch (err) {
+            showToast(err && err.message ? err.message : String(err), 'error');
+        }
+    })();
+});
+
+document.getElementById('btnTemplateGroupCreate')?.addEventListener('click', async () => {
+    if (!hasAdminSecret()) {
+        showToast('Admin-Secret erforderlich.', 'error');
+        return;
+    }
+    const idRaw = document.getElementById('newGroupId')?.value?.trim().toLowerCase() ?? '';
+    const display_name = document.getElementById('newGroupDisplayName')?.value?.trim() ?? '';
+    if (!idRaw) {
+        showToast('Bitte eine Gruppen-id angeben (Kleinbuchstaben, Ziffern, _).', 'warn');
+        return;
+    }
+    try {
+        await apiFetchEdge('POST', '/functions/v1/admin-cover-template-groups', {
+            id: idRaw,
+            display_name: display_name || idRaw,
+        });
+        showToast('Template-Gruppe angelegt.', 'success');
+        const idEl = document.getElementById('newGroupId');
+        const dnEl = document.getElementById('newGroupDisplayName');
+        if (idEl) idEl.value = '';
+        if (dnEl) dnEl.value = '';
+        await refreshTemplateGroupDropdowns();
+        await renderTemplateGroupsSettingsPanel();
+    } catch (e) {
+        showToast(e && e.message ? e.message : String(e), 'error');
+    }
+});
+
 document.getElementById('btnSchemaNewField')?.addEventListener('click', () => {
     if (!hasAdminSecret()) {
         const hint = document.getElementById('schemaManageHint');
@@ -3639,6 +3703,7 @@ document.getElementById('btnSchemaNewField')?.addEventListener('click', () => {
         element_type: 'text',
         required: false,
         layer: 'front',
+        editor_slot: 'none',
         sort_order: 0,
         active: true,
     });
@@ -3715,6 +3780,7 @@ async function saveSchemaFieldRow(tr) {
         element_type: tr.querySelector('.sf-type')?.value || 'text',
         required: Boolean(tr.querySelector('.sf-req')?.checked),
         layer,
+        editor_slot: tr.querySelector('.sf-slot')?.value || 'none',
         sort_order: parseInt(tr.querySelector('.sf-sort')?.value ?? '0', 10) || 0,
         active: Boolean(tr.querySelector('.sf-act')?.checked),
     };
@@ -3840,5 +3906,4 @@ if (new URLSearchParams(location.search).get('embed') === '1') {
 if (typeof window.__SVG_EDITOR_CONFIG__ === 'object' && window.__SVG_EDITOR_CONFIG__) {
     toolConfig = window.__SVG_EDITOR_CONFIG__;
     loadSchema();
-    void refreshTemplateGroupsCache();
 }

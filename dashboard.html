@@ -178,9 +178,7 @@
                                         <button type="button" class="shop-config-tab" data-tab="production">Produktion & Versand</button>
                                         <button type="button" class="shop-config-tab" data-tab="bindings">Bindungen</button>
                                         <button type="button" class="shop-config-tab" data-tab="extras">Extras</button>
-                                        <button type="button" class="shop-config-tab" data-tab="colorpairs">Farben (Supabase)</button>
-                                        <button type="button" class="shop-config-tab" data-tab="templates">Templates</button>
-                                        <button type="button" class="shop-config-tab" data-tab="templatezuordnung">Template-Zuordnung</button>
+                                        <button type="button" class="shop-config-tab" data-tab="coverhub">Buchdecken</button>
                                     </div>
                                     <div id="shopConfigPanelGeneral" class="shop-config-panel">
                                         <div id="shopGeneralForm" class="template-form"></div>
@@ -211,15 +209,14 @@
                                         <button type="button" id="btnAddExtra" class="btn-primary" style="margin-top:10px;">Extra hinzufügen</button>
                                         <div id="shopExtraFormContainer" class="template-form hidden" style="margin-top:16px;"></div>
                                     </div>
-                                    <div id="shopConfigPanelColorpairs" class="shop-config-panel hidden">
-                                        <p class="settings-hint">Farbpalette in Supabase (Tabelle farbpaare). Der Buchdecken-Editor lädt Farben und Zuordnung nur noch aus Supabase; Farbfelder im SVG werden ignoriert.</p>
-                                        <div id="shopColorPairsList" class="shop-config-list"></div>
-                                        <button type="button" id="btnAddColorPair" class="btn-primary" style="margin-top:10px;">Farbe hinzufügen</button>
-                                        <div id="shopColorPairFormContainer" class="template-form hidden" style="margin-top:16px;"></div>
-                                    </div>
-                                    <div id="shopConfigPanelTemplates" class="shop-config-panel hidden">
-                                        <p class="settings-hint">SVG-Templates in Supabase (Storage + Metadaten). Gruppe z.&nbsp;B. hardcover_modern, hardcover_efalin, paperback – der Editor filtert danach. Für Upload muss in <strong>dashboard.config.json</strong> der Eintrag <strong>adminSecret</strong> gesetzt sein und mit dem Secret in Supabase übereinstimmen (Edge Functions → Secrets → ADMIN_SECRET).</p>
-                                        <details class="settings-hint" style="margin-top:6px;">
+                                    <div id="shopConfigPanelCoverhub" class="shop-config-panel hidden">
+                                        <p class="settings-hint">Alle Buchdecken-Templates, globale Farbpaare, Template-Zuordnung, Schema-Felder und Uploads werden zentral im <strong>Dashboard SVG-Editor</strong> (SCG-Editor) gepflegt – eine Oberfläche für Supabase statt mehrerer Tabs hier.</p>
+                                        <div class="form-row" style="margin-top:14px; display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
+                                            <a href="dashboard-svg-editor.html" class="btn-primary" style="display:inline-block;text-decoration:none;" target="_blank" rel="noopener">SVG-Editor öffnen</a>
+                                            <a href="dashboard-svg-editor.html?embed=1" target="_blank" rel="noopener" style="display:inline-block;padding:8px 14px;font-size:0.9rem;border:1px solid var(--color-border);border-radius:var(--radius-sm);color:var(--color-text);text-decoration:none;">Eingebettet (wie unter Tools)</a>
+                                        </div>
+                                        <p class="text-muted" style="font-size:0.9em; margin-top:12px;">Voraussetzung: <code>dashboard.config.json</code> mit <strong>adminSecret</strong> (gleicher Wert wie Supabase Edge Functions → <code>ADMIN_SECRET</code>). Den Editor idealerweise aus dem Dashboard öffnen, damit die Konfiguration geladen wird.</p>
+                                        <details class="settings-hint" style="margin-top:16px;">
                                             <summary>Konventionen für SVG-Templates (Felder &amp; IDs)</summary>
                                             <div style="margin-top:4px;font-size:0.9em;">
                                                 <p>Single Source of Truth: <code>docs/SSOT_SVG_COVER_TEMPLATES.md</code> (Supabase-<code>element_id</code> = SVG-<code>id</code>).</p>
@@ -239,18 +236,11 @@
                                                     <li>Buchrücken: <code>tpl-title-spine</code>, <code>tpl-name-spine</code>, <code>tpl-year-spine</code></li>
                                                     <li>Rückseite: z.&nbsp;B. <code>tpl-abstract</code></li>
                                                     <li>Logo: z.&nbsp;B. <code>tpl-logo-main</code> oder <code>tpl-logo-Logo1</code></li>
+                                                    <li>Buchblock-Vorschau (erste PDF-Seite im Cover): <code>&lt;image id="tpl-pdf-page1"&gt;</code> — wird im Webshop automatisch mit der Vorschau aus dem hochgeladenen Buchblock-PDF befüllt (optional zusätzlich Schema-Feld mit <code>editor_slot = book_block_first_page</code>; siehe SSOT).</li>
                                                 </ul>
                                             </div>
                                         </details>
-                                        <div id="shopCoverTemplatesList" class="shop-config-list"></div>
-                                        <button type="button" id="btnUploadCoverTemplate" class="btn-primary" style="margin-top:10px;">Template hochladen</button>
-                                        <div id="shopCoverTemplateFormContainer" class="template-form hidden" style="margin-top:16px;"></div>
-                                    </div>
-                                    <div id="shopConfigPanelTemplatezuordnung" class="shop-config-panel hidden">
-                                        <p class="settings-hint">Pro Template Farbpaare (Farbschema) festlegen: Farbe 1 und Farbe 2 aus der Palette wählen, hinzufügen, löschen, Reihenfolge ändern. Nur diese Farbpaare erscheinen im Buchdecken-Editor für das jeweilige Template.</p>
-                                        <div id="shopTemplateZuordnungList" class="shop-config-list"></div>
-                                        <button type="button" id="btnAddTemplateZuordnung" class="btn-primary" style="margin-top:10px;">Template-Zuordnung anlegen/bearbeiten</button>
-                                        <div id="shopTemplateZuordnungFormContainer" class="template-form hidden" style="margin-top:16px;"></div>
+                                        <p class="text-muted" style="margin-top:14px; font-size:0.9em;">Hilfs-Tools (Schriften einbetten, Preflight, Inkscape-Konvertierung) bleiben unter <strong>Tools</strong> im Dashboard erreichbar.</p>
                                     </div>
                                 </div>
                             </section>
@@ -266,7 +256,7 @@
                 <button type="button" id="btnToolsBack" class="btn-logout">← Zurück zum Dashboard</button>
             </header>
             <div id="toolsListWrap" class="tools-list-wrap">
-                <p class="settings-hint">Hilfsprogramme für Vorbereitung und Produktion (Buchdeckentemplates, Mockups usw.).</p>
+                <p class="settings-hint">Hilfsprogramme für Vorbereitung und Produktion (Mockups, Schriften, Preflight usw.). <strong>Buchdecken-Templates, Farben und Schema</strong> werden zentral im <strong>SCG-Editor</strong> gepflegt (auch über die Karte unten oder Shopkonfiguration → Tab „Buchdecken“).</p>
                 <div class="tools-grid" id="toolsGrid">
                     <a href="#" class="tool-card" id="toolCardSvgProductioner" data-tool="svg-productioner">
                         <span class="tool-card-title">SVG Productioner</span>
@@ -285,8 +275,8 @@
                         <span class="tool-card-desc">SVG aus Inkscape laden (mit $$F1$$/$$S1$$-Markern, Ebenen, Codierfarben) → Konvertieren → Editor-taugliche SVG. Mit Mustertexten, -farben und -logos testen, ob alles korrekt zugeordnet wird.</span>
                     </a>
                     <a href="#" class="tool-card" id="toolCardSvgPersonalisierung" data-tool="svg-personalisierung">
-                        <span class="tool-card-title">SVG-Personalisierung</span>
-                        <span class="tool-card-desc">Inkscape-SVG laden, Schema aus Supabase zuweisen (data-label, Farbrollen), Editor-SVG und Produktion-SVG exportieren. Zentrale Pflege der Felder in Supabase.</span>
+                        <span class="tool-card-title">SCG-Editor (Buchdecken)</span>
+                        <span class="tool-card-desc">Gleiche Oberfläche wie „SVG-Editor öffnen“ in der Shopkonfiguration: Templates, Farbpaare, Zuordnung, Schema und Export – zentral an einer Stelle.</span>
                     </a>
                 </div>
             </div>

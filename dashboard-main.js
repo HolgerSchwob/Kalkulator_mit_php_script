@@ -11,7 +11,7 @@ import {
     showSettingsView
 } from './dashboard-detail.js';
 import { closeTemplateForm, renderTemplatesList, GetEmailDetails } from './dashboard-settings-mail.js';
-import { ensureShopConfig, openPaperForm, openProdTimeForm, openDeliveryForm, openBindingForm, openExtraForm, openColorPairForm, openTemplateZuordnungForm, openCoverTemplateUploadForm } from './dashboard-settings-shop.js';
+import { ensureShopConfig, openPaperForm, openProdTimeForm, openDeliveryForm, openBindingForm, openExtraForm } from './dashboard-settings-shop.js';
 import { initStatsModal } from './dashboard-stats.js';
 window.GetEmailDetails = GetEmailDetails;
 
@@ -148,9 +148,6 @@ document.getElementById('btnAddProdTime')?.addEventListener('click', () => openP
 document.getElementById('btnAddDelivery')?.addEventListener('click', () => openDeliveryForm(-1));
 document.getElementById('btnAddBinding')?.addEventListener('click', () => openBindingForm(-1));
 document.getElementById('btnAddExtra')?.addEventListener('click', () => openExtraForm(-1));
-document.getElementById('btnAddColorPair')?.addEventListener('click', () => openColorPairForm(-1));
-document.getElementById('btnAddTemplateZuordnung')?.addEventListener('click', () => openTemplateZuordnungForm(null));
-document.getElementById('btnUploadCoverTemplate')?.addEventListener('click', () => openCoverTemplateUploadForm());
 
 document.getElementById('loginForm')?.addEventListener('submit', (e) => {
     e.preventDefault();

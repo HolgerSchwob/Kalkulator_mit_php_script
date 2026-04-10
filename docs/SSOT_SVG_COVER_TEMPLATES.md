@@ -16,7 +16,7 @@
 ## 1. Prinzip
 
 - **Template-Referenz in Supabase:** Kanonisch ist **`cover_templates.id`** (UUID). Verknüpfungen (z. B. Farbpaare über `cover_template_paletten`) nutzen diese ID. Der **Dateiname** ist **nicht** projektweit eindeutig (Eindeutigkeit nur je **`gruppe`**); das Dashboard löst Zuordnungen deshalb über **UUID** und **`gruppe`**, nicht allein über den Dateinamen.
-- **`element_id` in Supabase** = **`id`-Attribut** der zugehörigen SVG-Elemente (Text `text`, Logo `rect`).
+- **`element_id` in Supabase** = **`id`-Attribut** der zugehörigen SVG-Elemente (Text `text`, Logo `rect`, Bild-Vorschau `image` bei `editor_slot`).
 - Präfix für alle personalisierbaren Felder: **`tpl-`** — so filtert der Webshop-Editor zuverlässig (`text[id^="tpl-"]`, `rect[id^="tpl-logo"]`).
 - **Legacy-IDs** (`front-text-title`, …) sind durch Migration `024_ssot_schema_element_ids_tpl.sql` ersetzt; in neuen Templates nicht mehr verwenden.
 
@@ -33,6 +33,8 @@ Jedes **Text**-Element mit `id^="tpl-"` muss in **genau einer** dieser Gruppen l
 | `#tpl-group-u4` | Rückdeckel (U4) | Beschriftung Rückseite |
 
 **Inkscape:** Ebenen können `data-layer="front" | spine | back"` nutzen; für den Shop zählt die **Einbettung in die `tpl-group-*`-Gruppen**.
+
+**Variable Rückenbreite (Webshop):** `HardcoverEditor._updateSpineAndLayout` verschiebt `#tpl-group-u4` / `#tpl-group-u1` und setzt die **Breite** des ersten `<rect>` in `#tpl-group-spine` auf die aktuelle Rückenbreite (mm). Ohne `#tpl-group-spine` (z. B. manche Paperbacks) kann ein **`<rect id="tpl-spine-face">`** dieselbe Breite erhalten (Kartonstreifen an der Spine-Kante).
 
 ---
 
@@ -56,6 +58,21 @@ Kanonische Namen (müssen mit SVG-`id` übereinstimmen):
 | `tpl-abstract` | text | back |
 
 Zusätzliche projektspezifische Felder: weiterhin **`tpl-` + Kleinbuchstaben/Ziffern/Bindestrich**, z. B. `tpl-mat-nr`, `tpl-img-hero` (Bildplatzhalter).
+
+**Buchblock, erste PDF-Seite (Raster-Vorschau im Cover):** feste ID **`tpl-pdf-page1`** für ein **`<image>`** (z. B. Paperback Deckfolie). Der Webshop befüllt **`href`** / **`xlink:href`** automatisch, sobald eine Buchblock-Vorschau existiert — **ohne** dass zwingend eine Schema-Zeile nötig ist (Konstante `KNOWN_BOOK_BLOCK_FIRST_PAGE_IMAGE_IDS` in [`kalkulator/editorSlots.mjs`](kalkulator/editorSlots.mjs)). Zusätzlich kann dieselbe ID (oder eine andere `<image id>`) über **`editor_slot = book_block_first_page`** im Schema gepflegt werden; beides ist kompatibel.
+
+### Editor-Slots (`cover_schema_elements.editor_slot`)
+
+- **Spalte:** `none` (Standard) oder `book_block_first_page` (Migration `030_cover_schema_editor_slot.sql`).
+- **Semantik:** Steuert **zusätzliche** Webshop-Logik in [`kalkulator/editorSlots.mjs`](kalkulator/editorSlots.mjs) / [`kalkulator/HardcoverEditor.mjs`](kalkulator/HardcoverEditor.mjs), unabhängig vom reinen `element_type`.
+- **`book_block_first_page`:** Gilt nur für Schema-Zeilen mit **`element_type = image`**. Im SVG muss ein **`<image id="{element_id}">`** existieren (gleiche ID wie in der DB). Beim Laden setzt der Editor **`href`** / **`xlink:href`** in dieser Reihenfolge:
+  1. Vorschau erste PDF-Seite (`inquiryState.bookBlock.firstPagePreviewUrl`, Data-URL),
+  2. optional: `editorConfig.bookBlockPreviewFallbackUrl` in der Shop-Bindung,
+  3. sonst bleibt der im Template hinterlegte **`href`** (Musterbild).
+- **Konvention `tpl-pdf-page1`:** Wie oben beschrieben — auch **ohne** DB-Zeile, sofern das SVG die ID enthält.
+- **Logos** bleiben **`rect`** mit `id^="tpl-logo"`; **Raster-Vorschau Buchblock** nutzt **`image`** + `editor_slot`, nicht `rect`.
+
+**Pflege:** Neues Slot-Token = DB-`CHECK` + Edge `update-cover-schema` + Dropdown im SCG-Editor + **diesen Abschnitt** + [`kalkulator/docs/EDITOR_SVG_KONVENTIONEN.md`](kalkulator/docs/EDITOR_SVG_KONVENTIONEN.md).
 
 ---
 

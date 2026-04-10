@@ -36,6 +36,16 @@ Migration `003_email_templates.sql` legt die Tabelle an und befüllt sie mit ein
 
 Prüfen, ob Secrets gesetzt sind: `npx supabase secrets list`
 
+## Öffentliche Shop-URL (`PUBLIC_SITE_URL`)
+
+Die Edge Function **create-order-and-checkout** baut für Stripe Checkout die **success_url** und **cancel_url** aus der öffentlichen Basis-URL des Shops.
+
+1. In **Supabase → Edge Functions → Secrets** den Key **`PUBLIC_SITE_URL`** setzen (z. B. `https://deine-domain.de` oder `https://dein-projekt.vercel.app`). Wert ohne Pfad, optional ohne abschließenden Slash.
+2. Ohne dieses Secret versucht die Function, die URL aus dem **Origin**- oder **Referer**-Header zu ermitteln (normaler Browser-Tab: oft ok; nicht in allen Kontexten zuverlässig).
+3. Nach einem Wechsel der Live-URL (z. B. erster Deploy auf **Vercel**, siehe [GITHUB_ANLEITUNG.md](../../GITHUB_ANLEITUNG.md) Abschnitt Vercel) **`PUBLIC_SITE_URL`** anpassen, damit Rückkehr nach der Zahlung zur richtigen Seite funktioniert.
+
+**Stripe-Webhooks** bleiben bei Stripe auf die **Supabase**-Function-URLs konfiguriert, nicht auf Vercel.
+
 ## Deployment (Supabase CLI)
 
 1. [Supabase CLI](https://supabase.com/docs/guides/cli) installieren und anmelden.
@@ -52,6 +62,12 @@ Prüfen, ob Secrets gesetzt sind: `npx supabase secrets list`
    `supabase functions deploy get-shop-config`  
    `supabase functions deploy shop-config`  
    `supabase functions deploy spot-color-palette`
+
+### Wichtig: kein „Deploy aller Functions“ aus Versehen
+
+- **`supabase functions deploy`** (ohne Function-Namen) deployt **alle** Edge Functions des Projekts. Das kann unbeabsichtigt z. B. Cover-Editor- oder Admin-Functions mit ausrollen.
+- **Empfehlung:** Immer **nur einzelne** Functions deployen (`supabase functions deploy <name>`), oder das Skript **`supabase/deploy-core-functions.ps1`** verwenden (Whitelist – enthält **nicht** `get-cover-template-group` und andere optionale Cover-Functions).
+- **`get-cover-template-group`** (und ggf. weitere Cover-Hilfs-Functions): nur **bewusst einzeln** deployen, wenn du die API dort wirklich ändern willst.
 
 ## Gmail API (send-order-email)
 

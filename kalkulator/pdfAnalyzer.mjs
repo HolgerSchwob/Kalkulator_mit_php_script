@@ -3,7 +3,8 @@
 import { getDocument } from './pdf.mjs'; // Pfad ggf. anpassen!
 
 const TOLERANCE_MM = 1.5; // Toleranz für Maßvergleiche
-const PREVIEW_CANVAS_TARGET_WIDTH = 200; // Breite des Canvas im Modal-Preview
+/** Breite der gerasterten ersten PDF-Seite (px). Höhe folgt dem Seitenverhältnis. 200 war für Modal-Thumbnails; höhere Werte verbessern die Schärfe im Cover-SVG (z. B. Paperback Deckfolie). */
+const PREVIEW_CANVAS_TARGET_WIDTH = 800;
 
 const DIN_A4_W_MM = 210;
 const DIN_A4_H_MM = 297;
@@ -108,7 +109,13 @@ export async function analyzePdfFile(fileArrayBuffer) {
         const tempCtx = tempCanvas.getContext('2d');
         tempCanvas.width = Math.floor(scaledViewport.width);
         tempCanvas.height = Math.floor(scaledViewport.height);
-        await page.render({ canvasContext: tempCtx, viewport: scaledViewport }).promise;
+        tempCtx.imageSmoothingEnabled = true;
+        tempCtx.imageSmoothingQuality = 'high';
+        await page.render({
+            canvasContext: tempCtx,
+            viewport: scaledViewport,
+            intent: 'print',
+        }).promise;
         firstPagePreviewDataURL = tempCanvas.toDataURL('image/png');
     }
     

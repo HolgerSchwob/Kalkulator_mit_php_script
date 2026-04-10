@@ -224,6 +224,7 @@ export async function uploadCoverTemplate(formData) {
         headers: {
             'x-admin-secret': state.config.adminSecret || '',
             'Authorization': 'Bearer ' + (state.config.anonKey || ''),
+            apikey: state.config.anonKey || '',
         },
         body: formData,
     });
@@ -276,6 +277,17 @@ export async function patchCoverTemplateGroup(payload) {
     return data;
 }
 
+export async function postCoverTemplateGroup(payload) {
+    const res = await fetch(state.config.supabaseUrl + '/functions/v1/admin-cover-template-groups', {
+        method: 'POST',
+        headers: state.headers(),
+        body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Gruppe konnte nicht angelegt werden.');
+    return data;
+}
+
 export async function uploadPreviewAsset(file, pathPrefix = '') {
     const formData = new FormData();
     formData.append('file', file);
@@ -285,6 +297,7 @@ export async function uploadPreviewAsset(file, pathPrefix = '') {
         headers: {
             'x-admin-secret': state.config.adminSecret || '',
             'Authorization': 'Bearer ' + (state.config.anonKey || ''),
+            apikey: state.config.anonKey || '',
         },
         body: formData,
     });

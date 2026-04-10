@@ -353,14 +353,21 @@ body {
 
 .svg-editor-tabs {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0;
+    flex-wrap: nowrap;
+    gap: 2px;
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 10px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
 }
 
 .svg-editor-tabs button {
-    flex: 1;
+    flex: 1 1 0;
+    min-width: 4.25rem;
     padding: 10px 8px;
     border: none;
     background: transparent;
@@ -370,6 +377,8 @@ body {
     cursor: pointer;
     border-bottom: 2px solid transparent;
     margin-bottom: -1px;
+    white-space: nowrap;
+    box-sizing: border-box;
 }
 
 .svg-editor-tabs button:hover {
@@ -798,6 +807,35 @@ html.svg-editor-embed body {
     color: #fca5a5;
 }
 
+.svg-editor-info-box {
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.svg-editor-info-box--err {
+    border-color: rgba(248, 113, 113, 0.45);
+    background: rgba(248, 113, 113, 0.08);
+}
+
+.svg-editor-info-box-list {
+    margin: 0;
+    padding-left: 1.2em;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.45;
+}
+
+.svg-editor-info-box-list li {
+    margin-bottom: 6px;
+}
+
+.svg-editor-info-box-list li:last-child {
+    margin-bottom: 0;
+}
+
 .svg-editor-upload-title {
     margin: 16px 0 8px 0;
     font-size: 12px;
@@ -1195,12 +1233,140 @@ html.svg-editor-embed body {
     border-top: 2px solid transparent;
     margin-bottom: 0;
     margin-top: -1px;
-    padding: 11px 8px 9px;
+    padding: 11px 10px 9px;
 }
 
 .svg-editor-tabs button.active {
     border-top-color: var(--gold);
     border-bottom-color: transparent;
+}
+
+/* ── Tab „Templates“: Shop-Übersicht ───────────────────────────────────────── */
+.tmpl-overview-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.tmpl-overview-filter-label {
+    font-size: 12px;
+    color: var(--muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tmpl-overview-filter {
+    min-width: 11rem;
+}
+
+.template-groups-new-block {
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+}
+
+.template-groups-toolbar {
+    margin: 10px 0;
+}
+
+.template-groups-table-wrap {
+    overflow-x: auto;
+    margin-bottom: 10px;
+    -webkit-overflow-scrolling: touch;
+}
+
+table.template-groups-table {
+    width: max-content;
+    min-width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+}
+
+table.template-groups-table th,
+table.template-groups-table td {
+    border: 1px solid var(--border);
+    padding: 4px 6px;
+    text-align: left;
+    vertical-align: middle;
+}
+
+table.template-groups-table th {
+    background: var(--surface);
+    color: var(--muted);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+table.template-groups-table .tg-id code {
+    font-size: 10px;
+}
+
+table.template-groups-table .svg-shop-input {
+    max-width: 5rem;
+    font-size: 11px;
+}
+
+table.template-groups-table .tg-inp-wide {
+    max-width: 9rem;
+}
+
+.tmpl-overview-table-wrap {
+    overflow-x: auto;
+    margin-bottom: 10px;
+    -webkit-overflow-scrolling: touch;
+}
+
+table.tmpl-overview-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+}
+
+table.tmpl-overview-table th,
+table.tmpl-overview-table td {
+    border: 1px solid var(--border);
+    padding: 6px 8px;
+    text-align: left;
+    vertical-align: middle;
+}
+
+table.tmpl-overview-table th {
+    background: var(--surface);
+    color: var(--muted);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+table.tmpl-overview-table .tmpl-sort {
+    width: 4rem;
+    min-width: 3rem;
+}
+
+table.tmpl-overview-table .tmpl-disp {
+    min-width: 7rem;
+    font-size: 11px;
+}
+
+table.tmpl-overview-table .tmpl-fn {
+    font-size: 10px;
+    word-break: break-all;
+}
+
+.tmpl-overview-actions-cell {
+    white-space: nowrap;
+}
+
+.tmpl-overview-save-row {
+    margin-bottom: 8px;
+}
+
+.svg-editor-templates-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 18px 0 16px;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1294,6 +1460,16 @@ html.svg-editor-embed body {
     width: 100%;
 }
 
+/* Template-Gruppen: breite Tabelle nutzt volle Fensterbreite (kein 960px-Cap) */
+.svg-editor-settings-body--template-groups-wide {
+    max-width: none;
+}
+
+.svg-editor-settings-body--template-groups-wide table.template-groups-table {
+    width: 100%;
+    min-width: 100%;
+}
+
 .svg-editor-settings-panel {
     width: 100%;
 }
@@ -1341,6 +1517,13 @@ html.svg-editor-embed body {
 .palette-template-info .palette-no-template {
     color: var(--muted);
     font-style: italic;
+}
+
+.palette-template-info .palette-tid {
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--muted);
+    word-break: break-all;
 }
 
 .tz-farbpaare-checks {
@@ -1573,6 +1756,82 @@ html.svg-editor-embed body {
 /* ════════════════════════════════════════════════════════════════════════════
    TOAST-BENACHRICHTIGUNGEN
    ════════════════════════════════════════════════════════════════════════════ */
+/* Modal: Zusammenfassung nach Produktion / Supabase-Upload */
+.svg-editor-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10050;
+    background: rgba(5, 15, 28, 0.72);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    backdrop-filter: blur(2px);
+}
+
+.svg-editor-modal-overlay[hidden] {
+    display: none !important;
+}
+
+.svg-editor-modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    max-width: 440px;
+    width: 100%;
+    padding: 18px 20px 16px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+}
+
+.svg-editor-modal-title {
+    margin: 0 0 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.svg-editor-modal-list {
+    margin: 0 0 16px;
+    padding-left: 1.2em;
+    color: var(--muted);
+    line-height: 1.5;
+    font-size: 12px;
+}
+
+.svg-editor-modal-list li {
+    margin-bottom: 8px;
+}
+
+.svg-editor-modal-list li:last-child {
+    margin-bottom: 0;
+}
+
+.svg-editor-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.svg-editor-modal-overlay .btn {
+    padding: 8px 18px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--bg-elev);
+    color: var(--text);
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.svg-editor-modal-overlay .btn-primary {
+    background: var(--gold-dim);
+    border-color: var(--gold);
+    color: var(--gold);
+}
+
+.svg-editor-modal-overlay .btn-primary:hover {
+    filter: brightness(1.08);
+}
+
 .svg-editor-toast-container {
     position: fixed;
     bottom: 24px;
@@ -2166,12 +2425,59 @@ html.svg-editor-embed body {
 
 .fp-text-input:focus { border-color: var(--gold); }
 
-/* ── RGB-Zeile (Swatch + Picker + Hex) ────────────────────────────────── */
+/* ── RGB-Zeile (Swatch + Picker + R/G/B 0–255) ─────────────────────────── */
 .fp-rgb-row {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 8px;
 }
+
+.fp-rgb-255-wrap {
+    flex: 1;
+    min-width: 0;
+}
+
+.fp-rgb-255-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+}
+
+.fp-rgb-255-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+}
+
+.fp-rgb-255-chan {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    color: var(--text-muted);
+}
+
+.fp-rgb-255-input {
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-size: 12px;
+    font-family: monospace;
+    padding: 5px 3px;
+    outline: none;
+    transition: border-color 0.15s;
+    -moz-appearance: textfield;
+}
+
+.fp-rgb-255-input::-webkit-inner-spin-button,
+.fp-rgb-255-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+.fp-rgb-255-input:focus { border-color: var(--gold); }
 
 /* Sichtbares Farbfeld – klickbar, öffnet den versteckten native Picker */
 .fp-swatch {
@@ -2222,6 +2528,15 @@ html.svg-editor-embed body {
 .fp-hex-input:focus { border-color: var(--gold); }
 
 /* ── CMYK-Zeile ───────────────────────────────────────────────────────── */
+.fp-cmyk-rgb-btn-row {
+    margin: 0 0 6px;
+}
+.fp-cmyk-rgb-btn {
+    width: 100%;
+    font-size: 11px;
+    padding: 4px 8px;
+}
+
 .fp-cmyk-row {
     display: grid;
     grid-template-columns: repeat(4, 1fr);

@@ -24,7 +24,10 @@ export const state = {
     headers() {
         const c = this.config;
         const h = { 'Content-Type': 'application/json' };
-        if (c.anonKey) h['Authorization'] = 'Bearer ' + c.anonKey;
+        if (c.anonKey) {
+            h['Authorization'] = 'Bearer ' + c.anonKey;
+            h['apikey'] = c.anonKey;
+        }
         if (c.adminSecret) h['x-admin-secret'] = c.adminSecret;
         return h;
     }

@@ -21,6 +21,19 @@ const EDITOR_BEHAVIOR_CONFIG = {
     LOGO_MANUAL_SCALE_MIN: 0.5,
     LOGO_MANUAL_SCALE_MAX: 2.0,
     LOGO_MOVE_STEP: 1,
+    /** `#tpl-foil-overlay`: Matt vs. glänzend (Deckfolie-Vorschau) */
+    FOIL_OVERLAY_OPACITY_MATTE: 0.2,
+    FOIL_OVERLAY_OPACITY_GLOSSY: 0,
+    /** Vorschau-Hilfslinien (Spine-Kante / Aufklapprillung) — Strichstärken in mm (UserSpace) */
+    HELPER_SPINE_LINE_WIDTH: 0.38,
+    HELPER_SPINE_DASH_LEN: 2.8,
+    HELPER_SPINE_GAP_LEN: 2.8,
+    /** Aufklapprillung: etwas längere Striche als Spine, gleicher Weiß/Schwarz-Kontrast */
+    HELPER_CREASE_LINE_WIDTH: 0.34,
+    HELPER_CREASE_DASH_LEN: 3.5,
+    HELPER_CREASE_GAP_LEN: 4,
+    /** Wenn `dimensions.falzZoneWidth` fehlt oder ungültig ist (NULL in DB wurde früher zu 0) */
+    DEFAULT_FALZ_ZONE_MM: 8,
 };
 
 const HCE_ICON = {
@@ -46,6 +59,8 @@ export class HardcoverEditor extends BaseEditor {
         // Dynamische Werte zur Laufzeit
         this.spineWidth = config.spineWidth;
         this.initialData = config.initialData || {};
+        /** @type {{ id: string, name: string, default?: boolean }[] | null} */
+        this.foilTypeChoices = config.foilTypeChoices || null;
         this.availableTemplates = [];
         this.svgDoc = null;
         this.svgNode = null;
@@ -58,6 +73,7 @@ export class HardcoverEditor extends BaseEditor {
             textInputs: { ...this.initialData.textInputs },
             logoInputs: { ...this.initialData.logoInputs },
             selectedColorPairIndex: this.initialData.selectedColorPairIndex || 0,
+            foilTypeId: this.initialData.foilTypeId,
         };
 
         this.zoomLevel = 1;
@@ -87,6 +103,10 @@ export class HardcoverEditor extends BaseEditor {
                                 <span class="hce-palette-rail-toggle-icon">${HCE_ICON.chevronLeft()}</span>
                             </button>
                             <div id="hce-palette-rail-body" class="hce-palette-rail-body">
+                                <div id="hce-deck-foil-block" class="hce-deck-foil-block" hidden>
+                                    <span class="hce-palette-rail-label">Deckfolie</span>
+                                    <div id="hce-deck-foil-buttons" class="hce-deck-foil-buttons"></div>
+                                </div>
                                 <span class="hce-palette-rail-label">Farben</span>
                                 <div id="hce-color-meta" class="hce-color-meta" hidden>
                                     <div class="hce-color-meta-title" id="hce-color-meta-title"></div>
@@ -131,6 +151,8 @@ export class HardcoverEditor extends BaseEditor {
 
         this._setupZoomControls();
         this._setupPaletteRail();
+        this._setupDeckFoilUi();
+        this._updateControlsPanelVisibility();
 
         try {
             await this._fetchTemplateList();
@@ -210,6 +232,97 @@ export class HardcoverEditor extends BaseEditor {
             },
             { signal: this._abortController.signal }
         );
+    }
+
+    /**
+     * Folientyp (glänzend/matt) für Paperback Deckfolie — gleiche IDs wie Bindungs-Option `foil_type`.
+     * @returns {{ id: string, name: string, default?: boolean }[] | null}
+     */
+    _resolveFoilChoices() {
+        if (this.foilTypeChoices && this.foilTypeChoices.length > 0) {
+            return this.foilTypeChoices;
+        }
+        if (this.templateGroup === 'paperback_foil') {
+            return [
+                { id: 'foil_glossy', name: 'Glänzend', default: true },
+                { id: 'foil_matte', name: 'Mattiert' },
+            ];
+        }
+        return null;
+    }
+
+    _setupDeckFoilUi() {
+        const block = this.bodyElement.querySelector('#hce-deck-foil-block');
+        const container = this.bodyElement.querySelector('#hce-deck-foil-buttons');
+        if (!block || !container) return;
+
+        const choices = this._resolveFoilChoices();
+        if (!choices || choices.length === 0) {
+            block.hidden = true;
+            return;
+        }
+
+        let initialId = this.uiState.foilTypeId;
+        const validIds = new Set(choices.map((c) => c.id));
+        if (!initialId || !validIds.has(initialId)) {
+            const def = choices.find((c) => c.default);
+            initialId = (def || choices[0]).id;
+        }
+        this.uiState.foilTypeId = initialId;
+
+        container.innerHTML = '';
+        const ls = { signal: this._abortController.signal };
+        choices.forEach((choice) => {
+            const wrap = document.createElement('div');
+            wrap.className = 'hce-deck-foil-option';
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'hce-deck-foil-btn';
+            btn.title = choice.name;
+            btn.textContent = choice.name;
+            btn.dataset.foilId = choice.id;
+            const selected = choice.id === this.uiState.foilTypeId;
+            if (selected) btn.classList.add('active');
+            btn.setAttribute('aria-pressed', selected ? 'true' : 'false');
+            btn.addEventListener(
+                'click',
+                () => {
+                    this.uiState.foilTypeId = choice.id;
+                    container.querySelectorAll('.hce-deck-foil-btn').forEach((b) => {
+                        b.classList.remove('active');
+                        b.setAttribute('aria-pressed', 'false');
+                    });
+                    btn.classList.add('active');
+                    btn.setAttribute('aria-pressed', 'true');
+                    this._scheduleApply();
+                },
+                ls
+            );
+            wrap.appendChild(btn);
+            container.appendChild(wrap);
+        });
+
+        block.hidden = false;
+
+        // Nach erstem Template-Laden existiert svgNode → Deckkraft sofort setzen (nicht nur beim Folien-Button).
+        if (this.svgNode) {
+            this._updateFoilOverlay();
+        }
+    }
+
+    /**
+     * Blendet die rechte Spalte aus, wenn weder Text- noch Logo-Eingaben aus dem SVG erzeugt werden.
+     * Vergrößert die Vorschau entsprechend (CSS-Klasse am Container).
+     */
+    _updateControlsPanelVisibility() {
+        const panel = this.bodyElement.querySelector('#hce-controls-panel');
+        const scroll = this.bodyElement.querySelector('#hce-controls-scroll');
+        const outer = this.bodyElement.querySelector('.hardcover-editor-container');
+        if (!panel || !scroll || !outer) return;
+        const hasControls = scroll.children.length > 0;
+        panel.hidden = !hasControls;
+        panel.setAttribute('aria-hidden', hasControls ? 'false' : 'true');
+        outer.classList.toggle('hce--no-inputs-panel', !hasControls);
     }
 
     /** Zeigt Paarname und Farbbezeichnungen neben „Farben“. */
@@ -383,10 +496,41 @@ export class HardcoverEditor extends BaseEditor {
         await document.fonts.ready;
 
         await this._loadPaletteFromSupabase(fileName, template.id || null);
+        await this._applyEditorSlotsFromSchema();
         this._storeInitialTransforms();
         this._createUiFromSvg();
-        this._applyStateToSvg(); 
-        this._resetZoomAndPan(); 
+        this._applyStateToSvg();
+        this._resetZoomAndPan();
+        // Erst nach Palette/UI/Layout: Folien-Overlay (initialData.foilTypeId / Standard) zuverlässig anwenden.
+        this._updateFoilOverlay();
+    }
+
+    /**
+     * cover_schema_elements.editor_slot → z. B. Buchblock erste Seite in `<image id="…">`.
+     */
+    async _applyEditorSlotsFromSchema() {
+        if (!this.svgNode) return;
+        try {
+            const { getSupabaseConfig } = await import('./supabaseConfig.mjs');
+            const { url, anonKey } = await getSupabaseConfig();
+            const res = await fetch(`${url}/functions/v1/get-cover-schema`, {
+                cache: 'no-store',
+                headers: {
+                    Authorization: `Bearer ${anonKey}`,
+                    apikey: anonKey,
+                },
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            const elements = Array.isArray(data.elements) ? data.elements : [];
+            const { applyEditorSlotsToSvg } = await import('./editorSlots.mjs');
+            applyEditorSlotsToSvg(this.svgNode, elements, {
+                bookBlockPreviewUrl: this.config.bookBlockPreviewUrl,
+                bookBlockPreviewFallbackUrl: this.config.bookBlockPreviewFallbackUrl,
+            });
+        } catch (e) {
+            console.warn('[Editor-Slots]', e?.message || e);
+        }
     }
 
     /**
@@ -568,6 +712,7 @@ export class HardcoverEditor extends BaseEditor {
         this._createTextInputs(controlsScroll);
         this._createLogoInputs(controlsScroll);
         this._createColorPalettes(colorPaletteContainer);
+        this._updateControlsPanelVisibility();
 
         // Nur ein Akkordeon gleichzeitig offen (klassisches Accordion).
         // Wichtig: `toggle` auf <details> blubbert nicht → Listener müssen am jeweiligen Element sitzen.
@@ -1059,7 +1204,42 @@ export class HardcoverEditor extends BaseEditor {
         this._applyColors();
         this._updateLogos();
         this._updateSpineAndLayout();
+        this._updateFoilOverlay();
         this._updateEditorTitle();
+    }
+
+    /**
+     * Templates mit `#tpl-foil-overlay`: Deckfolie-Vorschau — matt = weißliche Schicht mit Deckkraft, glänzend = durchsichtig.
+     * Nur wenn Folienwahl aktiv ({@link _resolveFoilChoices}); sonst bleibt das SVG unverändert.
+     */
+    _updateFoilOverlay() {
+        const el = this.svgNode?.querySelector('#tpl-foil-overlay');
+        if (!el || el.tagName.toLowerCase() !== 'rect') return;
+
+        const choices = this._resolveFoilChoices();
+        if (!choices || choices.length === 0) return;
+
+        const id = (this.uiState.foilTypeId || '').trim();
+        const matte =
+            id === 'foil_matte' ||
+            /^foil[_-]?matte$/i.test(id) ||
+            /matt|matte/i.test(id);
+        const opacity = matte
+            ? EDITOR_BEHAVIOR_CONFIG.FOIL_OVERLAY_OPACITY_MATTE
+            : EDITOR_BEHAVIOR_CONFIG.FOIL_OVERLAY_OPACITY_GLOSSY;
+
+        el.setAttribute('fill-opacity', String(opacity));
+
+        const style = el.getAttribute('style') || '';
+        if (/fill-opacity\s*:/i.test(style)) {
+            const next = style
+                .replace(/fill-opacity\s*:\s*[^;]+;?/gi, '')
+                .replace(/;\s*;/g, ';')
+                .replace(/^;|;$/g, '')
+                .trim();
+            if (next) el.setAttribute('style', next);
+            else el.removeAttribute('style');
+        }
     }
 
     _applyTexts() {
@@ -1347,7 +1527,8 @@ export class HardcoverEditor extends BaseEditor {
         const groupSpine = this.svgNode.querySelector('#tpl-group-spine');
         /** Rückseite: klassisch #tpl-group-u4 oder zusammengelegter Block (z. B. Swiss: #layer-back-spine-bg) */
         const leftLayoutGroup = groupU4 || this.svgNode.querySelector('#layer-back-spine-bg');
-        if (!groupU1 || !groupSpine || !leftLayoutGroup) return;
+        /** Ohne U1 + linke Layout-Gruppe kein variabler Rücken; #tpl-group-spine ist optional (z. B. Paperback Deckfolie nur #tpl-spine-face). */
+        if (!groupU1 || !leftLayoutGroup) return;
 
         const initialU1Transform = this.initialTransforms['tpl-group-u1'] || 'translate(0,0)';
         const initialU4Transform = groupU4
@@ -1359,18 +1540,39 @@ export class HardcoverEditor extends BaseEditor {
         leftLayoutGroup.setAttribute('transform', `${initialU4Transform} translate(${-delta}, 0)`);
         groupU1.setAttribute('transform', `${initialU1Transform} translate(${delta}, 0)`);
 
-        const spineRectInGroup = groupSpine.querySelector('rect');
-        if (spineRectInGroup) {
-            spineRectInGroup.setAttribute('width', spineW);
-        } else {
-            const mergedBack = this.svgNode.querySelector('#bg-u4-spine-swiss');
-            if (mergedBack) {
-                if (!mergedBack.dataset.hceInitialWidth) {
-                    mergedBack.dataset.hceInitialWidth = mergedBack.getAttribute('width') || '0';
+        if (groupSpine) {
+            const spineRectInGroup = groupSpine.querySelector('rect');
+            if (spineRectInGroup) {
+                spineRectInGroup.setAttribute('width', spineW);
+            } else {
+                const mergedBack = this.svgNode.querySelector('#bg-u4-spine-swiss');
+                if (mergedBack) {
+                    if (!mergedBack.dataset.hceInitialWidth) {
+                        mergedBack.dataset.hceInitialWidth = mergedBack.getAttribute('width') || '0';
+                    }
+                    const baseW = parseFloat(mergedBack.dataset.hceInitialWidth) || 0;
+                    const deltaSpine = spineW - EDITOR_BEHAVIOR_CONFIG.DEFAULT_SPINE_WIDTH;
+                    mergedBack.setAttribute('width', String(baseW + deltaSpine));
                 }
-                const baseW = parseFloat(mergedBack.dataset.hceInitialWidth) || 0;
-                const deltaSpine = spineW - EDITOR_BEHAVIOR_CONFIG.DEFAULT_SPINE_WIDTH;
-                mergedBack.setAttribute('width', String(baseW + deltaSpine));
+            }
+        } else {
+            /** Paperback Deckfolie u. a.: Karton-Streifen an der Spine-Kante, ohne eigene #tpl-group-spine */
+            const spineFace = this.svgNode.querySelector('#tpl-spine-face');
+            if (spineFace && spineFace.tagName.toLowerCase() === 'rect') {
+                /** Immer zur Dokumentmitte zentrieren — nur width zu ändern verschiebt den Streifen (z. B. Paperback Deckfolie). */
+                const cx = Number(this.dimensions?.svgCenterX) || 250;
+                spineFace.setAttribute('x', String(cx - spineW / 2));
+                spineFace.setAttribute('width', String(spineW));
+            } else {
+                const mergedBack = this.svgNode.querySelector('#bg-u4-spine-swiss');
+                if (mergedBack) {
+                    if (!mergedBack.dataset.hceInitialWidth) {
+                        mergedBack.dataset.hceInitialWidth = mergedBack.getAttribute('width') || '0';
+                    }
+                    const baseW = parseFloat(mergedBack.dataset.hceInitialWidth) || 0;
+                    const deltaSpine = spineW - EDITOR_BEHAVIOR_CONFIG.DEFAULT_SPINE_WIDTH;
+                    mergedBack.setAttribute('width', String(baseW + deltaSpine));
+                }
             }
         }
 
@@ -1400,20 +1602,82 @@ export class HardcoverEditor extends BaseEditor {
         const center = this.dimensions.svgCenterX;
         const leftSpineX = center - spineW / 2;
         const rightSpineX = center + spineW / 2;
-        const falzW = this.dimensions.falzZoneWidth;
+        const falzW = this._getHelperFalzWidthMm();
 
         const helperGroup = this._createSvgElement('g', {
             id: 'hce-helper-lines', 'pointer-events': 'none'
         });
 
-        const dashLineAttrs = { stroke: 'rgba(0,0,0,0.5)', 'stroke-width': '0.5', 'stroke-dasharray': '3,3' };
+        if (falzW > 0) {
+            helperGroup.appendChild(this._createSvgElement('rect', { x: leftSpineX - falzW, y: topY, width: falzW, height: bottomY, fill: 'rgba(0,0,0,0.08)' }));
+            helperGroup.appendChild(this._createSvgElement('rect', { x: rightSpineX, y: topY, width: falzW, height: bottomY, fill: 'rgba(0,0,0,0.08)' }));
+            /** Außenkanten der Falzzone = Aufklapprillung (sichtbar auf hellem + dunklem Karton) */
+            this._appendFoldCreaseGuideLines(helperGroup, leftSpineX - falzW, rightSpineX + falzW, topY, bottomY);
+        }
 
-        helperGroup.appendChild(this._createSvgElement('rect', { x: leftSpineX - falzW, y: topY, width: falzW, height: bottomY, fill: 'rgba(0,0,0,0.1)' }));
-        helperGroup.appendChild(this._createSvgElement('rect', { x: rightSpineX, y: topY, width: falzW, height: bottomY, fill: 'rgba(0,0,0,0.1)' }));
-        helperGroup.appendChild(this._createSvgElement('line', { x1: leftSpineX, y1: topY, x2: leftSpineX, y2: bottomY, ...dashLineAttrs }));
-        helperGroup.appendChild(this._createSvgElement('line', { x1: rightSpineX, y1: topY, x2: rightSpineX, y2: bottomY, ...dashLineAttrs }));
+        this._appendContrastingSpineEdgeLines(helperGroup, leftSpineX, topY, bottomY);
+        this._appendContrastingSpineEdgeLines(helperGroup, rightSpineX, topY, bottomY);
 
         this.svgNode.appendChild(helperGroup);
+    }
+
+    /**
+     * Falzbreite für Hilfslinien: `falz_zone_width_mm` aus Template-Gruppe.
+     * Früher: NULL → 0 → keine Falz-Linien; Fallback 8 mm wenn Wert fehlt oder ungültig.
+     * Explizit `0` in dimensions: keine Falz-Einblendung.
+     */
+    _getHelperFalzWidthMm() {
+        const d = this.dimensions || {};
+        if (!('falzZoneWidth' in d)) {
+            return EDITOR_BEHAVIOR_CONFIG.DEFAULT_FALZ_ZONE_MM;
+        }
+        const v = Number(d.falzZoneWidth);
+        if (!Number.isFinite(v) || v < 0) {
+            return EDITOR_BEHAVIOR_CONFIG.DEFAULT_FALZ_ZONE_MM;
+        }
+        return v;
+    }
+
+    /**
+     * Aufklapprillung: außen links/rechts wie Spine-Kanten (Weiß/Schwarz), sonst auf blauem Karton unsichtbar.
+     */
+    _appendFoldCreaseGuideLines(helperGroup, leftOuterX, rightOuterX, topY, bottomY) {
+        const o = {
+            dashLen: EDITOR_BEHAVIOR_CONFIG.HELPER_CREASE_DASH_LEN,
+            gapLen: EDITOR_BEHAVIOR_CONFIG.HELPER_CREASE_GAP_LEN,
+            lineWidth: EDITOR_BEHAVIOR_CONFIG.HELPER_CREASE_LINE_WIDTH,
+        };
+        this._appendContrastingSpineEdgeLines(helperGroup, leftOuterX, topY, bottomY, o);
+        this._appendContrastingSpineEdgeLines(helperGroup, rightOuterX, topY, bottomY, o);
+    }
+
+    /**
+     * Spine-Kanten: abwechselnd #fff / #000 entlang der Linie (gleiches Dash-Muster, zweite Linie um halbe Periode versetzt)
+     * — gut erkennbar auf hellem und dunklem Hintergrund.
+     * @param {{ dashLen?: number, gapLen?: number, lineWidth?: number }} [style] — z. B. Aufklapprillung etwas andere Strichlänge
+     */
+    _appendContrastingSpineEdgeLines(helperGroup, x, topY, bottomY, style = {}) {
+        const dash = style.dashLen ?? EDITOR_BEHAVIOR_CONFIG.HELPER_SPINE_DASH_LEN;
+        const gap = style.gapLen ?? EDITOR_BEHAVIOR_CONFIG.HELPER_SPINE_GAP_LEN;
+        const period = dash + gap;
+        const sw = style.lineWidth ?? EDITOR_BEHAVIOR_CONFIG.HELPER_SPINE_LINE_WIDTH;
+        const base = {
+            x1: x,
+            y1: topY,
+            x2: x,
+            y2: bottomY,
+            'stroke-width': String(sw),
+            'stroke-linecap': 'butt',
+            'stroke-dasharray': `${dash} ${gap}`,
+        };
+        helperGroup.appendChild(this._createSvgElement('line', { ...base, stroke: '#ffffff' }));
+        helperGroup.appendChild(
+            this._createSvgElement('line', {
+                ...base,
+                stroke: '#000000',
+                'stroke-dashoffset': String(period / 2),
+            })
+        );
     }
 
     _createSvgElement(tag, attrs = {}) {
@@ -1461,18 +1725,23 @@ export class HardcoverEditor extends BaseEditor {
             return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
         });
 
+        const parameters = {
+            templateFile: currentTemplate.file,
+            templateDisplayName: currentTemplate.name,
+            templateIndex: this.uiState.currentTemplateIndex,
+            textInputs: this.uiState.textInputs,
+            logoInputs: this.uiState.logoInputs,
+            selectedColorPairIndex: this.uiState.selectedColorPairIndex,
+            spineWidth: this.spineWidth,
+        };
+        if (this.uiState.foilTypeId != null) {
+            parameters.foilTypeId = this.uiState.foilTypeId;
+        }
+
         return {
             svgString: finalSvgString,
             thumbnailDataUrl: thumbnailDataUrl,
-            parameters: {
-                templateFile: currentTemplate.file,
-                templateDisplayName: currentTemplate.name,
-                templateIndex: this.uiState.currentTemplateIndex,
-                textInputs: this.uiState.textInputs,
-                logoInputs: this.uiState.logoInputs,
-                selectedColorPairIndex: this.uiState.selectedColorPairIndex,
-                spineWidth: this.spineWidth,
-            }
+            parameters,
         };
     }
 

@@ -566,7 +566,9 @@ async function openEditorForVariant(variantId) {
     }
     const existingPersonalizationParameters = inquiryState.personalizations[variantId]?.editorData?.parameters;
     try {
-        await launchEditorForVariant(variant, bindingConfig, bookBlockThickness, existingPersonalizationParameters, handleEditorSubmit);
+        await launchEditorForVariant(variant, bindingConfig, bookBlockThickness, existingPersonalizationParameters, handleEditorSubmit, {
+            bookBlockPreviewUrl: inquiryState.bookBlock?.firstPagePreviewUrl ?? null,
+        });
     } catch (e) {
         console.error('Editor konnte nicht geöffnet werden.', e);
         alert(e.message || 'Editor konnte nicht geöffnet werden.');
@@ -583,6 +585,7 @@ function handleEditorSubmit(variantId, editorResult) {
     }
     inquiryState.personalizations[variantId].editorData = editorResult;
     inquiryState.personalizations[variantId].spineWidthAtCreation = spineWidthAtCreation;
+
     updateApp();
 }
 

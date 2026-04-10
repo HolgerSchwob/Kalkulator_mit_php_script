@@ -8,23 +8,55 @@ Wir nutzen Supabase für die Farb- und Template-Verwaltung.
 
 SVG-Templates werden dynamisch via Bounding-Boxen (BBox) skaliert.
 
-Wichtige Referenzdokumente
+---
 
-Lies IMMER die folgenden Dokumente, bevor du SVG-Templates generierst oder den Editor-Code anpasst:
+## Secrets & lokale Konfiguration (Pflicht)
 
-SSOT (IDs, Schema, tpl-group-*): @docs/SSOT_SVG_COVER_TEMPLATES.md
+**IMMER vorher beim Nutzer rückfragen** (keine stillen Aktionen), bevor du:
 
-Für technische SVG-Regeln (BBox, Spine-Anker, Kaschiersicherheit): @docs/ai_skills/SKILL_01_TECHNICAL.md
+- **`dashboard.config.json`**, **`supabase.config.json`** oder andere **gitignorte** Config-Dateien **löschst, überschreibst oder leerst**
+- **Secrets, Keys, Tokens, Passwörter** aus Dateien entfernst, rotierst oder in das Repo schreibst
+- **Build-/Test-Skripte** ausführst, die solche Dateien **generieren oder löschen** (z. B. lokaler `npm run build` mit gesetzten Env-Variablen neben echten Configs)
+- Vorschläge machst, sensible Werte **nach GitHub zu committen** (auch in privaten Repos vermeiden)
 
-Für Design, Typografie & Zielgruppen: @docs/ai_skills/SKILL_02_DESIGN.md
+Kurz: Jede Änderung, die **Zugangsdaten** betrifft oder **lokale-only** Config zerstören könnte → **erst kurz klären**, dann ausführen.
+
+---
+
+## Skill-Schichten (Reihenfolge — glasklar)
+
+Bei **jedem** Thema, das SVG-Cover-Templates, Cover-Layout oder Editor-Anpassungen betrifft:
+
+1. **SSOT (Konventionen):** `@docs/SSOT_SVG_COVER_TEMPLATES.md` — IDs, `tpl-group-*`, Schema (inkl. neue Spalten wie `editor_slot`), Webshop.
+2. **Technik (Pflicht):** `@docs/ai_skills/SKILL_01_TECHNICAL.md` — Maße, Falz, BBox, Kaschier, Spine, `viewBox`, Farblogik technisch.
+3. **Design-Grundlagen (global):** `@docs/ai_skills/SKILL_02_DESIGN.md` — Typo-Bänder, max. 2 Fonts, Paletten-Übersicht, Art Direction — **kein** stil-spezifisches Layout.
+4. **Style (nur Optik, wenn Stil genannt):** `@docs/ai_skills/styles/SKILL_STYLE_<Archetyp>_<NAME>.md` — z. B. L-05 → `SKILL_STYLE_L05_SWISS_EDITORIAL.md`. Index und Dateinamen: `docs/ai_skills/styles/README.md` und Tabelle in SKILL_02 Abschnitt 2.
+
+**Regel:** Technik nie in Style-Skills duplizieren. Style-Skills enthalten **keine** mm-SSOT außer Verweis auf SKILL_01.
+
+**Wenn der Nutzer einen Stil nennt** (z. B. „Swiss“, „L-05“): passendes Style-Skill **mit** laden. Fehlt noch eine Datei: Stil kurz aus SKILL_02 Archetyp-Index + globalen Regeln ableiten und optional `docs/ai_skills/styles/SKILL_STYLE_SCAFFOLD.md` nutzen, um ein neues Style-Skill anzulegen.
+
+**Externe KI nur für Optik:** kann (SKILL_02 + konkretes Style-Skill) erhalten; Technik bleibt im Projekt über SKILL_01 + SSOT.
+
+**Nur-Stil-Prompt:** Der Nutzer darf sich auf eine Stilbeschreibung beschränken (z. B. „L-05“, „Swiss, mehr Akzentfarbe“). Du lädst **trotzdem immer vollständig** SSOT, SKILL_01 und SKILL_02; bei genanntem oder erkennbarem Stil zusätzlich das passende `SKILL_STYLE_*`.
+
+---
+
+Wichtige Referenzdokumente (Kurz)
+
+- SSOT: `@docs/SSOT_SVG_COVER_TEMPLATES.md`
+- Technik: `@docs/ai_skills/SKILL_01_TECHNICAL.md`
+- Design global: `@docs/ai_skills/SKILL_02_DESIGN.md`
+- Style-Optik: `@docs/ai_skills/styles/` (siehe README + SKILL_STYLE_*.md)
 
 SVG Generierungs-Regeln
 
-Wenn du ein SVG generierst, kombiniere immer die technischen Pflichten aus SKILL_01 mit der kreativen Ausrichtung aus SKILL_02. Halte dich strikt an die RGB-Webvorschau-Logik und nutze die korrekten colorselector-Attribute.
+Wenn du ein SVG generierst: **SKILL_01** einhalten; **SKILL_02** für globale Typo/Paletten; **passendes SKILL_STYLE_*** für das vereinbarte Layout. `colorselector`-Attribute korrekt setzen.
 
-Template-Erstellung (Agent-Ablauf, vereinbart 2026-04-06)
+Template-Erstellung (Agent-Ablauf)
 
-- Bei jeder Template-Erstellung auf Anfrage: zuerst @docs/ai_skills/SKILL_01_TECHNICAL.md und @docs/ai_skills/SKILL_02_DESIGN.md lesen und einhalten.
-- Ergebnis-SVGs immer unter Templates/ai_generated/ ablegen (Dateiname sinnvoll wählen, z. B. thema_variante.svg).
-- Orientierung am Muster: ai_templates/beispiel/ (z. B. Cover_Visual_Project.svg).
-- Lernfähigkeit: Wenn der Nutzer grundsätzliche Infos oder Anweisungen zur Template-Erstellung gibt, danach explizit fragen, ob diese in den Skills (z. B. Ergänzung in SKILL_01/02 oder neues Modul unter docs/ai_skills/) festgehalten werden sollen. Bestätigte Learnings dort kurz und strukturiert ergänzen (Datum, Regel, Kontext).
+- Zuerst **SSOT** + **SKILL_01** + **SKILL_02** lesen; wenn Stil bekannt: **entsprechendes Style-Skill** unter `docs/ai_skills/styles/` lesen.
+- Ergebnis-SVGs unter `Templates/ai_generated/` ablegen (Dateiname sinnvoll, z. B. `thema_variante.svg`).
+- Begleit-**thema_variante.md** dort: Farbpaar-Vorschläge (Rollen color1/color2, 1–3 Paare, Hex), Verweis auf Paletten-IDs aus SKILL_02; bei Stil-Skills ggf. kurz, warum sie zum Style passen.
+- Orientierung: `ai_templates/beispiel/` (z. B. Cover_Visual_Project.svg).
+- Lernfähigkeit: Wenn der Nutzer dauerhafte Regeln nennt, fragen, ob Skills ergänzt werden sollen; bestätigte Learnings in SKILL_01, SKILL_02 oder **neues/ergänzendes** `docs/ai_skills/styles/SKILL_STYLE_*.md` festhalten (Datum, Regel, Kontext).

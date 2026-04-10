@@ -66,6 +66,7 @@ Deno.serve(async (req) => {
     layer?: string | null
     sort_order?: number
     active?: boolean
+    editor_slot?: string
   }
 
   const body = (await req.json().catch(() => ({}))) as {
@@ -77,6 +78,7 @@ Deno.serve(async (req) => {
 
   const validTypes = new Set(['text', 'image', 'zone'])
   const validLayers = new Set(['front', 'spine', 'back', 'any'])
+  const validEditorSlots = new Set(['none', 'book_block_first_page'])
 
   try {
     if (operation === 'create') {
@@ -102,6 +104,14 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
+      const slotRaw = (el.editor_slot ?? 'none').toString().trim()
+      if (!validEditorSlots.has(slotRaw)) {
+        return new Response(JSON.stringify({ error: 'editor_slot ungültig (none | book_block_first_page).' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const editor_slot = slotRaw
       const { data, error } = await supabase
         .from('cover_schema_elements')
         .insert({
@@ -113,6 +123,7 @@ Deno.serve(async (req) => {
           layer: layer || null,
           sort_order: typeof el.sort_order === 'number' ? el.sort_order : 0,
           active: el.active !== undefined ? Boolean(el.active) : true,
+          editor_slot,
         })
         .select()
         .single()
@@ -166,6 +177,16 @@ Deno.serve(async (req) => {
       if (el.active !== undefined) updates.active = Boolean(el.active)
       if (el.element_id !== undefined && id) {
         updates.element_id = String(el.element_id).trim()
+      }
+      if (el.editor_slot !== undefined) {
+        const slotRaw = String(el.editor_slot).trim()
+        if (!validEditorSlots.has(slotRaw)) {
+          return new Response(JSON.stringify({ error: 'editor_slot ungültig (none | book_block_first_page).' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          })
+        }
+        updates.editor_slot = slotRaw
       }
 
       if (Object.keys(updates).length === 0) {

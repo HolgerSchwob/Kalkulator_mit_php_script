@@ -1,0 +1,7 @@
+{
+  "name": "kalkulator-site",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/write-vercel-config.mjs"
+  }
+}

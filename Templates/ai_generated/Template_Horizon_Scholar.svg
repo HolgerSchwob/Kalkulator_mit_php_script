@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="500mm"
+   height="330mm"
+   viewBox="0 0 500 330"
+   version="1.1"
+   id="svg-template-horizon-scholar"
+   xml:space="preserve"
+   xml:lang="de"
+   xmlns="http://www.w3.org/2000/svg">
+
+  <defs id="defs-horizon">
+    <style type="text/css">
+      @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;700&amp;family=Literata:ital,opsz,wght@0,7..72,500;0,7..72,600;1,7..72,500&amp;display=swap');
+    </style>
+    <rect id="tpl-subtitle_bbox" x="308" y="48" width="172" height="14" style="fill:none;stroke:none"/>
+    <rect id="tpl-title_bbox" x="308" y="214" width="172" height="82" style="fill:none;stroke:none"/>
+    <rect id="tpl-topic_bbox" x="308" y="118" width="172" height="48" style="fill:none;stroke:none"/>
+    <rect id="tpl-name_bbox" x="308" y="268" width="172" height="14" style="fill:none;stroke:none"/>
+    <rect id="tpl-university_bbox" x="308" y="284" width="82" height="10" style="fill:none;stroke:none"/>
+    <rect id="tpl-faculty_bbox" x="308" y="294" width="82" height="10" style="fill:none;stroke:none"/>
+    <rect id="tpl-mat-nr_bbox" x="398" y="284" width="82" height="10" style="fill:none;stroke:none"/>
+    <rect id="tpl-year_bbox" x="398" y="294" width="82" height="10" style="fill:none;stroke:none"/>
+    <rect id="tpl-title-spine_bbox" x="246" y="92" width="8" height="105" style="fill:none;stroke:none"/>
+    <rect id="tpl-name-spine_bbox" x="246" y="220" width="8" height="68" style="fill:none;stroke:none"/>
+    <rect id="tpl-year-spine_bbox" x="246" y="290" width="8" height="14" style="fill:none;stroke:none"/>
+  </defs>
+
+  <g id="layer-back" data-layer="back">
+    <rect id="bg-u4-spine-horizon" x="0" y="0" width="295" height="330" colorselector="color1" style="fill:#3E3834;stroke:none"/>
+    <g id="tpl-group-u4"/>
+  </g>
+
+  <g id="layer-spine" data-layer="spine">
+    <g id="tpl-group-spine">
+      <text id="tpl-title-spine" dominant-baseline="central" data-label="Titel (Buchr&#252;cken)" transform="rotate(-90, 250, 148)" text-anchor="start" style="font-family:'DM Sans',sans-serif;font-size:4px;font-weight:500;fill:#F2EFE9;letter-spacing:0.05em" x="250" y="148">
+        <tspan x="250" y="148">Horizon &#183; Kurztitel</tspan>
+      </text>
+      <text id="tpl-name-spine" dominant-baseline="central" data-label="Name (Buchr&#252;cken)" transform="rotate(-90, 250, 266)" text-anchor="start" style="font-family:'DM Sans',sans-serif;font-size:3.7px;font-weight:700;fill:#C4A77D" colorselector="color2" x="250" y="266">
+        <tspan x="250" y="266">NACHNAME</tspan>
+      </text>
+      <text id="tpl-year-spine" dominant-baseline="central" data-label="Jahr (Buchr&#252;cken)" transform="rotate(-90, 250, 292)" text-anchor="start" style="font-family:'DM Sans',sans-serif;font-size:3.4px;font-weight:300;fill:#F2EFE9;fill-opacity:0.5" x="250" y="292">
+        <tspan x="250" y="292">2026</tspan>
+      </text>
+    </g>
+  </g>
+
+  <g id="layer-front" data-layer="front">
+    <g id="tpl-group-u1">
+      <rect id="bg-u1-horizon" x="295" y="0" width="205" height="330" style="fill:#F7F4EF;stroke:none"/>
+
+      <rect id="deco-horizon-bar" x="298" y="36" width="2.5" height="258" colorselector="color2" style="fill:#8B7355;stroke:none"/>
+      <line id="deco-horizon-line" x1="308" y1="192" x2="478" y2="192" colorselector="color2" style="stroke:#8B7355;stroke-width:0.45;fill:none;stroke-opacity:0.85"/>
+
+      <rect id="tpl-logo-main" data-label="Logo (Hochschule)" x="408" y="42" width="76" height="28" style="fill:#EBE6DE;stroke:#C9C0B5;stroke-width:0.35;stroke-dasharray:3 2"/>
+
+      <text id="tpl-subtitle" data-label="Art der Arbeit" colorselector="color2" text-anchor="start" style="font-family:'DM Sans',sans-serif;font-size:3.5px;font-weight:700;letter-spacing:0.32em;fill:#6B5B45" x="308" y="54">
+        <tspan x="308" y="54">DISSERTATION</tspan>
+      </text>
+
+      <text id="tpl-topic" data-label="Thema / Fach" data-multiline="true" data-max-lines="4" text-anchor="start" style="font-family:'DM Sans',sans-serif;font-size:4.1px;font-weight:300;fill:#4A4540;fill-opacity:0.9" x="308" y="124">
+        <tspan x="308" y="124">Sozial- und Kulturwissenschaften</tspan>
+        <tspan x="308" y="129.5">Theoriegeleitete Empirie</tspan>
+      </text>
+
+      <text id="tpl-title" data-label="Titel der Arbeit" text-anchor="start" style="font-family:'Literata',serif;font-size:14.5px;font-weight:600;fill:#2C2825;letter-spacing:-0.02em" x="308" y="234">
+        <tspan x="308" y="234">Ruhige Tiefe</tspan>
+        <tspan x="308" y="254.5">und sachliche W&#252;rde</tspan>
+        <tspan x="308" y="275">der wissenschaftlichen Form</tspan>
+      </text>
+
+      <text id="tpl-name" data-label="Name" text-anchor="start" style="font-family:'Literata',serif;font-size:7.5px;font-weight:600;fill:#2C2825" x="308" y="278">
+        <tspan x="308" y="278">Vorname Nachname</tspan>
+      </text>
+
+      <text id="tpl-university" data-label="Hochschule" text-anchor="start" style="font-family:'DM Sans',sans-serif;font-size:3.5px;font-weight:400;fill:#6B635A;fill-opacity:0.78" x="308" y="290">
+        <tspan x="308" y="290">Universit&#228;t</tspan>
+      </text>
+      <text id="tpl-faculty" data-label="Fakult&#228;t" text-anchor="start" style="font-family:'DM Sans',sans-serif;font-size:3.5px;font-weight:400;fill:#6B635A;fill-opacity:0.78" x="308" y="300">
+        <tspan x="308" y="300">Fakult&#228;t</tspan>
+      </text>
+      <text id="tpl-mat-nr" data-label="Matrikelnummer" text-anchor="start" style="font-family:'DM Sans',sans-serif;font-size:3.5px;font-weight:400;fill:#6B635A;fill-opacity:0.5" x="398" y="290">
+        <tspan x="398" y="290">0000000</tspan>
+      </text>
+      <text id="tpl-year" data-label="Jahr" text-anchor="start" style="font-family:'DM Sans',sans-serif;font-size:3.5px;font-weight:400;fill:#6B635A;fill-opacity:0.5" x="398" y="300">
+        <tspan x="398" y="300">2026</tspan>
+      </text>
+    </g>
+  </g>
+
+  <g id="guide-pappen" style="fill:none;stroke:none;">
+    <rect id="guide-pappe-u4" x="9.5" y="14" width="215" height="302"/>
+    <rect id="guide-falz-left" x="224.5" y="14" width="8" height="302"/>
+    <rect id="guide-pappe-spine" x="232.5" y="14" width="35" height="302"/>
+    <rect id="guide-falz-right" x="267.5" y="14" width="8" height="302"/>
+    <rect id="guide-pappe-u1" x="275.5" y="14" width="215" height="302"/>
+  </g>
+</svg>
