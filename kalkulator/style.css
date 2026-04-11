@@ -654,6 +654,59 @@ textarea:focus-visible,
     margin-right: var(--space-2);
 }
 
+/* Extras: Optionen 2-spaltig ab mittlerer Viewport-Breite */
+.extra-body .extra-options-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+    margin-top: var(--space-2);
+}
+@media (min-width: 600px) {
+    .extra-body .extra-options-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+.extra-body .extra-options-grid .extra-options-cell {
+    min-width: 0;
+}
+.extra-body .extra-options-grid .extra-options-group {
+    margin-bottom: 0;
+    height: 100%;
+    box-sizing: border-box;
+}
+.extra-body .extra-options-cell--beschriftung {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+.extra-body .extra-options-group--cd-source {
+    padding: var(--space-2) var(--space-3);
+}
+.extra-body .cd-label-source-label {
+    display: block;
+    font-weight: 600;
+    font-size: var(--text-sm);
+    margin-bottom: var(--space-2);
+    color: var(--color-text);
+}
+.extra-body .extra-options-group--cd-source .cd-source-variant-select,
+.extra-body .extra-options-group--cd-source .extra-type-select {
+    width: 100%;
+    max-width: 100%;
+}
+.extra-body .extra-options-group--cd-actions {
+    padding: var(--space-2) var(--space-3);
+    margin-top: 0;
+}
+.extra-body .extra-options-group--cd-actions .cd-label-open-btn {
+    width: 100%;
+}
+.extra-body .extra-quantity-row {
+    margin-top: var(--space-4);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--color-border-light);
+}
+
 .production-delivery-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -806,6 +859,20 @@ textarea:focus-visible,
     border-radius: var(--radius-sm);
     flex-shrink: 0;
     background-color: var(--color-surface);
+}
+/* Platzhalter-Buchblock (A4-Hochformat): in der Miniatur nicht hart beschneiden */
+.cart-item-binding-thumbnail--bookblock-fallback {
+    object-fit: contain;
+    object-position: center;
+    padding: 1px;
+}
+/* CD-Label: rundes Miniaturbild wie Scheibe */
+.cart-item-binding-thumbnail--cd {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    object-position: center;
 }
 .cart-item-invalid-notice {
     color: var(--color-error);

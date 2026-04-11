@@ -39,6 +39,7 @@
                 "templateGroup": "paperback_foil",
                 "templatePath": "templates/paperback_foil/",
                 "usesPdfPreviewAsCover": true,
+                "bookBlockPreviewFallbackUrl": "../media/book-block-first-page-placeholder.png",
                 "dimensions": {
                     "u1Width": 204.0,
                     "u4Width": 204.0,
@@ -127,6 +128,7 @@
                 "templateGroup": "paperback_modern",
                 "templatePath": "templates/paperback/",
                 "usesPdfPreviewAsCover": true,
+                "bookBlockPreviewFallbackUrl": "../media/book-block-first-page-placeholder.png",
                 "dimensions": {
                     "u1Width": 210.0,
                     "u4Width": 210.0,
@@ -141,23 +143,51 @@
         }
     ],
     "extras": [
-        { 
-            "id": "cd_packaging_service", 
-            "name": "CD/DVD: Verpackung", 
+        {
+            "id": "cd_packaging_service",
+            "name": "CD/DVD",
             "unitPrice": 0.0,
             "options": [
-                { 
-                    "groupName": "CD Verpackung wählen", 
-                    "type": "radio", 
-                    "optionKey": "cd_packaging", 
+                {
+                    "groupName": "Medium",
+                    "type": "radio",
+                    "optionKey": "media_type",
                     "choices": [
-                        { "id": "cd_sleeve", "name": "Papiertasche", "price": 0.40, "default": true },
-                        { "id": "cd_adhesive_pocket", "name": "Klebetasche", "price": 0.65 }
+                        { "id": "cd", "name": "CD", "price": 0, "default": true },
+                        { "id": "dvd", "name": "DVD", "price": 0 }
+                    ]
+                },
+                {
+                    "groupName": "Beschriftung",
+                    "type": "radio",
+                    "optionKey": "label_print",
+                    "choices": [
+                        { "id": "printed", "name": "Bedruckt", "price": 0, "default": true },
+                        { "id": "blank", "name": "Unbedruckt", "price": 0 }
+                    ]
+                },
+                {
+                    "groupName": "Brennen",
+                    "type": "radio",
+                    "optionKey": "burn",
+                    "choices": [
+                        { "id": "none", "name": "Ohne Daten", "price": 0, "default": true },
+                        { "id": "with_burn", "name": "Mit Daten (ZIP nach Bestellung)", "price": 0 }
+                    ]
+                },
+                {
+                    "groupName": "Verpackung",
+                    "type": "radio",
+                    "optionKey": "cd_packaging",
+                    "choices": [
+                        { "id": "jewel", "name": "Jewelcase", "price": 0.50, "default": true },
+                        { "id": "cd_sleeve", "name": "Papiertasche", "price": 0.40 },
+                        { "id": "cd_adhesive_pocket", "name": "SK-Tasche / Klebetasche", "price": 0.65 }
                     ]
                 }
-            ], 
-            "hasIndependentQuantity": true, 
-            "defaultQuantity": 1 
+            ],
+            "hasIndependentQuantity": true,
+            "defaultQuantity": 1
         },
         {
             "id": "postbox", 

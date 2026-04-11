@@ -12,6 +12,7 @@ import { initProductionDeliveryHandler, refreshProductionDeliveryUI } from './pr
 import { openLieferzeitenModal } from './lieferzeitenModal.mjs';
 import { initInquiryHandler, openInquiryModal } from './inquiryHandler.mjs';
 import { launchEditorForVariant } from './editorHandler.mjs';
+import { launchCdLabelEditor } from './cdLabelEditor.mjs';
 import { generateOfferPdf } from './offerGenerator.mjs';
 import { validateConfiguration } from './validator.mjs';
 import { calculateVariantPrices, calculateExtrasPrices, calculateTotalOrderPrice, calculateBookBlockThickness } from './priceCalculator.mjs';
@@ -52,6 +53,10 @@ let inquiryState = {
         productionTimeId: null,
         deliveryMethodId: null,
     },
+    /** Quelle für CD-Beschriftung (Farbschema / Vorbefüllung): Varianten-ID */
+    cdLabel: {
+        sourceVariantId: null,
+    },
     personalizations: {},
     customer: {}
 };
@@ -76,15 +81,19 @@ let stepperNavItems;
 /**
  * Erstellt eine speicherbare Kopie des States (ohne File/Blob).
  * mainPdfFile wird nie gespeichert – nach Reload muss die Druckdatei erneut hochgeladen werden.
+ * firstPagePreviewUrl (Data-URL, oft mehrere 100 KB) gehört zur aktuellen Sitzung wie die Datei —
+ * nicht persistieren, sonst zeigt der Editor/Cart nach F5 noch die alte Vorschau ohne PDF.
  */
 function getStateForStorage() {
     const bookBlock = { ...inquiryState.bookBlock };
     delete bookBlock.mainPdfFile; // File-Objekt nicht serialisierbar
+    bookBlock.firstPagePreviewUrl = null;
     return {
         bookBlock,
         variants: JSON.parse(JSON.stringify(inquiryState.variants)),
         extras: JSON.parse(JSON.stringify(inquiryState.extras)),
         production: { ...inquiryState.production },
+        cdLabel: inquiryState.cdLabel ? { ...inquiryState.cdLabel } : { sourceVariantId: null },
         personalizations: JSON.parse(JSON.stringify(inquiryState.personalizations)),
         customer: typeof inquiryState.customer === 'object' ? { ...inquiryState.customer } : {}
     };
@@ -150,6 +159,8 @@ function applyLoadedState(loaded) {
     if (loaded.bookBlock) {
         Object.assign(inquiryState.bookBlock, loaded.bookBlock);
         inquiryState.bookBlock.mainPdfFile = null; // Nie aus Storage wiederherstellen
+        // Alte gespeicherte Data-URL: ohne wiederhergestellte Druckdatei ungültig (Shift+F5 sonst „Geister-Vorschau“).
+        inquiryState.bookBlock.firstPagePreviewUrl = null;
     }
     if (Array.isArray(loaded.variants) && loaded.variants.length > 0) {
         inquiryState.variants.length = 0;
@@ -161,6 +172,9 @@ function applyLoadedState(loaded) {
     }
     if (loaded.production) {
         Object.assign(inquiryState.production, loaded.production);
+    }
+    if (loaded.cdLabel && typeof loaded.cdLabel === 'object') {
+        Object.assign(inquiryState.cdLabel, loaded.cdLabel);
     }
     if (loaded.personalizations && typeof loaded.personalizations === 'object') {
         Object.assign(inquiryState.personalizations, loaded.personalizations);
@@ -839,7 +853,15 @@ async function main() {
             CALC_CONFIG,
             updateApp,
             inquiryState,
-            DOM.addExtraButton
+            DOM.addExtraButton,
+            {
+                launchCdLabel: () =>
+                    launchCdLabelEditor({
+                        inquiryState,
+                        calcConfig: CALC_CONFIG,
+                        onSaved: () => updateApp(),
+                    }),
+            }
         );
         initPdfHandler({
             overlay: DOM.pdfAnalysisModalOverlay,

@@ -7,7 +7,7 @@ description: UNIVERSAL DESIGN MODULE. Global optical principles, typographic ban
 
 Dieses Modul definiert die universellen Gestaltungsgesetze für ein hochprofessionelles akademisches Editorial-Design sowie das zwingende Daten-Mapping für den Editor.
 
-**Reihenfolge beim Arbeiten:** `SSOT` → **`SKILL_01_TECHNICAL`** → **`SKILL_02_DESIGN`** (dieses Dokument) → **`styles/SKILL_STYLE_…`** (wenn ein Stil genannt wird).
+**Reihenfolge beim Arbeiten:** `SSOT` → **`SKILL_01_TECHNICAL`** → **`SKILL_02_DESIGN`** (dieses Dokument) → **`styles/SKILL_STYLE_…`** (wenn ein Stil genannt wird). **CD/DVD-Label-SVGs** (nicht Buchdecken): statt SKILL_01 **`SKILL_03_CD_LABEL_TECHNICAL`** und ggf. **`SKILL_CD_LABEL_FROM_COVER_SOURCE`**; SSOT bleibt maßgeblich für `tpl-*` und Farben.
 
 ## 1. DATA DICTIONARY: ELEMENT-IDs & BBOX (SSOT)
 Alle personalisierbaren Elemente MÜSSEN zwingend diese IDs und Attribute verwenden. 

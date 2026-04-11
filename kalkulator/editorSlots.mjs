@@ -15,14 +15,32 @@ export const EDITOR_SLOT = {
 export const KNOWN_BOOK_BLOCK_FIRST_PAGE_IMAGE_IDS = ['tpl-pdf-page1'];
 
 /**
+ * Relative Pfade (z. B. ../media/…) für eingebettetes SVG gegen die Seiten-URL auflösen,
+ * damit <image href> zuverlässig lädt (gleiche Basis wie kalkulator/index.html).
+ * @param {string} href
+ * @returns {string}
+ */
+export function resolveBookBlockImageHrefForDocument(href) {
+    const s = String(href).trim();
+    if (!s) return s;
+    if (/^(data:|https?:|blob:|file:)/i.test(s)) return s;
+    if (typeof window === 'undefined' || !window.location?.href) return s;
+    try {
+        return new URL(s, window.location.href).href;
+    } catch {
+        return s;
+    }
+}
+
+/**
  * @param {{ bookBlockPreviewUrl?: string | null, bookBlockPreviewFallbackUrl?: string | null }} runtime
  * @returns {string | null} href oder null (SVG-Default beibehalten)
  */
 export function resolveBookBlockFirstPageHref(runtime) {
     const u = runtime?.bookBlockPreviewUrl;
-    if (u != null && String(u).trim() !== '') return String(u).trim();
+    if (u != null && String(u).trim() !== '') return resolveBookBlockImageHrefForDocument(String(u).trim());
     const f = runtime?.bookBlockPreviewFallbackUrl;
-    if (f != null && String(f).trim() !== '') return String(f).trim();
+    if (f != null && String(f).trim() !== '') return resolveBookBlockImageHrefForDocument(String(f).trim());
     return null;
 }
 
@@ -33,11 +51,12 @@ export function resolveBookBlockFirstPageHref(runtime) {
  * @param {{ bookBlockPreviewUrl?: string | null, bookBlockPreviewFallbackUrl?: string | null }} runtime
  */
 export function applyEditorSlotsToSvg(svgRoot, schemaElements, runtime) {
-    if (!svgRoot || !Array.isArray(schemaElements)) return;
+    if (!svgRoot) return;
+    const rows = Array.isArray(schemaElements) ? schemaElements : [];
     const doc = svgRoot.ownerDocument || (typeof document !== 'undefined' ? document : null);
     if (!doc) return;
 
-    for (const row of schemaElements) {
+    for (const row of rows) {
         if (!row || row.active === false) continue;
         const slot = (row.editor_slot || EDITOR_SLOT.NONE).trim();
         if (slot === EDITOR_SLOT.NONE || !row.element_id) continue;

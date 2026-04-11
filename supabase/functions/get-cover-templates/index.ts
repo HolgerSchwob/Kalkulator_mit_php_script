@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
 
     let query = supabase
       .from('cover_templates')
-      .select('id, filename, display_name, storage_path')
+      .select('id, filename, display_name, storage_path, cd_label_template_id')
       .eq('active', true)
       .order('sort_order', { ascending: true })
 
@@ -50,13 +50,20 @@ Deno.serve(async (req) => {
     }
 
     const templates = (rows ?? []).map(
-      (r: { id: string; filename: string; display_name: string; storage_path: string }) => {
+      (r: {
+        id: string
+        filename: string
+        display_name: string
+        storage_path: string
+        cd_label_template_id?: string | null
+      }) => {
         const publicUrl = `${supabaseUrl}/storage/v1/object/public/${BUCKET}/${r.storage_path}`
         return {
           id: r.id,
           file: r.filename,
           name: r.display_name || r.filename,
           url: publicUrl,
+          cd_label_template_id: r.cd_label_template_id ?? null,
         }
       }
     )

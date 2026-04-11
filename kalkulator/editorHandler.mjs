@@ -9,7 +9,7 @@ import { getSupabaseConfig } from './supabaseConfig.mjs';
  * @param {string} templateGroup - z.B. hardcover_modern, paperback_modern
  * @returns {Promise<{ spine_offset_mm: number, dimensions: object }|null>} oder null bei Fehler/404
  */
-async function fetchCoverTemplateGroupConfig(templateGroup) {
+export async function fetchCoverTemplateGroupConfig(templateGroup) {
     if (!templateGroup) return null;
     try {
         const { url, anonKey } = await getSupabaseConfig();
@@ -79,12 +79,26 @@ export async function launchEditorForVariant(
     }
 
     const ec = bindingSpecificConfig || {};
+    /** Wenn Shop-Config (DB) kein Feld hat: gleicher Pfad wie in config.json — nur bei PDF-Deck-Vorschau. */
+    const DEFAULT_BOOK_BLOCK_PREVIEW_FALLBACK = '../media/book-block-first-page-placeholder.png';
+    /** DB-shop_config hat oft kein usesPdfPreviewAsCover — Bindung trotzdem wie Paperback-Deck behandeln. */
+    const BINDINGS_WITH_DEFAULT_BOOK_BLOCK_FALLBACK = new Set(['softcover_foil', 'paperback_perfect']);
     const bookBlockPreviewUrl =
         options.bookBlockPreviewUrl !== undefined ? options.bookBlockPreviewUrl : null;
     const bookBlockPreviewFallbackUrl =
         options.bookBlockPreviewFallbackUrl !== undefined
             ? options.bookBlockPreviewFallbackUrl
-            : ec.bookBlockPreviewFallbackUrl ?? null;
+            : (() => {
+                  const fromEc = ec.bookBlockPreviewFallbackUrl;
+                  if (fromEc != null && String(fromEc).trim() !== '') return String(fromEc).trim();
+                  if (
+                      ec.usesPdfPreviewAsCover === true ||
+                      BINDINGS_WITH_DEFAULT_BOOK_BLOCK_FALLBACK.has(bindingConfig.id)
+                  ) {
+                      return DEFAULT_BOOK_BLOCK_PREVIEW_FALLBACK;
+                  }
+                  return null;
+              })();
 
     const foilOptionGroup = (bindingConfig.options || []).find((o) => o.optionKey === 'foil_type');
     const foilTypeChoices = foilOptionGroup?.choices || null;
@@ -131,7 +145,7 @@ function mapBindingIdToEditorType(bindingId) {
 /**
  * Leitet die Supabase-Template-Gruppe aus der Bindungs-ID ab (falls editorConfig.templateGroup fehlt, z. B. bei Shop-Config aus Supabase).
  */
-function deriveTemplateGroupFromBindingId(bindingId) {
+export function deriveTemplateGroupFromBindingId(bindingId) {
     const known = {
         hardcover_modern_fullcolor: 'hardcover_modern',
         hardcover_efalin_fullcolor: 'hardcover_efalin',

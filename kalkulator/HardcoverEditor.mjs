@@ -7,7 +7,11 @@
  * - LOGIC: Der `logoInputs`-Zustand wird nicht mehr gelöscht. Die `_updateLogos`-Funktion rendert ein Logo nur, wenn der entsprechende Platzhalter im aktuellen Template existiert.
  */
 import { BaseEditor } from './baseEditor.mjs';
-import { generateU1Thumbnail } from './svg-thumbnail-generator.mjs';
+import {
+    generateFullSvgThumbnail,
+    generateU1Thumbnail,
+    inlineSameOriginImageHrefsInSvgString,
+} from './svg-thumbnail-generator.mjs';
 import { getSupabaseConfig } from './supabaseConfig.mjs';
 
 const EDITOR_BEHAVIOR_CONFIG = {
@@ -48,11 +52,13 @@ const HCE_ICON = {
 
 export class HardcoverEditor extends BaseEditor {
     constructor(config) {
-        super(config, 'Buchdecke gestalten');
+        super(config, config.editorTitle || 'Buchdecke gestalten');
         // Konfiguration aus config.json übernehmen
         this.templatePath = config.templatePath || '';
         this.templateSource = config.templateSource || null; // 'supabase' = Liste + SVGs aus Supabase
         this.templateGroup = config.templateGroup || null;   // z. B. hardcover_modern, paperback
+        /** @type {string | null} Optional: Buchdecken-template UUID für Farbpalette (z. B. CD-Editor) */
+        this.paletteSourceTemplateId = config.paletteSourceTemplateId || null;
         this.dimensions = config.dimensions;
         this.usesPdfPreviewAsCover = config.usesPdfPreviewAsCover; // Für zukünftige Erweiterungen
         this.pdfPreviewUrl = config.pdfPreviewUrl; // Für zukünftige Erweiterungen
@@ -420,7 +426,11 @@ export class HardcoverEditor extends BaseEditor {
                         const svgUrl = template.url || `${this.templatePath}${template.file}?t=${new Date().getTime()}`;
                         const response = await fetch(svgUrl);
                         const svgText = await response.text();
-                        const thumbnailUrl = await generateU1Thumbnail(svgText, this.dimensions, this.spineWidth, 120);
+                        const svgInlined = await inlineSameOriginImageHrefsInSvgString(svgText);
+                        const thumbnailUrl =
+                            this.templateGroup === 'cd_label'
+                                ? await generateFullSvgThumbnail(svgInlined, this.dimensions, 120)
+                                : await generateU1Thumbnail(svgInlined, this.dimensions, this.spineWidth, 120);
                         thumbContainer.innerHTML = `<img src="${thumbnailUrl}" alt="${template.name}">`;
                     } catch (e) {
                         thumbContainer.innerHTML = `<span>Vorschau<br>fehlerhaft</span>`;
@@ -495,7 +505,7 @@ export class HardcoverEditor extends BaseEditor {
         
         await document.fonts.ready;
 
-        await this._loadPaletteFromSupabase(fileName, template.id || null);
+        await this._loadPaletteFromSupabase(fileName, template.id || null, this.paletteSourceTemplateId);
         await this._applyEditorSlotsFromSchema();
         this._storeInitialTransforms();
         this._createUiFromSvg();
@@ -510,6 +520,11 @@ export class HardcoverEditor extends BaseEditor {
      */
     async _applyEditorSlotsFromSchema() {
         if (!this.svgNode) return;
+        const runtime = {
+            bookBlockPreviewUrl: this.config.bookBlockPreviewUrl,
+            bookBlockPreviewFallbackUrl: this.config.bookBlockPreviewFallbackUrl,
+        };
+        let elements = [];
         try {
             const { getSupabaseConfig } = await import('./supabaseConfig.mjs');
             const { url, anonKey } = await getSupabaseConfig();
@@ -520,25 +535,24 @@ export class HardcoverEditor extends BaseEditor {
                     apikey: anonKey,
                 },
             });
-            if (!res.ok) return;
-            const data = await res.json();
-            const elements = Array.isArray(data.elements) ? data.elements : [];
-            const { applyEditorSlotsToSvg } = await import('./editorSlots.mjs');
-            applyEditorSlotsToSvg(this.svgNode, elements, {
-                bookBlockPreviewUrl: this.config.bookBlockPreviewUrl,
-                bookBlockPreviewFallbackUrl: this.config.bookBlockPreviewFallbackUrl,
-            });
+            if (res.ok) {
+                const data = await res.json();
+                elements = Array.isArray(data.elements) ? data.elements : [];
+            }
         } catch (e) {
             console.warn('[Editor-Slots]', e?.message || e);
         }
+        const { applyEditorSlotsToSvg } = await import('./editorSlots.mjs');
+        applyEditorSlotsToSvg(this.svgNode, elements, runtime);
     }
 
     /**
      * Lädt Farbpalette: Template-ID auflösen, dann Edge Function get-cover-palette (serverseitiger Join, kein RLS-Embed).
      * @param {string} templateFileName
-     * @param {string | null} [templateIdFromList] – UUID aus get-cover-templates
+     * @param {string | null} [templateIdFromList] – UUID aus get-cover-templates (aktuelles SVG)
+     * @param {string | null} [paletteSourceTemplateId] – Optional: Palette von anderem Template (z. B. Buchdecke bei CD-Label)
      */
-    async _loadPaletteFromSupabase(templateFileName, templateIdFromList = null) {
+    async _loadPaletteFromSupabase(templateFileName, templateIdFromList = null, paletteSourceTemplateId = null) {
         this.colorPairs = [];
         try {
             const { getSupabaseClient } = await import('./supabaseClient.mjs');
@@ -555,10 +569,14 @@ export class HardcoverEditor extends BaseEditor {
 
             let template = null;
             let lastLookupErr = null;
+            const paletteOverride = paletteSourceTemplateId && String(paletteSourceTemplateId).trim();
+            if (paletteOverride && /^[0-9a-f-]{36}$/i.test(paletteOverride)) {
+                template = { id: paletteOverride };
+            }
             const listIdTrim = templateIdFromList && String(templateIdFromList).trim();
             // UUID aus get-cover-templates direkt nutzen (bereits gefiltert/authoritativ) — kein zweiter
             // Roundtrip nach cover_templates nötig; der Extra-Select kann u. a. bei Policy/Netz leer ausfallen.
-            if (listIdTrim && /^[0-9a-f-]{36}$/i.test(listIdTrim)) {
+            if (!template?.id && listIdTrim && /^[0-9a-f-]{36}$/i.test(listIdTrim)) {
                 template = { id: listIdTrim };
             }
 
@@ -740,13 +758,16 @@ export class HardcoverEditor extends BaseEditor {
         if (allTextElements.length === 0) return;
 
         const accordionGroups = {
+            cd: { title: 'Beschriftung CD', elements: [], isOpen: true },
             front: { title: 'Beschriftung Vorderseite', elements: [], isOpen: true },
             spine: { title: 'Beschriftung Buchrücken', elements: [], isOpen: false },
             back: { title: 'Beschriftung Rückseite', elements: [], isOpen: false },
         };
 
         allTextElements.forEach(el => {
-            if (el.closest('#tpl-group-u1')) {
+            if (el.closest('#tpl-group-cd-face')) {
+                accordionGroups.cd.elements.push(el);
+            } else if (el.closest('#tpl-group-u1')) {
                 accordionGroups.front.elements.push(el);
             } else if (el.closest('#tpl-group-spine')) {
                 accordionGroups.spine.elements.push(el);
@@ -755,7 +776,9 @@ export class HardcoverEditor extends BaseEditor {
             }
         });
 
-        Object.values(accordionGroups).forEach(group => {
+        ['cd', 'front', 'spine', 'back'].forEach((key) => {
+            const group = accordionGroups[key];
+            if (!group) return;
             if (group.elements.length > 0) {
                 this._createAccordionGroup(panel, group.title, group.elements, group.isOpen);
             }
@@ -1210,14 +1233,12 @@ export class HardcoverEditor extends BaseEditor {
 
     /**
      * Templates mit `#tpl-foil-overlay`: Deckfolie-Vorschau — matt = weißliche Schicht mit Deckkraft, glänzend = durchsichtig.
-     * Nur wenn Folienwahl aktiv ({@link _resolveFoilChoices}); sonst bleibt das SVG unverändert.
+     * Liegt über dem Buchblock-`<image>`; Opacity immer setzen, sobald das Element existiert (unabhängig von {@link _resolveFoilChoices},
+     * sonst bleibt nach {@link _applyColors} u. U. eine undechte Folie und verdeckt PDF/Platzhalter vollständig).
      */
     _updateFoilOverlay() {
         const el = this.svgNode?.querySelector('#tpl-foil-overlay');
         if (!el || el.tagName.toLowerCase() !== 'rect') return;
-
-        const choices = this._resolveFoilChoices();
-        if (!choices || choices.length === 0) return;
 
         const id = (this.uiState.foilTypeId || '').trim();
         const matte =
@@ -1228,18 +1249,19 @@ export class HardcoverEditor extends BaseEditor {
             ? EDITOR_BEHAVIOR_CONFIG.FOIL_OVERLAY_OPACITY_MATTE
             : EDITOR_BEHAVIOR_CONFIG.FOIL_OVERLAY_OPACITY_GLOSSY;
 
-        el.setAttribute('fill-opacity', String(opacity));
+        // Template nutzt oft style="opacity:…; fill:url(…) — Inline-Style schlägt Präsentationsattribute.
+        let style = el.getAttribute('style') || '';
+        style = style
+            .replace(/\bopacity\s*:\s*[^;]+;?/gi, '')
+            .replace(/\bfill-opacity\s*:\s*[^;]+;?/gi, '')
+            .replace(/;\s*;/g, ';')
+            .replace(/^;|;$/g, '')
+            .trim();
+        const extra = `opacity: ${opacity}`;
+        style = style ? `${style}; ${extra}` : extra;
+        el.setAttribute('style', style);
 
-        const style = el.getAttribute('style') || '';
-        if (/fill-opacity\s*:/i.test(style)) {
-            const next = style
-                .replace(/fill-opacity\s*:\s*[^;]+;?/gi, '')
-                .replace(/;\s*;/g, ';')
-                .replace(/^;|;$/g, '')
-                .trim();
-            if (next) el.setAttribute('style', next);
-            else el.removeAttribute('style');
-        }
+        el.setAttribute('fill-opacity', '1');
     }
 
     _applyTexts() {
@@ -1255,12 +1277,18 @@ export class HardcoverEditor extends BaseEditor {
         const activePair = this.colorPairs[this.uiState.selectedColorPairIndex];
         if (!activePair) return;
         this.svgNode.querySelectorAll('[data-color-role="color-1"]').forEach(el => this._applyColorToElement(el, activePair.color1));
-        this.svgNode.querySelectorAll('[data-color-role="color-2"]').forEach(el => this._applyColorToElement(el, activePair.color2));
+        this.svgNode.querySelectorAll('[data-color-role="color-2"]').forEach((el) => {
+            // Deckfolie-Overlay liegt über #tpl-pdf-page1; Vollfarbe würde PDF/Platzhalter vollständig verdecken (Gradient bleibt für Vorschau).
+            if (el.id === 'tpl-foil-overlay') return;
+            this._applyColorToElement(el, activePair.color2);
+        });
     }
 
     _applyColorToElement(el, color) {
+        if (el.tagName && el.tagName.toLowerCase() === 'image') return;
         this._setColorOnNode(el, color);
         el.querySelectorAll('*').forEach(desc => {
+            if (desc.tagName && desc.tagName.toLowerCase() === 'image') return;
             if (desc.hasAttribute('data-color-role')) return;
             if (this._isExplicitWhite(desc)) return;
             this._setColorOnNode(desc, color);
@@ -1268,6 +1296,7 @@ export class HardcoverEditor extends BaseEditor {
     }
 
     _setColorOnNode(node, color) {
+        if (node.tagName && node.tagName.toLowerCase() === 'image') return;
         node.setAttribute('fill', color);
         const style = node.getAttribute('style') || '';
         let newStyle = style.replace(/fill\s*:\s*[^;]+/gi, '').replace(/;\s*;/g, ';').replace(/^;|;$/g, '').trim();
@@ -1708,19 +1737,31 @@ export class HardcoverEditor extends BaseEditor {
         if (!currentTemplate) throw new Error("Kein Template ausgewählt.");
 
         const originalViewBox = this.svgNode.getAttribute('viewBox');
-        this.svgNode.setAttribute('viewBox', `0 0 ${this.dimensions.svgTotalWidth} ${this.dimensions.svgTotalHeight}`);
+        // CD-Label: keine Zwangs-viewBox aus DB-Buchmaßen (svgTotalWidth/Height passen oft nicht zur
+        // echten Template-Fläche z. B. 0…140 → sonst Export/Thumbnail fast nur Weißraum).
+        if (this.templateGroup !== 'cd_label') {
+            this.svgNode.setAttribute('viewBox', `0 0 ${this.dimensions.svgTotalWidth} ${this.dimensions.svgTotalHeight}`);
+        }
 
         const finalSvgString = new XMLSerializer().serializeToString(this.svgNode);
 
-        if (originalViewBox) {
-            this.svgNode.setAttribute('viewBox', originalViewBox);
-        } else {
-            this._updateSpineAndLayout();
+        if (this.templateGroup !== 'cd_label') {
+            if (originalViewBox) {
+                this.svgNode.setAttribute('viewBox', originalViewBox);
+            } else {
+                this._updateSpineAndLayout();
+            }
         }
 
         this._drawHelperLines();
 
-        const thumbnailDataUrl = await generateU1Thumbnail(finalSvgString, this.dimensions, this.spineWidth).catch(err => {
+        const svgForThumbnail = await inlineSameOriginImageHrefsInSvgString(finalSvgString);
+        // CD-Label: kein Buch-U1-Ausschnitt (würde außerhalb der viewBox liegen → weißes PNG).
+        const thumbPromise =
+            this.templateGroup === 'cd_label'
+                ? generateFullSvgThumbnail(svgForThumbnail, this.dimensions, 200)
+                : generateU1Thumbnail(svgForThumbnail, this.dimensions, this.spineWidth, 200);
+        const thumbnailDataUrl = await thumbPromise.catch((err) => {
             console.error("Fehler bei Thumbnail-Erstellung:", err);
             return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
         });
@@ -1728,6 +1769,7 @@ export class HardcoverEditor extends BaseEditor {
         const parameters = {
             templateFile: currentTemplate.file,
             templateDisplayName: currentTemplate.name,
+            templateId: currentTemplate.id || null,
             templateIndex: this.uiState.currentTemplateIndex,
             textInputs: this.uiState.textInputs,
             logoInputs: this.uiState.logoInputs,

@@ -15,6 +15,10 @@ Der **HardcoverEditor** baut Formularfelder und die Vorschau **dynamisch** aus d
 
 Text-Elemente mit `id^="tpl-"` **ohne** Zuordnung zu diesen Gruppen erscheinen **nicht** in den Accordions.
 
+### CD-Label (`gruppe = cd_label`)
+
+Für **CD/DVD** gelten dieselben `tpl-*`- und Farbregeln, aber **kein** U1/Spine/U4. Sinnvoll: alle editierbaren Elemente in **einer** Gruppe (z. B. `#tpl-group-cd-face`), damit die Zuordnung zu Accordions konsistent bleibt. Technik (Kreis, Beschnitt, Maske): [`docs/ai_skills/SKILL_03_CD_LABEL_TECHNICAL.md`](../../docs/ai_skills/SKILL_03_CD_LABEL_TECHNICAL.md).
+
 ## Textfelder, Logos, Farben, Dateien
 
 Siehe SSOT (Abschnitte 3–7). Kurz: `tpl-`-Präfix, `data-label`, `colorselector`, `{id}_bbox`, `templates.json` / Supabase wie bisher.

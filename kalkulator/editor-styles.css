@@ -330,10 +330,26 @@
     outline-offset: 2px;
 }
 
+/* Aktive Auswahl deutlich: Primärfarbe (Marine) + heller Text — statt nur dunkler Rahmen */
 .hce-deck-foil-btn.active {
     border-color: var(--primary-color);
-    background: linear-gradient(180deg, var(--editor-bg) 0%, var(--secondary-color) 100%);
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.04);
+    background: var(--primary-color);
+    color: #ffffff;
+    box-shadow: 0 1px 4px rgba(0, 35, 70, 0.22);
+}
+
+.hce-deck-foil-btn.active:hover {
+    background: var(--primary-color-hover);
+    border-color: var(--primary-color-hover);
+    color: #ffffff;
+}
+
+.hce-deck-foil-btn.active:focus-visible {
+    outline-color: #ffffff;
+    box-shadow:
+        0 1px 4px rgba(0, 35, 70, 0.22),
+        0 0 0 2px var(--primary-color),
+        0 0 0 4px var(--editor-bg);
 }
 
 @media (min-width: 769px) {

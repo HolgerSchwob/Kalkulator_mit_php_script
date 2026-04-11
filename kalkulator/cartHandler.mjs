@@ -17,6 +17,47 @@ function escapeHtml(s) {
     return span.innerHTML;
 }
 
+const DEFAULT_BOOK_BLOCK_CART_FALLBACK = '../media/book-block-first-page-placeholder.png';
+
+/**
+ * Vorschau-URL für Warenkorb: Editor-Thumbnail, sonst PDF-Seite 1, sonst Platzhalter-PNG (Paperback-Deck).
+ */
+function resolveCartVariantThumbnail(variant, personalizationData, inquiryState, config) {
+    const editorThumb = personalizationData.editorData?.thumbnailDataUrl;
+    if (editorThumb) return { src: editorThumb, kind: 'editor' };
+    const pdfPrev = inquiryState.bookBlock?.firstPagePreviewUrl;
+    if (pdfPrev) return { src: pdfPrev, kind: 'pdf' };
+
+    const binding = config.bindings?.find((b) => b.id === variant.bindingTypeId);
+    const ec = binding?.editorConfig || {};
+    const useBbFallback =
+        ec.usesPdfPreviewAsCover === true ||
+        variant.bindingTypeId === 'softcover_foil' ||
+        variant.bindingTypeId === 'paperback_perfect';
+    if (!useBbFallback) return { src: null, kind: 'none' };
+
+    let path = ec.bookBlockPreviewFallbackUrl;
+    if (path == null || String(path).trim() === '') path = DEFAULT_BOOK_BLOCK_CART_FALLBACK;
+    path = String(path).trim();
+    try {
+        if (typeof window !== 'undefined' && window.location?.href) {
+            return { src: new URL(path, window.location.href).href, kind: 'bookblock-fallback' };
+        }
+    } catch {
+        /* ignore */
+    }
+    return { src: path, kind: 'bookblock-fallback' };
+}
+
+/**
+ * CD-Beschriftung: gleiches Thumbnail wie im Editor (HardcoverEditor → thumbnailDataUrl).
+ */
+function resolveCdLabelCartThumbnail(inquiryState) {
+    const url = inquiryState.personalizations?.cd_label?.editorData?.thumbnailDataUrl;
+    if (url) return { src: url, kind: 'cd' };
+    return { src: null, kind: 'none' };
+}
+
 export function initCartHandler(calcConfig) {
     CALC_CONFIG_REF = calcConfig;
     cartItemsContainerDesktop_DOM = document.getElementById('cartItemsContainerDesktop');
@@ -45,11 +86,19 @@ export function updateCartUI(calculationResults, inquiryState, calcConfig) {
     if (variantsWithPrices.length > 0) {
         variantsWithPrices.forEach((variant) => {
             const personalizationData = inquiryState.personalizations?.[variant.id] || {};
-            const thumb = (personalizationData.editorData?.thumbnailDataUrl)
-                ? `<img src="${escapeHtml(personalizationData.editorData.thumbnailDataUrl)}" alt="Vorschau" class="cart-item-binding-thumbnail">`
-                : (inquiryState.bookBlock?.firstPagePreviewUrl
-                    ? `<img src="${escapeHtml(inquiryState.bookBlock.firstPagePreviewUrl)}" alt="Vorschau" class="cart-item-binding-thumbnail">`
-                    : '');
+            const { src: thumbSrc, kind: thumbKind } = resolveCartVariantThumbnail(
+                variant,
+                personalizationData,
+                inquiryState,
+                config
+            );
+            const thumbClass =
+                thumbKind === 'bookblock-fallback'
+                    ? 'cart-item-binding-thumbnail cart-item-binding-thumbnail--bookblock-fallback'
+                    : 'cart-item-binding-thumbnail';
+            const thumb = thumbSrc
+                ? `<img src="${escapeHtml(thumbSrc)}" alt="Vorschau" class="${thumbClass}">`
+                : '';
             cartItemsHTML += `<div class="cart-item cart-item-variant" id="variant-item-${escapeHtml(variant.id)}">
                 ${thumb}
                 <div>
@@ -64,7 +113,22 @@ export function updateCartUI(calculationResults, inquiryState, calcConfig) {
     if (extrasWithPrices.length > 0) {
         cartItemsHTML += '<h4>Extras</h4>';
         extrasWithPrices.forEach((extra) => {
-            cartItemsHTML += `<div class="cart-item"><p><strong>${escapeHtml(extra.quantity)}x ${escapeHtml(extra.name)}</strong></p><div class="extra-item-details"><p class="item-price">Gesamt: ${escapeHtml(extra.totalPrice.toFixed(2))} ${escapeHtml(currency)}</p></div></div>`;
+            let thumbHtml = '';
+            let rowClass = 'cart-item';
+            if (extra.extraId === 'cd_packaging_service') {
+                const { src: cdSrc, kind: cdKind } = resolveCdLabelCartThumbnail(inquiryState);
+                if (cdSrc && cdKind === 'cd') {
+                    thumbHtml = `<img src="${escapeHtml(cdSrc)}" alt="" class="cart-item-binding-thumbnail cart-item-binding-thumbnail--cd">`;
+                    rowClass = 'cart-item cart-item-variant';
+                }
+            }
+            cartItemsHTML += `<div class="${rowClass}">
+                ${thumbHtml}
+                <div>
+                    <p><strong>${escapeHtml(extra.quantity)}x ${escapeHtml(extra.name)}</strong></p>
+                    <div class="extra-item-details"><p class="item-price">Gesamt: ${escapeHtml(extra.totalPrice.toFixed(2))} ${escapeHtml(currency)}</p></div>
+                </div>
+            </div>`;
         });
     }
 

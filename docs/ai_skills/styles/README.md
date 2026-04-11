@@ -5,9 +5,10 @@
 ## Schichten (Reihenfolge für Agent & KI)
 
 1. **`docs/SSOT_SVG_COVER_TEMPLATES.md`** — IDs, Gruppen, Webshop-Konventionen  
-2. **`docs/ai_skills/SKILL_01_TECHNICAL.md`** — Technik (Pflicht)  
-3. **`docs/ai_skills/SKILL_02_DESIGN.md`** — globale Typo-Bänder, Paletten-Übersicht, Art Direction  
-4. **`SKILL_STYLE_<ID>_<KURZNAME>.md`** (dieser Ordner) — **nur** Layout/Optik dieses Stils  
+2. **`docs/ai_skills/SKILL_01_TECHNICAL.md`** — Technik Buchdecken (Pflicht)  
+3. **CD/DVD-Label:** **`docs/ai_skills/SKILL_03_CD_LABEL_TECHNICAL.md`** — Maße, Kreis, Maske; bei Ableitung aus einem Cover zusätzlich **`SKILL_CD_LABEL_FROM_COVER_SOURCE.md`**  
+4. **`docs/ai_skills/SKILL_02_DESIGN.md`** — globale Typo-Bänder, Paletten-Übersicht, Art Direction  
+5. **`SKILL_STYLE_<ID>_<KURZNAME>.md`** (dieser Ordner) — **nur** Layout/Optik dieses Stils (Buchdecken)  
 
 Externe KI für „nur Gestaltung“ kann **(3)+(4)** erhalten; Technik bleibt **(1)+(2)** im Projekt.
 

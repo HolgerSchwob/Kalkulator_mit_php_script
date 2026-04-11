@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- CD 120 mm, Mitte (70,70). Hub/kein Druck ca. r≤22 mm; druckbarer Ring ca. r 23–58 mm (übliche Specs ~Ø43–116 mm). Text nur im Ring, nicht über der Mitte. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="140mm" height="140mm" viewBox="0 0 140 140">
+  <defs>
+    <clipPath id="cd-trim" clipPathUnits="userSpaceOnUse">
+      <circle cx="70" cy="70" r="60"/>
+    </clipPath>
+    <!-- BBox im unteren Beschriftungsbereich (Abstand zur Mitte > Hub-Radius 22) -->
+    <rect id="tpl-title_bbox" x="18" y="96" width="104" height="14" fill="none" stroke="none"/>
+    <rect id="tpl-name_bbox" x="18" y="108" width="104" height="12" fill="none" stroke="none"/>
+    <rect id="tpl-year_bbox" x="40" y="118" width="60" height="10" fill="none" stroke="none"/>
+  </defs>
+  <g id="tpl-group-cd-face" clip-path="url(#cd-trim)">
+    <rect width="140" height="140" fill="#ececec" colorselector="color1"/>
+    <!-- Sichtbare „Loch“- / Hub-Zone (kein bedruckbarer Bereich) -->
+    <circle cx="70" cy="70" r="22" fill="#f8f8f8" stroke="#dddddd" stroke-width="0.25"/>
+    <!-- Drei Zeilen im unteren Ring: Baselines so gewählt, dass Glyphen nicht in r≤22 liegen -->
+    <text id="tpl-title" x="70" y="104" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="7" font-weight="600" colorselector="color2" data-label="Titel">Titel der Arbeit</text>
+    <text id="tpl-name" x="70" y="114" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="6.25" colorselector="color1" data-label="Name">Vorname Nachname</text>
+    <text id="tpl-year" x="70" y="123" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="5.5" colorselector="color1" data-label="Jahr">2026</text>
+  </g>
+</svg>

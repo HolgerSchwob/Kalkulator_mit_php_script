@@ -48,3 +48,9 @@ Die Box sollte so gross gewähltsein, dass ausreichend reserve vorhanden ist. er
   * **Quer zur Spine (waagerecht vor Drehung):** `text-anchor="middle"` empfohlen, damit die Zeile um x=250 zentriert ist; `start`/`end` nur bei bewusstem asymmetrischen Layout.
   * **Drehung:** `transform="rotate(-90, 250, y)"` mit demselben `(250, y)` wie `x`/`y` des Textes (Drehzentrum = Ankerpunkt).
   * Leserichtung „von unten nach oben“ wie bisher über Positionen der drei Felder (Titel / Name / Jahr), nicht über `text-anchor="start"` erzwingen.
+
+---
+
+## CD/DVD-Label (nicht Buchdecken)
+
+Gilt **nicht** für dieses CORE-Modul (500×330 mm). **Separates Skill:** [`SKILL_03_CD_LABEL_TECHNICAL.md`](SKILL_03_CD_LABEL_TECHNICAL.md) (Maße brutto, Kreis, `clipPath`), bei optischer Ableitung aus einem Cover: [`SKILL_CD_LABEL_FROM_COVER_SOURCE.md`](SKILL_CD_LABEL_FROM_COVER_SOURCE.md). SSOT: [`../SSOT_SVG_COVER_TEMPLATES.md`](../SSOT_SVG_COVER_TEMPLATES.md) Abschnitt 10.

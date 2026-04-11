@@ -319,6 +319,7 @@ Deno.serve(async (req) => {
         sort_order?: number
         active?: boolean
         file?: string
+        cd_label_template_id?: string | null
       }
       const id = (body.id ?? '').trim()
       if (!id) {
@@ -344,6 +345,15 @@ Deno.serve(async (req) => {
       if (body.display_name !== undefined) updates.display_name = String(body.display_name).trim()
       if (typeof body.sort_order === 'number') updates.sort_order = body.sort_order
       if (typeof body.active === 'boolean') updates.active = body.active
+      if (body.cd_label_template_id !== undefined) {
+        const raw = body.cd_label_template_id
+        if (raw === null || raw === '') {
+          updates.cd_label_template_id = null
+        } else {
+          const s = String(raw).trim()
+          updates.cd_label_template_id = /^[0-9a-f-]{36}$/i.test(s) ? s : null
+        }
+      }
 
       let productionPrepFromMove: ProductionPrepInfo | undefined
 

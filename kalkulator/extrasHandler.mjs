@@ -8,6 +8,8 @@ let CALC_CONFIG;
 let onUpdateCallback;
 let inquiryStateRef;
 let addExtraButton;
+/** @type {(() => void) | null} */
+let launchCdLabelFn = null;
 
 // DOM Elements
 const extrasContainer = document.getElementById('extrasContainer');
@@ -121,6 +123,72 @@ function handleExtraInputChange(instanceId, field, value) {
 }
 
 /**
+ * Ein Fieldset mit Radio-Optionen für eine Extra-Optionsgruppe.
+ * @param {object} optGroup
+ * @param {object} extra
+ */
+function renderExtraOptionFieldset(optGroup, extra) {
+    let html = `<fieldset class="extra-options-group"><legend>${escapeHtml(optGroup.groupName)}</legend>`;
+    if (optGroup.choices && Array.isArray(optGroup.choices)) {
+        optGroup.choices.forEach((choice) => {
+            const isChecked = extra.selectedOptions[optGroup.optionKey] === choice.id;
+            html += `<div><label><input type="radio" name="extra_option_${escapeAttr(optGroup.optionKey)}_${escapeAttr(extra.instanceId)}" 
+                       data-option-key="${escapeAttr(optGroup.optionKey)}" 
+                       value="${escapeAttr(choice.id)}" ${isChecked ? 'checked' : ''}> 
+                ${escapeHtml(choice.name)} (+${choice.price.toFixed(2)}${CALC_CONFIG.general.currencySymbol})
+            </label></div>`;
+        });
+    }
+    html += `</fieldset>`;
+    return html;
+}
+
+/**
+ * CD-Editor: Quelle (mehrere Varianten) + Button — direkt bei „Beschriftung“.
+ * @param {object} extra
+ * @returns {string}
+ */
+function buildCdLabelBlockHtml(extra) {
+    if (
+        extra.extraId !== 'cd_packaging_service' ||
+        extra.selectedOptions.label_print !== 'printed' ||
+        !launchCdLabelFn
+    ) {
+        return '';
+    }
+    const variants = inquiryStateRef.variants || [];
+    if (!inquiryStateRef.cdLabel) {
+        inquiryStateRef.cdLabel = { sourceVariantId: null };
+    }
+    if (variants.length === 1) {
+        inquiryStateRef.cdLabel.sourceVariantId = variants[0].id;
+    }
+    let sourceHtml = '';
+    if (variants.length > 1) {
+        let sid = inquiryStateRef.cdLabel.sourceVariantId;
+        if (!sid || !variants.some((v) => v.id === sid)) {
+            sid = variants[0].id;
+        }
+        inquiryStateRef.cdLabel.sourceVariantId = sid;
+        const opts = variants
+            .map((v) => {
+                const b = CALC_CONFIG.bindings.find((x) => x.id === v.bindingTypeId);
+                const label = b ? b.name : v.bindingTypeId;
+                const sel = v.id === sid ? ' selected' : '';
+                return `<option value="${escapeAttr(v.id)}"${sel}>${escapeHtml(label)}</option>`;
+            })
+            .join('');
+        sourceHtml = `<div class="extra-options-group extra-options-group--cd-source cd-label-source"><label class="cd-label-source-label">Quelle für Farben / Textvorschlag (Buchdeckel):</label><select class="cd-source-variant-select extra-type-select" data-instance-id="${escapeAttr(extra.instanceId)}">${opts}</select></div>`;
+    }
+    const cdDone = !!(inquiryStateRef.personalizations?.cd_label?.editorData?.parameters?.templateFile);
+    const btnLabel = cdDone ? 'CD-Beschriftung bearbeiten' : 'CD beschriften';
+    return (
+        sourceHtml +
+        `<div class="extra-options-group extra-options-group--cd-actions cd-label-actions"><button type="button" class="button-primary cd-label-open-btn">${escapeHtml(btnLabel)}</button></div>`
+    );
+}
+
+/**
  * Toggles the expanded state of an extra and collapses others.
  * @param {string} instanceIdToToggle The extra to toggle.
  */
@@ -152,6 +220,15 @@ export function updateExtrasUI(extrasWithPrices) {
         const extraPriceInfo = extrasWithPrices.find(p => p.instanceId === extra.instanceId) || { totalPrice: 0 };
         const extraConfig = CALC_CONFIG.extras.find(e => e.id === extra.extraId);
         if (!extraConfig) return;
+
+        if (extraConfig.options) {
+            extraConfig.options.forEach((optGroup) => {
+                if (extra.selectedOptions[optGroup.optionKey] === undefined && optGroup.choices?.length) {
+                    const defaultChoice = optGroup.choices.find((c) => c.default) || optGroup.choices[0];
+                    if (defaultChoice) extra.selectedOptions[optGroup.optionKey] = defaultChoice.id;
+                }
+            });
+        }
 
         const itemEl = document.createElement('div');
         itemEl.className = 'accordion-item extra-item';
@@ -211,25 +288,25 @@ export function updateExtrasUI(extrasWithPrices) {
 
             let optionsHTML = '';
             if (extraConfig.options && extraConfig.options.length > 0) {
-                 extraConfig.options.forEach(optGroup => {
-                    optionsHTML += `<fieldset class="extra-options-group"><legend>${escapeHtml(optGroup.groupName)}</legend>`;
-                    if (optGroup.choices && Array.isArray(optGroup.choices)) {
-                        optGroup.choices.forEach(choice => {
-                            const isChecked = extra.selectedOptions[optGroup.optionKey] === choice.id;
-                            optionsHTML += `<div><label><input type="radio" name="extra_option_${escapeAttr(optGroup.optionKey)}_${escapeAttr(extra.instanceId)}" 
-                                       data-option-key="${escapeAttr(optGroup.optionKey)}" 
-                                       value="${escapeAttr(choice.id)}" ${isChecked ? 'checked' : ''}> 
-                                ${escapeHtml(choice.name)} (+${choice.price.toFixed(2)}${CALC_CONFIG.general.currencySymbol})
-                            </label></div>`;
-                        });
+                const cdLabelHtml = buildCdLabelBlockHtml(extra);
+                optionsHTML += '<div class="extra-options-grid">';
+                extraConfig.options.forEach((optGroup) => {
+                    const fieldsetHtml = renderExtraOptionFieldset(optGroup, extra);
+                    if (extra.extraId === 'cd_packaging_service' && optGroup.optionKey === 'label_print') {
+                        optionsHTML += `<div class="extra-options-cell extra-options-cell--beschriftung">`;
+                        optionsHTML += fieldsetHtml;
+                        optionsHTML += cdLabelHtml;
+                        optionsHTML += `</div>`;
+                    } else {
+                        optionsHTML += `<div class="extra-options-cell">${fieldsetHtml}</div>`;
                     }
-                    optionsHTML += `</fieldset>`;
                 });
+                optionsHTML += '</div>';
             }
 
             let quantityInputHTML = '';
             if (extraConfig.hasIndependentQuantity) {
-                quantityInputHTML += `<div class="number-input-wrapper">
+                quantityInputHTML += `<div class="extra-quantity-row number-input-wrapper">
                                 <label for="extra_quantity_${escapeAttr(extra.instanceId)}">Anzahl:</label>
                                 <div class="input-group">
                                     <button type="button" class="btn-number" data-type="minus" data-field="extra_quantity_${escapeAttr(extra.instanceId)}" aria-label="Menge verringern">-</button>
@@ -238,6 +315,7 @@ export function updateExtrasUI(extrasWithPrices) {
                                 </div>
                              </div>`;
             }
+
             body.innerHTML = selectTypeHtml + optionsHTML + quantityInputHTML;
 
             body.querySelector('.extra-type-select').addEventListener('change', e => {
@@ -257,6 +335,20 @@ export function updateExtrasUI(extrasWithPrices) {
                     handleExtraInputChange(extra.instanceId, 'quantity', e.target.value);
                 });
             }
+
+            const cdSrc = body.querySelector('.cd-source-variant-select');
+            if (cdSrc) {
+                cdSrc.addEventListener('change', (e) => {
+                    if (!inquiryStateRef.cdLabel) inquiryStateRef.cdLabel = { sourceVariantId: null };
+                    inquiryStateRef.cdLabel.sourceVariantId = e.target.value;
+                    onUpdateCallback();
+                });
+            }
+            const cdBtn = body.querySelector('.cd-label-open-btn');
+            if (cdBtn && launchCdLabelFn) {
+                cdBtn.addEventListener('click', () => launchCdLabelFn());
+            }
+
             itemEl.appendChild(body);
         }
         extrasContainer.appendChild(itemEl);
@@ -285,11 +377,12 @@ export function getConfiguredExtras() {
  * @param {object} state - The main application state object.
  * @param {HTMLElement} addBtn - The button to add a new extra (below the list).
  */
-export function initExtrasHandler(config, updateCb, state, addBtn) {
+export function initExtrasHandler(config, updateCb, state, addBtn, helpers = {}) {
     CALC_CONFIG = config;
     onUpdateCallback = updateCb;
     inquiryStateRef = state;
     addExtraButton = addBtn;
+    launchCdLabelFn = typeof helpers.launchCdLabel === 'function' ? helpers.launchCdLabel : null;
     
     if (addExtraButton) {
         addExtraButton.addEventListener('click', addNewExtra);

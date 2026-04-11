@@ -7,6 +7,10 @@
 | Bereich | Datei / Ort |
 |--------|----------------|
 | Layout, Maße, Falz, Kaschierung, BBox, Farblogik (Detail) | `docs/ai_skills/SKILL_01_TECHNICAL.md` |
+| **CD/DVD-Label** (kreisförmig, `gruppe cd_label`, Beschnitt) | `docs/ai_skills/SKILL_03_CD_LABEL_TECHNICAL.md` |
+| **CD aus Cover ableiten** (optisch passend zum Buchdecken-SVG) | `docs/ai_skills/SKILL_CD_LABEL_FROM_COVER_SOURCE.md` |
+| **Namenskonvention** (`*_CDLABEL.svg`, `DEFAULT_CDLABEL.svg`, Zuweisung) | `docs/CD_LABEL_NAMING_AND_ASSIGNMENT.md` |
+| Implementierung Shop/DB (Extras, Migration, Deploy) | `docs/CD_DVD_FEATURE.md` |
 | Design global (Typo-Bänder, Paletten-Übersicht, Art Direction) | `docs/ai_skills/SKILL_02_DESIGN.md` |
 | **Optik pro Stil** (L-01 … L-05, nur Layout/Look — keine Technik-Duplikate) | `docs/ai_skills/styles/` (README + `SKILL_STYLE_*.md`) |
 | Editor-Verhalten (technisch, kurz) | `kalkulator/docs/EDITOR_SVG_KONVENTIONEN.md` |
@@ -117,7 +121,7 @@ Zusätzliche projektspezifische Felder: weiterhin **`tpl-` + Kleinbuchstaben/Zif
 
 ## 9. Ablauf: KI → `Templates/ai_generated` → Dashboard → Supabase → Webshop
 
-Zielbild: Du lässt ein SVG nach Vorgaben erzeugen, speicherst es lokal unter **`Templates/ai_generated/`**, prüfst es im **Dashboard** (SVG-Personalisierung / Preflight), lädst es nach **Supabase** hoch — danach soll es im **Kalkulator/Webshop** für passende Bindungen nutzbar sein.
+Zielbild: Du lässt ein SVG nach Vorgaben erzeugen, speicherst es lokal unter **`Templates/ai_generated/`**, prüfst es im **Dashboard** (SVG-Personalisierung / Preflight), lädst es nach **Supabase** hoch — danach soll es im **Kalkulator/Webshop** für passende Bindungen nutzbar sein. **CD-Label-SVGs** (`*_CDLABEL.svg`, `DEFAULT_CDLABEL.svg`) liegen **ebenfalls** unter **`Templates/ai_generated/`** (Upload mit Gruppe **`cd_label`**); siehe [`Templates/ai_generated/README_CD_LABEL.md`](../Templates/ai_generated/README_CD_LABEL.md).
 
 **Hinweis zur Anweisung:** In der Praxis reicht oft eine **reine Stilbeschreibung** (Archetyp L-01…L-05 oder eigenes Style-Skill). Der Agent bzw. die KI im Projekt soll **dennoch immer** `SSOT_SVG_COVER_TEMPLATES.md`, `SKILL_01_TECHNICAL.md` und `SKILL_02_DESIGN.md` vollständig einbeziehen — nicht nur das Style-Skill.
 
@@ -147,4 +151,16 @@ Zielbild: Du lässt ein SVG nach Vorgaben erzeugen, speicherst es lokal unter **
 
 ---
 
-*Letzte strukturelle Aktualisierung: SSOT-Einführung (Repo).*
+## 10. CD-Label (`gruppe = cd_label`)
+
+CD/DVD-Beschriftung nutzt **dieselbe** `tpl-*`- und Farb-Logik wie Buchdecken, aber **andere Geometrie**: kein Rücken, **kreisförmiger Trim** (typisch 120 mm Durchmesser), **Brutto-Dokument** größer für Beschnitt (empfohlen **140 × 140 mm**, siehe SKILL_03).
+
+- **Supabase:** `cover_templates.gruppe = 'cd_label'`; optional **`cd_label_template_id`** auf **Buchdecken**-Zeilen verweist auf ein CD-Template; fehlt die Zuordnung, greift **`DEFAULT_CDLABEL.svg`** in `cd_label` (falls vorhanden; ältere Deployments: `default.svg`). **Dateinamen:** Buchdecken-Paar `*_CDLABEL.svg`, siehe [`CD_LABEL_NAMING_AND_ASSIGNMENT.md`](CD_LABEL_NAMING_AND_ASSIGNMENT.md).
+- **Webshop:** Editor lädt nur Templates mit `gruppe = cd_label`; **Farbpalette** kommt vom **Buchdecken-Template der gewählten Quell-Variante** (`paletteSourceTemplateId`), nicht von einer separaten CD-Paletten-Zeile.
+- **Technik / KI:** Maße, `clipPath`, Masken: **`docs/ai_skills/SKILL_03_CD_LABEL_TECHNICAL.md`**. Ableitung aus einem Cover-SVG: **`docs/ai_skills/SKILL_CD_LABEL_FROM_COVER_SOURCE.md`**.
+
+Layout-Gruppen aus Abschnitt 2 (U1/Spine/U4) sind für CD-Labels **nicht** vorgeschrieben; sinnvoll ist eine **eine** Gruppe für die sichtbare CD-Fläche (z. B. `tpl-group-cd-face`), konsistent mit [`kalkulator/docs/EDITOR_SVG_KONVENTIONEN.md`](../kalkulator/docs/EDITOR_SVG_KONVENTIONEN.md).
+
+---
+
+*Letzte strukturelle Aktualisierung: SSOT-Einführung (Repo); Abschnitt 10 CD-Label.*

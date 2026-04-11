@@ -129,6 +129,7 @@ const TEMPLATE_GROUPS = [
     { id: 'paperback_classic', name: 'Paperback Classic' },
     { id: 'paperback_foil', name: 'Paperback (Deckfolie / Folienvariante)' },
     { id: 'paperback', name: 'Paperback (Legacy)' },
+    { id: 'cd_label', name: 'CD-Label' },
 ];
 /** @type {Map<string, object>} */
 const schemaByElementId = new Map();
@@ -1111,9 +1112,24 @@ async function renderTmplOverviewTable() {
                 .join('');
         };
 
+        const cdPool = coverTemplatesList.filter((t) => String(t.gruppe || '').trim() === 'cd_label');
+        const cdOptionsForRow = (currentCdId) => {
+            const cur = String(currentCdId || '').trim();
+            let opts =
+                '<option value="">' +
+                escapeHtml('Standard (DEFAULT_CDLABEL / Fallback)') +
+                '</option>';
+            cdPool.forEach((t) => {
+                const tid = String(t.id || '').trim();
+                const sel = tid && tid === cur ? ' selected' : '';
+                opts += `<option value="${escapeAttr(tid)}"${sel}>${escapeHtml(t.display_name || t.filename || tid)}</option>`;
+            });
+            return opts;
+        };
+
         const thead =
             '<thead><tr>' +
-            '<th>Anzeigename</th><th>Dateiname</th><th>Gruppe</th><th>Sort</th><th>Aktiv</th><th></th>' +
+            '<th>Anzeigename</th><th>Dateiname</th><th>Gruppe</th><th>CD-Label-Zuweisung</th><th>Sort</th><th>Aktiv</th><th></th>' +
             '</tr></thead>';
         const tbody = rows
             .map((r) => {
@@ -1123,11 +1139,16 @@ async function renderTmplOverviewTable() {
                 const fn = escapeHtml(r.filename || '');
                 const act = r.active !== false ? ' checked' : '';
                 const sort = String(r.sort_order ?? 0);
+                const isCdOnly = String(r.gruppe || '').trim() === 'cd_label';
+                const cdCell = isCdOnly
+                    ? '<td class="text-muted">—</td>'
+                    : `<td><select class="svg-shop-select tmpl-cd-label">${cdOptionsForRow(r.cd_label_template_id)}</select></td>`;
                 return (
                     `<tr data-tmpl-row="${idAttr}">` +
                     `<td><input type="text" class="svg-shop-input tmpl-disp" value="${dn}" /></td>` +
                     `<td class="tmpl-fn"><code>${fn}</code></td>` +
                     `<td><select class="svg-shop-select tmpl-gruppe">${optGruppe(r.gruppe)}</select></td>` +
+                    cdCell +
                     `<td class="tmpl-sort"><input type="number" class="svg-shop-input tmpl-sort-inp" min="0" step="1" value="${escapeAttr(sort)}" /></td>` +
                     `<td><label class="tmpl-act-label"><input type="checkbox" class="tmpl-active"${act} /> ja</label></td>` +
                     `<td class="tmpl-ov-actions"><button type="button" class="btn btn-sm btn-primary btn-tmpl-ov-load">Laden</button> ` +
@@ -1161,13 +1182,19 @@ async function saveTmplOverviewList() {
             const gruppe = tr.querySelector('.tmpl-gruppe')?.value ?? '';
             const sort_order = parseInt(tr.querySelector('.tmpl-sort-inp')?.value || '0', 10) || 0;
             const active = tr.querySelector('.tmpl-active')?.checked === true;
-            await apiFetchEdge('PATCH', '/functions/v1/admin-cover-templates', {
+            const cdSel = tr.querySelector('.tmpl-cd-label');
+            const payload = {
                 id,
                 display_name,
                 gruppe,
                 sort_order,
                 active,
-            });
+            };
+            if (cdSel && String(gruppe || '').trim() !== 'cd_label') {
+                const raw = cdSel.value?.trim() ?? '';
+                payload.cd_label_template_id = raw || null;
+            }
+            await apiFetchEdge('PATCH', '/functions/v1/admin-cover-templates', payload);
             n += 1;
         }
         showToast(`${n} Template(s) gespeichert.`, 'success');

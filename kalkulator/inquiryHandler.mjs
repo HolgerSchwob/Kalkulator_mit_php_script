@@ -319,9 +319,14 @@ async function handleSubmit(event) {
         for (const variantId in inquiryStateCache.personalizations || {}) {
             const perso = inquiryStateCache.personalizations[variantId];
             if (!perso?.editorData?.svgString) continue;
-            const variant = inquiryStateCache.variants.find(v => v.id === variantId);
-            const safeName = (variant?.name ?? 'personalisierung').replace(/[^a-zA-Z0-9]/g, '_');
-            const fileName = `personalisierung_${safeName}_${variantId}.svg`;
+            let fileName;
+            if (variantId === 'cd_label') {
+                fileName = 'personalisierung_cd_label.svg';
+            } else {
+                const variant = inquiryStateCache.variants.find(v => v.id === variantId);
+                const safeName = (variant?.name ?? 'personalisierung').replace(/[^a-zA-Z0-9]/g, '_');
+                fileName = `personalisierung_${safeName}_${variantId}.svg`;
+            }
             const blob = new Blob([perso.editorData.svgString], { type: 'image/svg+xml' });
             const { error: svgError } = await supabase.storage
                 .from(STORAGE_BUCKET)
